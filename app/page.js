@@ -1,70 +1,115 @@
 import Link from 'next/link'
 
+const SERVICII = [
+  { name: 'Manichiură Clasică', pret: '70 lei', durata: '30 min' },
+  { name: 'Rubber Base cu Apex + 1 Design', pret: '145 lei', durata: '1h 20min' },
+  { name: 'Ojă Semi + Culoare', pret: '140 lei', durata: '1h' },
+  { name: 'Gel pe Unghia Naturală', pret: '150 lei', durata: '1h' },
+  { name: 'Construcție Gel/Polygel', pret: 'de la 165 lei', durata: '1h 30min' },
+  { name: 'Întreținere Gel/Polygel', pret: 'de la 145 lei', durata: '1h 30min' },
+  { name: 'Construcție SLIM', pret: '210 lei', durata: '1h 40min' },
+]
+
 export default function Home() {
   return (
-    <main className="min-h-screen" style={{ background: '#fff' }}>
+    <main style={{ background: '#fff', minHeight: '100vh' }}>
+
       {/* Header */}
-      <header style={{ background: '#C41E3A' }} className="py-6 px-8 flex justify-between items-center">
+      <header style={{
+        background: 'linear-gradient(135deg, #9B1B30 0%, #7A1525 100%)',
+        padding: '20px 40px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 4px 20px rgba(155,27,48,0.3)'
+      }}>
         <div>
-          <h1 className="text-white text-2xl font-serif tracking-widest">ANDREEA BERTA</h1>
-          <p style={{ color: '#D4AF37' }} className="text-sm tracking-widest uppercase">Salon EVOLIS — Piatra Neamț</p>
+          <h1 style={{ color: 'white', fontSize: '22px', letterSpacing: '4px', margin: 0, fontFamily: 'Georgia, serif' }}>
+            ANDREEA BERTA
+          </h1>
+          <p style={{ color: '#E2C97E', fontSize: '11px', letterSpacing: '3px', margin: '4px 0 0', textTransform: 'uppercase' }}>
+            Salon EVOLIS · Piatra Neamț
+          </p>
         </div>
-        <Link href="/programare"
-          style={{ background: '#D4AF37', color: '#1a1a1a' }}
-          className="px-6 py-3 font-bold tracking-wider hover:opacity-90 transition">
+        <Link href="/programare" className="btn-gold" style={{ fontSize: '13px', padding: '12px 28px' }}>
           PROGRAMEAZĂ-TE
         </Link>
       </header>
 
       {/* Hero */}
-      <section style={{ background: '#F5EDE3' }} className="py-20 px-8 text-center">
-        <p style={{ color: '#C41E3A' }} className="text-sm tracking-widest uppercase mb-4">Salon de unghii premium</p>
-        <h2 className="text-5xl font-serif mb-6" style={{ color: '#1a1a1a' }}>
-          Frumusețe cu<br />
-          <span style={{ color: '#C41E3A' }}>știință</span> și <span style={{ color: '#D4AF37' }}>pasiune</span>
-        </h2>
-        <p className="text-lg text-gray-600 max-w-xl mx-auto mb-10">
-          Salon EVOLIS — unde fiecare detaliu contează. Unghii perfecte, produse premium, tehnică certificată.
+      <section style={{
+        background: 'linear-gradient(160deg, #F7EFE5 0%, #EDE0D0 100%)',
+        padding: '80px 40px',
+        textAlign: 'center'
+      }}>
+        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '20px' }}>
+          ✦ Salon de unghii premium ✦
         </p>
-        <Link href="/programare"
-          style={{ background: '#C41E3A', color: '#fff' }}
-          className="px-10 py-4 text-lg tracking-wider hover:opacity-90 transition inline-block">
+        <h2 style={{
+          fontSize: '48px',
+          fontFamily: 'Georgia, serif',
+          color: '#1C1C1C',
+          lineHeight: 1.2,
+          marginBottom: '24px',
+          fontWeight: 'normal'
+        }}>
+          Frumusețe cu <span style={{ color: '#9B1B30' }}>știință</span><br />
+          și <span style={{ color: '#C9A84C' }}>pasiune</span>
+        </h2>
+        <p style={{ color: '#666', fontSize: '18px', maxWidth: '520px', margin: '0 auto 40px', lineHeight: 1.7 }}>
+          Fiecare detaliu contează. Unghii perfecte, produse premium, tehnică certificată internațional.
+        </p>
+        <Link href="/programare" className="btn-primary" style={{ fontSize: '14px' }}>
           REZERVĂ O PROGRAMARE
         </Link>
       </section>
 
       {/* Servicii */}
-      <section className="py-16 px-8 max-w-4xl mx-auto">
-        <h3 className="text-center text-3xl font-serif mb-12" style={{ color: '#C41E3A' }}>Servicii</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { name: 'Manichiură Gel', price: 'de la 120 lei', desc: 'Baze, culori, nail art — rezultate de durată' },
-            { name: 'Reconstrucție', price: 'de la 180 lei', desc: 'Extensii, amprentă, modelare profesională' },
-            { name: 'Nail Art', price: 'de la 150 lei', desc: 'Desene, pietre, folii — creativitate fără limite' },
-          ].map((s) => (
-            <div key={s.name} className="text-center p-8 border" style={{ borderColor: '#D4AF37' }}>
-              <h4 className="text-xl font-serif mb-2">{s.name}</h4>
-              <p style={{ color: '#C41E3A' }} className="font-bold mb-3">{s.price}</p>
-              <p className="text-gray-600 text-sm">{s.desc}</p>
+      <section style={{ padding: '80px 40px', maxWidth: '1000px', margin: '0 auto' }}>
+        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>
+          ✦ Ce oferim ✦
+        </p>
+        <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>
+          Servicii
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+          {SERVICII.map((s) => (
+            <div key={s.name} className="card-3d" style={{ padding: '28px', borderTop: '3px solid #9B1B30' }}>
+              <h4 style={{ fontSize: '16px', fontFamily: 'Georgia, serif', marginBottom: '12px', color: '#1C1C1C' }}>{s.name}</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#9B1B30', fontWeight: 'bold', fontSize: '18px' }}>{s.pret}</span>
+                <span style={{ color: '#999', fontSize: '13px', background: '#F7EFE5', padding: '4px 12px', borderRadius: '20px' }}>{s.durata}</span>
+              </div>
             </div>
           ))}
         </div>
+        <div style={{ textAlign: 'center', marginTop: '40px' }}>
+          <Link href="/programare" className="btn-primary">
+            PROGRAMEAZĂ-TE ACUM
+          </Link>
+        </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ background: '#C41E3A' }} className="py-16 text-center">
-        <h3 className="text-white text-3xl font-serif mb-6">Gata să îți transformi unghiile?</h3>
-        <Link href="/programare"
-          style={{ background: '#D4AF37', color: '#1a1a1a' }}
-          className="px-10 py-4 text-lg font-bold tracking-wider hover:opacity-90 transition inline-block">
-          PROGRAMEAZĂ-TE ACUM
+      {/* Despre */}
+      <section style={{ background: 'linear-gradient(135deg, #9B1B30 0%, #7A1525 100%)', padding: '80px 40px', textAlign: 'center' }}>
+        <p style={{ color: '#E2C97E', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '20px' }}>✦ Povestea noastră ✦</p>
+        <h3 style={{ color: 'white', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '24px' }}>
+          De ce EVOLIS?
+        </h3>
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '17px', maxWidth: '600px', margin: '0 auto 40px', lineHeight: 1.8 }}>
+          EVOLIS înseamnă <em>Evoluție + Vis</em>. Cu impegno și viziune se construiește ceva unic.
+          Fiecare clientă e tratată cu atenție, știință și căldură.
+        </p>
+        <Link href="/programare" className="btn-gold">
+          REZERVĂ ACUM
         </Link>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-gray-500 text-sm">
-        <p>© 2026 Andreea Berta — Salon EVOLIS, Piatra Neamț</p>
-        <p className="mt-1">Instagram: <span style={{ color: '#C41E3A' }}>@andreeaberta.ro</span></p>
+      <footer style={{ padding: '40px', textAlign: 'center', color: '#999', fontSize: '14px', borderTop: '1px solid #F0E8DF' }}>
+        <p style={{ color: '#9B1B30', fontFamily: 'Georgia, serif', fontSize: '18px', marginBottom: '8px' }}>ANDREEA BERTA</p>
+        <p>Salon EVOLIS · Piatra Neamț · Instagram: @andreeaberta.ro</p>
+        <p style={{ marginTop: '8px' }}>© 2026 Toate drepturile rezervate</p>
       </footer>
     </main>
   )
