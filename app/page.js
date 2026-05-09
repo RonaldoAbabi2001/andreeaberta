@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SpinWheel from './components/SpinWheel'
 
 const SERVICII = [
   { name: 'Manichiură Clasică', pret: '70 lei', durata: '30 min' },
@@ -88,6 +89,11 @@ export default function Home() {
             REZERVAȚI O ȘEDINȚĂ
           </Link>
         </div>
+      </section>
+
+      {/* Roata Norocului */}
+      <section style={{ background: '#fff', padding: '20px 0' }}>
+        <SpinWheel />
       </section>
 
       {/* Despre */}
