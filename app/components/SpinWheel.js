@@ -96,6 +96,41 @@ export default function SpinWheel() {
     drawWheel(rotation)
   }, [])
 
+  function playTick() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.connect(g)
+      g.connect(ctx.destination)
+      o.frequency.value = 600
+      g.gain.setValueAtTime(0.15, ctx.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05)
+      o.start(ctx.currentTime)
+      o.stop(ctx.currentTime + 0.05)
+    } catch {}
+  }
+
+  function playWin() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const notes = [523, 659, 784, 1047]
+      notes.forEach((freq, i) => {
+        const o = ctx.createOscillator()
+        const g = ctx.createGain()
+        o.connect(g)
+        g.connect(ctx.destination)
+        o.frequency.value = freq
+        o.type = 'sine'
+        const t = ctx.currentTime + i * 0.15
+        g.gain.setValueAtTime(0.2, t)
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3)
+        o.start(t)
+        o.stop(t + 0.3)
+      })
+    } catch {}
+  }
+
   function spin() {
     if (spinning) return
     setSpinning(true)
@@ -107,26 +142,34 @@ export default function SpinWheel() {
     const duration = 4000
     const start = performance.now()
     const startRot = rotation
+    let lastSegment = -1
 
     function animate(now) {
       const elapsed = now - start
       const progress = Math.min(elapsed / duration, 1)
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3)
       const currentRot = startRot + (totalRotation - startRot) * eased
 
       drawWheel(currentRot)
 
+      // Tick sound per segment
+      const normalizedNow = ((currentRot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+      const currentSegment = Math.floor(normalizedNow / segmentAngle) % PREMII.length
+      if (currentSegment !== lastSegment) {
+        playTick()
+        lastSegment = currentSegment
+      }
+
       if (progress < 1) {
         animRef.current = requestAnimationFrame(animate)
       } else {
         setRotation(totalRotation)
-        // Calculate winner — pointer is at top (angle = -PI/2)
         const normalizedRot = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
         const pointerAngle = (2 * Math.PI - normalizedRot + 3 * Math.PI / 2) % (2 * Math.PI)
         const winnerIndex = Math.floor(pointerAngle / segmentAngle) % PREMII.length
         setResult(PREMII[winnerIndex])
         setSpinning(false)
+        playWin()
       }
     }
 
