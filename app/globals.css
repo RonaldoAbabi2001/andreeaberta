@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --red: #C41E3A;
+  --gold: #D4AF37;
+  --nude: #F5EDE3;
+  --white: #FFFFFF;
+}
+
+body {
+  background-color: var(--white);
+  color: #1a1a1a;
+  font-family: Georgia, serif;
+}
