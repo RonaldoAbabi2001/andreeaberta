@@ -21,8 +21,8 @@ export default function Programare() {
         <h2 style={{ fontSize: '32px', fontFamily: 'Georgia, serif', fontWeight: 'normal', textAlign: 'center', marginBottom: '8px', color: '#1C1C1C' }}>
           Programare online
         </h2>
-        <p style={{ textAlign: 'center', color: '#888', marginBottom: '40px', fontSize: '15px' }}>
-          Completează formularul și te contactăm pentru confirmare.
+        <p style={{ textAlign: 'center', color: '#888', marginBottom: '40px', fontSize: '15px', lineHeight: 1.7 }}>
+          Spuneți-ne cum vă putem servi. Vă contactăm în scurt timp pentru confirmare.
         </p>
         <BookingForm />
       </section>

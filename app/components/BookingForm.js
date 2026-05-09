@@ -77,10 +77,10 @@ export default function BookingForm() {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
         <p style={{ fontSize: '24px', fontFamily: 'Georgia, serif', color: '#9B1B30', marginBottom: '12px' }}>
-          Cerere trimisă!
+          Vă mulțumim.
         </p>
         <p style={{ color: '#666', lineHeight: 1.7 }}>
-          Îți mulțumim! Te contactăm în scurt timp pe <strong>{form.telefon}</strong> pentru confirmare.
+          Cererea dumneavoastră a fost primită. Vă contactăm în scurt timp la <strong>{form.telefon}</strong> pentru confirmare.
         </p>
       </div>
     )
@@ -206,7 +206,7 @@ export default function BookingForm() {
 
       <button type="submit" className="btn-primary" disabled={status === 'loading'}
         style={{ width: '100%', textAlign: 'center', fontSize: '14px', padding: '16px' }}>
-        {status === 'loading' ? 'Se trimite...' : 'TRIMITE CEREREA'}
+        {status === 'loading' ? 'Se procesează...' : 'CONFIRMAȚI PROGRAMAREA'}
       </button>
     </form>
   )

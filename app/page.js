@@ -32,7 +32,7 @@ export default function Home() {
           </p>
         </div>
         <Link href="/programare" className="btn-gold" style={{ fontSize: '13px', padding: '12px 28px' }}>
-          PROGRAMEAZĂ-TE
+          REZERVAȚI
         </Link>
       </header>
 
@@ -57,20 +57,20 @@ export default function Home() {
           și <span style={{ color: '#C9A84C' }}>pasiune</span>
         </h2>
         <p style={{ color: '#666', fontSize: '18px', maxWidth: '520px', margin: '0 auto 40px', lineHeight: 1.7 }}>
-          Fiecare detaliu contează. Unghii perfecte, produse premium, tehnică certificată internațional.
+          Fiecare ședință este un moment dedicat în întregime dumneavoastră. Produse premium, tehnică certificată, atenție la fiecare detaliu.
         </p>
         <Link href="/programare" className="btn-primary" style={{ fontSize: '14px' }}>
-          REZERVĂ O PROGRAMARE
+          REZERVAȚI O ȘEDINȚĂ
         </Link>
       </section>
 
       {/* Servicii */}
       <section style={{ padding: '80px 40px', maxWidth: '1000px', margin: '0 auto' }}>
         <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>
-          ✦ Ce oferim ✦
+          ✦ Ce vă oferim ✦
         </p>
         <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>
-          Servicii
+          Servicii & Tarife
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
           {SERVICII.map((s) => (
@@ -85,7 +85,7 @@ export default function Home() {
         </div>
         <div style={{ textAlign: 'center', marginTop: '40px' }}>
           <Link href="/programare" className="btn-primary">
-            PROGRAMEAZĂ-TE ACUM
+            REZERVAȚI O ȘEDINȚĂ
           </Link>
         </div>
       </section>
@@ -96,12 +96,15 @@ export default function Home() {
         <h3 style={{ color: 'white', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '24px' }}>
           De ce EVOLIS?
         </h3>
-        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '17px', maxWidth: '600px', margin: '0 auto 40px', lineHeight: 1.8 }}>
-          EVOLIS înseamnă <em>Evoluție + Vis</em>. Cu impegno și viziune se construiește ceva unic.
-          Fiecare clientă e tratată cu atenție, știință și căldură.
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '17px', maxWidth: '600px', margin: '0 auto 16px', lineHeight: 1.8 }}>
+          EVOLIS înseamnă <em>Evoluție + Vis</em>. Nu închiem o ședință — continuăm o relație.
+          Fiecare clientă este tratată cu atenție, știință și căldură autentică.
+        </p>
+        <p style={{ color: '#E2C97E', fontSize: '14px', fontStyle: 'italic', maxWidth: '500px', margin: '0 auto 40px', lineHeight: 1.7 }}>
+          „Consultarea nu începe cu pensula. Începe cu atenția."
         </p>
         <Link href="/programare" className="btn-gold">
-          REZERVĂ ACUM
+          REZERVAȚI O ȘEDINȚĂ
         </Link>
       </section>
 
@@ -109,6 +112,7 @@ export default function Home() {
       <footer style={{ padding: '40px', textAlign: 'center', color: '#999', fontSize: '14px', borderTop: '1px solid #F0E8DF' }}>
         <p style={{ color: '#9B1B30', fontFamily: 'Georgia, serif', fontSize: '18px', marginBottom: '8px' }}>ANDREEA BERTA</p>
         <p>Salon EVOLIS · Piatra Neamț · Instagram: @andreeaberta.ro</p>
+        <p style={{ marginTop: '8px', fontStyle: 'italic', color: '#bbb' }}>„Clienta nu își amintește cât a costat, ci cum s-a simțit."</p>
         <p style={{ marginTop: '8px' }}>© 2026 Toate drepturile rezervate</p>
       </footer>
     </main>
