@@ -1,4 +1,4 @@
-import BookingForm from '../components/BookingForm'
+import BookingFlow from '../components/BookingFlow'
 import Link from 'next/link'
 
 export default function Programare() {
@@ -14,17 +14,8 @@ export default function Programare() {
         </Link>
       </header>
 
-      <section style={{ padding: '60px 20px', maxWidth: '560px', margin: '0 auto' }}>
-        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>
-          ✦ Rezervare ✦
-        </p>
-        <h2 style={{ fontSize: '32px', fontFamily: 'Georgia, serif', fontWeight: 'normal', textAlign: 'center', marginBottom: '8px', color: '#1C1C1C' }}>
-          Programare online
-        </h2>
-        <p style={{ textAlign: 'center', color: '#888', marginBottom: '40px', fontSize: '15px', lineHeight: 1.7 }}>
-          Spuneți-ne cum vă putem servi. Vă contactăm în scurt timp pentru confirmare.
-        </p>
-        <BookingForm />
+      <section style={{ padding: '40px 20px 80px', maxWidth: '600px', margin: '0 auto' }}>
+        <BookingFlow />
       </section>
     </main>
   )
