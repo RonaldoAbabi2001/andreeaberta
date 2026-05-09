@@ -4,7 +4,7 @@ import { useState } from 'react'
 const SPECIALIST = {
   name: 'Andreea Berta',
   titlu: 'Tehnician Onicolog Certificat',
-  adresa: 'Salon EVOLIS, Piatra Neamț',
+  adresa: 'B-dul Dacia nr. 6, Bl. E1, Sc. A, Ap. 11, Piatra Neamț',
 }
 
 const SERVICII = [
