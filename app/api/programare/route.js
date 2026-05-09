@@ -3,6 +3,8 @@ import fs from 'fs'
 import path from 'path'
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'programari.json')
+const BOT_TOKEN = '8465613425:AAEawrbtzjSTyIpmtAtgYQEeOBCjc2T3iAE'
+const CHAT_ID = '645634084'
 
 function loadProgramari() {
   if (!fs.existsSync(DATA_FILE)) return []
@@ -12,6 +14,16 @@ function loadProgramari() {
 function saveProgramari(list) {
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true })
   fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2))
+}
+
+async function sendTelegram(text) {
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' })
+    })
+  } catch {}
 }
 
 export async function POST(request) {
@@ -31,6 +43,16 @@ export async function POST(request) {
   }
   programari.push(programare)
   saveProgramari(programari)
+
+  await sendTelegram(
+    `🔔 <b>Programare nouă!</b>\n\n` +
+    `👤 <b>${body.nume}</b>\n` +
+    `📞 ${body.telefon}\n` +
+    `💅 ${body.serviciu}\n` +
+    `📅 ${body.data} · ${body.ora}\n` +
+    `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
+    `💰 Total: ${body.pret} lei`
+  )
 
   return NextResponse.json({ success: true, id: programare.id })
 }
