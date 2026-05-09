@@ -1,19 +1,28 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { neon } from '@neondatabase/serverless'
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'programari.json')
 const BOT_TOKEN = '8465613425:AAEawrbtzjSTyIpmtAtgYQEeOBCjc2T3iAE'
 const CHAT_ID = '645634084'
 
-function loadProgramari() {
-  if (!fs.existsSync(DATA_FILE)) return []
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'))
-}
-
-function saveProgramari(list) {
-  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true })
-  fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2))
+async function getDb() {
+  const sql = neon(process.env.DATABASE_URL)
+  await sql`
+    CREATE TABLE IF NOT EXISTS programari (
+      id BIGINT PRIMARY KEY,
+      nume TEXT,
+      telefon TEXT,
+      serviciu TEXT,
+      pret INT,
+      durata INT,
+      data TEXT,
+      ora TEXT,
+      plata TEXT,
+      observatii TEXT,
+      creat TIMESTAMPTZ DEFAULT NOW(),
+      status TEXT DEFAULT 'pending'
+    )
+  `
+  return sql
 }
 
 async function sendTelegram(text) {
@@ -34,30 +43,38 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Câmpuri obligatorii lipsă' }, { status: 400 })
   }
 
-  const programari = loadProgramari()
-  const programare = {
-    id: Date.now(),
-    ...body,
-    creat: new Date().toISOString(),
-    status: 'pending'
+  try {
+    const sql = await getDb()
+    const id = Date.now()
+
+    await sql`
+      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii)
+      VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.serviciu}, ${body.pret || 0},
+              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''})
+    `
+
+    await sendTelegram(
+      `🔔 <b>Programare nouă!</b>\n\n` +
+      `👤 <b>${body.nume}</b>\n` +
+      `📞 ${body.telefon}\n` +
+      `💅 ${body.serviciu}\n` +
+      `📅 ${body.data} · ${body.ora}\n` +
+      `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
+      `💰 Total: ${body.pret} lei`
+    )
+
+    return NextResponse.json({ success: true, id })
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
-  programari.push(programare)
-  saveProgramari(programari)
-
-  await sendTelegram(
-    `🔔 <b>Programare nouă!</b>\n\n` +
-    `👤 <b>${body.nume}</b>\n` +
-    `📞 ${body.telefon}\n` +
-    `💅 ${body.serviciu}\n` +
-    `📅 ${body.data} · ${body.ora}\n` +
-    `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
-    `💰 Total: ${body.pret} lei`
-  )
-
-  return NextResponse.json({ success: true, id: programare.id })
 }
 
 export async function GET() {
-  const programari = loadProgramari()
-  return NextResponse.json(programari)
+  try {
+    const sql = await getDb()
+    const rows = await sql`SELECT * FROM programari ORDER BY creat DESC`
+    return NextResponse.json(rows)
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
 }
