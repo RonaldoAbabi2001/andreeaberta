@@ -53,10 +53,12 @@ export async function POST(request) {
   }
 
   const sql = await getDb()
+  const existing = await sql`SELECT id FROM clienti WHERE telefon = ${body.telefon}`
+  if (existing.length > 0) return NextResponse.json({ success: true, id: existing[0].id, duplicate: true })
   const id = Date.now()
   await sql`
-    INSERT INTO clienti (id, nume, telefon, email, data_nastere, observatii)
-    VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.email || ''}, ${body.data_nastere || ''}, ${body.observatii || ''})
+    INSERT INTO clienti (id, nume, telefon, email, data_nastere, observatii, sursa)
+    VALUES (${id}, ${body.nume || ''}, ${body.telefon}, ${body.email || ''}, ${body.data_nastere || ''}, ${body.observatii || ''}, ${body.sursa || 'manual'})
   `
   return NextResponse.json({ success: true, id })
 }

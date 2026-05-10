@@ -191,8 +191,14 @@ export default function AdminDashboard() {
       headers: authHeaders(),
       body: JSON.stringify({ ...newProg, pret: serv?.pret || 0, durata: serv?.durata || 0 })
     })
+    await fetch('/api/admin/clienti', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ nume: newProg.nume, telefon: newProg.telefon, sursa: 'admin' })
+    })
     setShowAddForm(false)
-    fetchProgramari()
+    await fetchProgramari()
+    await fetchClienti()
   }
 
   async function updateStatus(id, status) {
@@ -233,7 +239,7 @@ export default function AdminDashboard() {
   }
 
   const dateStr = formatDateRO
-  const progAzi = programari.filter(p => p.data === dateStr(viewDate))
+  const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim())
   const filteredClienti = clienti.filter(c =>
     c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
     c.telefon?.includes(clientSearch)
