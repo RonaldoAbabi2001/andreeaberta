@@ -1,5 +1,6 @@
 import BookingFlow from '../components/BookingFlow'
 import Link from 'next/link'
+import ClientHeaderButton from '../components/ClientHeaderButton'
 
 export default function Programare() {
   return (
@@ -13,9 +14,7 @@ export default function Programare() {
         <Link href="/" style={{ color: 'white', fontSize: '20px', letterSpacing: '4px', fontFamily: 'Georgia, serif', textDecoration: 'none' }}>
           ANDREEA BERTA
         </Link>
-        <Link href="/client/login" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', padding: '8px 16px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.25)', letterSpacing: '1px' }}>
-          Contul meu
-        </Link>
+        <ClientHeaderButton />
       </header>
 
       <section style={{ padding: '40px 20px 80px', maxWidth: '600px', margin: '0 auto' }}>
