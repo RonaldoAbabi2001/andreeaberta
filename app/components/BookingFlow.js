@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 
 const SPECIALIST = {
@@ -42,16 +42,16 @@ function generateSlots(durata) {
   return slots
 }
 
-function getDaysOfMonth(month, year) {
+function generateFutureDates(monthsAhead = 12) {
   const today = new Date(); today.setHours(0,0,0,0)
-  const isCurrentMonth = month === today.getMonth() && year === today.getFullYear()
-  const startDay = isCurrentMonth ? today.getDate() : 1
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const days = []
-  for (let d = startDay; d <= daysInMonth; d++) {
-    days.push(new Date(year, month, d))
+  const end = new Date(today.getFullYear(), today.getMonth() + monthsAhead + 1, 0)
+  const dates = []
+  const d = new Date(today)
+  while (d <= end) {
+    dates.push(new Date(d))
+    d.setDate(d.getDate() + 1)
   }
-  return days
+  return dates
 }
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
@@ -83,8 +83,10 @@ export default function BookingFlow() {
   const [status, setStatus] = useState(null)
   const [clientExistent, setClientExistent] = useState(null)
   const [loggedInClient, setLoggedInClient] = useState(null)
-  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth())
-  const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date().getMonth())
+  const [visibleYear, setVisibleYear] = useState(() => new Date().getFullYear())
+  const scrollRef = useRef(null)
+  const dayRefs = useRef({})
 
   // Restore state from sessionStorage on mount
   useEffect(() => {
@@ -133,20 +135,49 @@ export default function BookingFlow() {
     } catch {}
   }, [step, serviciu, data, ora, plata, form, clientExistent, status])
 
-  const today = new Date(); today.setHours(0,0,0,0)
-  const isCurrentMonth = viewMonth === today.getMonth() && viewYear === today.getFullYear()
-  const days = getDaysOfMonth(viewMonth, viewYear)
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0)
+  const allDates = generateFutureDates(12)
   const slots = serviciu ? generateSlots(serviciu.durata) : []
 
+  const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
+
+  function scrollToMonth(month, year) {
+    const key = `${year}-${month}`
+    const el = dayRefs.current[key]
+    if (el && scrollRef.current) {
+      scrollRef.current.scrollTo({ left: el.offsetLeft - 8, behavior: 'smooth' })
+    }
+  }
+
   function prevMonth() {
-    if (isCurrentMonth) return
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
-    else setViewMonth(m => m - 1)
+    if (isFirstMonth) return
+    let m = visibleMonth - 1, y = visibleYear
+    if (m < 0) { m = 11; y-- }
+    setVisibleMonth(m); setVisibleYear(y)
+    scrollToMonth(m, y)
   }
+
   function nextMonth() {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
-    else setViewMonth(m => m + 1)
+    let m = visibleMonth + 1, y = visibleYear
+    if (m > 11) { m = 0; y++ }
+    setVisibleMonth(m); setVisibleYear(y)
+    scrollToMonth(m, y)
   }
+
+  const handleDateScroll = useCallback(() => {
+    const container = scrollRef.current
+    if (!container) return
+    const containerLeft = container.scrollLeft + container.clientWidth / 2
+    let closest = null, closestDiff = Infinity
+    for (const [key, el] of Object.entries(dayRefs.current)) {
+      const diff = Math.abs(el.offsetLeft - containerLeft)
+      if (diff < closestDiff) { closestDiff = diff; closest = key }
+    }
+    if (closest) {
+      const [y, m] = closest.split('-').map(Number)
+      setVisibleMonth(m); setVisibleYear(y)
+    }
+  }, [])
 
   async function checkTelefon(telefon) {
     if (loggedInClient) return
@@ -276,20 +307,25 @@ export default function BookingFlow() {
 
           {/* Month navigator */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <button onClick={prevMonth} disabled={isCurrentMonth}
-              style={{ background: 'none', border: 'none', fontSize: '22px', cursor: isCurrentMonth ? 'not-allowed' : 'pointer', color: isCurrentMonth ? '#CCC' : style.ruby, padding: '4px 12px', lineHeight: 1 }}>‹</button>
+            <button onClick={prevMonth} disabled={isFirstMonth}
+              style={{ background: 'none', border: 'none', fontSize: '24px', cursor: isFirstMonth ? 'not-allowed' : 'pointer', color: isFirstMonth ? '#CCC' : style.ruby, padding: '4px 14px', lineHeight: 1 }}>‹</button>
             <p style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 'bold', color: style.ruby, margin: 0 }}>
-              {LUNI[viewMonth]} {viewYear}
+              {LUNI[visibleMonth]} {visibleYear}
             </p>
             <button onClick={nextMonth}
-              style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: style.ruby, padding: '4px 12px', lineHeight: 1 }}>›</button>
+              style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: style.ruby, padding: '4px 14px', lineHeight: 1 }}>›</button>
           </div>
 
-          <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px' }}>
-            {days.map((d, i) => {
+          <div ref={scrollRef} onScroll={handleDateScroll} className="date-carousel"
+            style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {allDates.map((d, i) => {
               const selected = data && data.toDateString() === d.toDateString()
+              const isFirstOfMonth = d.getDate() === 1 || i === 0
+              const monthKey = `${d.getFullYear()}-${d.getMonth()}`
               return (
-                <div key={i} onClick={() => { setData(d); setOra(null) }}
+                <div key={i}
+                  ref={isFirstOfMonth ? el => { if (el) dayRefs.current[monthKey] = el } : undefined}
+                  onClick={() => { setData(d); setOra(null) }}
                   style={{ minWidth: '60px', borderRadius: '14px', padding: '10px 8px', textAlign: 'center', cursor: 'pointer', flexShrink: 0, background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#EEE'}`, boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
                 >
                   <p style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{ZILE[d.getDay()]}</p>
