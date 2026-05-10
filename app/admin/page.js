@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
@@ -30,9 +30,93 @@ const STATUS_COLORS = {
   noshow: '#6B7280',
 }
 
+const PX_PER_MIN = 1.2
+const GRID_START_HOUR = 7
+const GRID_END_HOUR = 26 // 01:00 next day = 25th hour, show until 26
+const GRID_HOURS = GRID_END_HOUR - GRID_START_HOUR
+
 function timeToMin(t) {
+  if (!t) return 0
   const [h, m] = t.split(':').map(Number)
   return h * 60 + m
+}
+
+function formatDateRO(d) {
+  return `${d.getDate()} ${LUNI[d.getMonth()]} ${d.getFullYear()}`
+}
+
+function parseDateRO(str) {
+  if (!str) return null
+  const parts = str.trim().split(' ')
+  if (parts.length !== 3) return null
+  const day = parseInt(parts[0])
+  const month = LUNI.indexOf(parts[1])
+  const year = parseInt(parts[2])
+  if (month === -1 || isNaN(day) || isNaN(year)) return null
+  return new Date(year, month, day)
+}
+
+function DatePickerPopup({ value, onChange, onClose }) {
+  const parsed = parseDateRO(value)
+  const today = new Date()
+  const [month, setMonth] = useState(parsed ? parsed.getMonth() : today.getMonth())
+  const [year, setYear] = useState(parsed ? parsed.getFullYear() : today.getFullYear())
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  function prevMonth() {
+    if (month === 0) { setMonth(11); setYear(y => y - 1) }
+    else setMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (month === 11) { setMonth(0); setYear(y => y + 1) }
+    else setMonth(m => m + 1)
+  }
+
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  const selectedDay = parsed && parsed.getMonth() === month && parsed.getFullYear() === year ? parsed.getDate() : null
+  const todayDay = today.getMonth() === month && today.getFullYear() === year ? today.getDate() : null
+
+  return (
+    <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 300, background: 'white', borderRadius: '16px', boxShadow: '0 8px 40px rgba(0,0,0,0.18)', padding: '16px', minWidth: '290px', marginTop: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#9B1B30', padding: '4px 10px' }}>‹</button>
+        <span style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold' }}>{LUNI[month]} {year}</span>
+        <button onClick={nextMonth} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#9B1B30', padding: '4px 10px' }}>›</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', marginBottom: '6px' }}>
+        {ZILE.map(z => (
+          <div key={z} style={{ textAlign: 'center', fontSize: '10px', color: '#999', padding: '4px 0', fontWeight: 'bold', letterSpacing: '1px' }}>{z}</div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
+        {cells.map((d, i) => d ? (
+          <button key={i} onClick={() => { onChange(formatDateRO(new Date(year, month, d))); onClose() }}
+            style={{
+              padding: '8px 0', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px',
+              background: selectedDay === d ? '#9B1B30' : todayDay === d ? '#F7EFE5' : 'transparent',
+              color: selectedDay === d ? 'white' : todayDay === d ? '#9B1B30' : '#1C1C1C',
+              fontWeight: selectedDay === d || todayDay === d ? 'bold' : 'normal',
+            }}>
+            {d}
+          </button>
+        ) : <div key={i} />)}
+      </div>
+
+      <div style={{ marginTop: '12px', textAlign: 'center', borderTop: '1px solid #F0EAE0', paddingTop: '12px' }}>
+        <button onClick={() => { onChange(formatDateRO(today)); onClose() }}
+          style={{ background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', padding: '6px 16px', cursor: 'pointer', fontSize: '12px', color: '#9B1B30' }}>
+          Azi
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function AdminDashboard() {
@@ -41,14 +125,14 @@ export default function AdminDashboard() {
   const [programari, setProgramari] = useState([])
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState('day')
   const [showAddForm, setShowAddForm] = useState(false)
-  const [showImport, setShowImport] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [selectedClient, setSelectedClient] = useState(null)
   const [csvText, setCsvText] = useState('')
   const [importStatus, setImportStatus] = useState(null)
   const [token, setToken] = useState(null)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const datePickerRef = useRef(null)
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
@@ -66,6 +150,16 @@ export default function AdminDashboard() {
     fetchClienti()
   }, [token])
 
+  useEffect(() => {
+    function handleClick(e) {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
+        setShowDatePicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
   const authHeaders = () => ({ 'Content-Type': 'application/json', 'x-admin-token': token })
 
   async function fetchProgramari() {
@@ -80,6 +174,15 @@ export default function AdminDashboard() {
     setClienti(Array.isArray(data) ? data : [])
   }
 
+  function openAddForm() {
+    setNewProg({
+      nume: '', telefon: '', serviciu: '',
+      data: formatDateRO(viewDate),
+      ora: '', plata: 'numerar', observatii: ''
+    })
+    setShowAddForm(true)
+  }
+
   async function addProgramare(e) {
     e.preventDefault()
     const serv = SERVICII.find(s => s.name === newProg.serviciu)
@@ -89,7 +192,6 @@ export default function AdminDashboard() {
       body: JSON.stringify({ ...newProg, pret: serv?.pret || 0, durata: serv?.durata || 0 })
     })
     setShowAddForm(false)
-    setNewProg({ nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: '' })
     fetchProgramari()
   }
 
@@ -130,24 +232,19 @@ export default function AdminDashboard() {
     setCsvText('')
   }
 
-  // Calendar helpers
-  const dateStr = (d) => `${d.getDate()} ${LUNI[d.getMonth()]} ${d.getFullYear()}`
+  const dateStr = formatDateRO
   const progAzi = programari.filter(p => p.data === dateStr(viewDate))
-
-  const hours = Array.from({ length: 19 }, (_, i) => i + 7)
-
   const filteredClienti = clienti.filter(c =>
     c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
     c.telefon?.includes(clientSearch)
   )
-
   const clientProgramari = (telefon) => programari.filter(p => p.telefon === telefon)
+
+  const gridHeight = GRID_HOURS * 60 * PX_PER_MIN
 
   if (!token) return null
 
-  const s = {
-    ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', white: '#fff', text: '#1C1C1C'
-  }
+  const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', white: '#fff', text: '#1C1C1C' }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Georgia, serif' }}>
@@ -158,7 +255,6 @@ export default function AdminDashboard() {
           <p style={{ fontSize: '16px', letterSpacing: '3px', fontWeight: 'bold' }}>EVOLIS</p>
           <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Admin Panel</p>
         </div>
-
         {[
           { id: 'calendar', label: '📅 Calendar' },
           { id: 'clienti', label: '👤 Clienți' },
@@ -173,7 +269,6 @@ export default function AdminDashboard() {
               borderLeft: tab === item.id ? `3px solid ${s.gold}` : '3px solid transparent',
             }}>{item.label}</button>
         ))}
-
         <div style={{ marginTop: 'auto', padding: '20px' }}>
           <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }}
             style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', width: '100%' }}>
@@ -188,7 +283,6 @@ export default function AdminDashboard() {
         {/* CALENDAR TAB */}
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
@@ -201,54 +295,98 @@ export default function AdminDashboard() {
                 <button onClick={() => setViewDate(new Date())}
                   style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>Azi</button>
               </div>
-              <button onClick={() => setShowAddForm(true)}
+              <button onClick={openAddForm}
                 style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '12px 24px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
                 + Adaugă programare
               </button>
             </div>
 
-            {/* Calendar grid */}
-            <div style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
-              {hours.map(h => {
-                const hStr = String(h).padStart(2, '0') + ':00'
-                const prog = progAzi.filter(p => p.ora && timeToMin(p.ora) >= h * 60 && timeToMin(p.ora) < (h + 1) * 60)
-                const isPauza = h === 12
-                return (
+            {/* Calendar grid — absolute positioning */}
+            <div style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', display: 'flex' }}>
+              {/* Hour labels column */}
+              <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px` }}>
+                {Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR).map(h => (
                   <div key={h} style={{
-                    display: 'flex', borderBottom: '1px solid #F0EAE0',
-                    background: isPauza ? '#FFF8F0' : 'white', minHeight: '60px'
+                    position: 'absolute', top: `${(h - GRID_START_HOUR) * 60 * PX_PER_MIN}px`,
+                    width: '100%', padding: '0 10px',
+                    color: '#999', fontSize: '12px', lineHeight: `${60 * PX_PER_MIN}px`,
+                    borderBottom: '1px solid #F0EAE0',
                   }}>
-                    <div style={{ width: '70px', padding: '12px 16px', color: '#999', fontSize: '13px', borderRight: '1px solid #F0EAE0', flexShrink: 0 }}>{hStr}</div>
-                    <div style={{ flex: 1, padding: '4px 8px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                      {isPauza && <span style={{ color: '#C9A84C', fontSize: '12px', padding: '8px 0', opacity: 0.7 }}>Pauză prânz</span>}
-                      {prog.map(p => (
-                        <div key={p.id} style={{
-                          background: STATUS_COLORS[p.status] + '22',
-                          border: `2px solid ${STATUS_COLORS[p.status]}`,
-                          borderRadius: '10px', padding: '8px 12px', minWidth: '180px'
-                        }}>
-                          <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>{p.nume}</p>
-                          <p style={{ fontSize: '12px', color: '#666' }}>{p.serviciu} · {p.durata}min</p>
-                          <p style={{ fontSize: '12px', color: '#666' }}>{p.telefon}</p>
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                            {['confirmed', 'cancelled', 'noshow'].map(st => (
-                              <button key={st} onClick={() => updateStatus(p.id, st)}
-                                style={{
-                                  padding: '2px 8px', borderRadius: '20px', border: 'none', cursor: 'pointer',
-                                  background: p.status === st ? STATUS_COLORS[st] : '#EEE',
-                                  color: p.status === st ? 'white' : '#666', fontSize: '10px'
-                                }}>
-                                {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {String(h % 24).padStart(2, '0')}:00
                   </div>
-                )
-              })}
+                ))}
+              </div>
+
+              {/* Bookings area */}
+              <div style={{ flex: 1, position: 'relative', height: `${gridHeight}px` }}>
+                {/* Hour grid lines */}
+                {Array.from({ length: GRID_HOURS }, (_, i) => i).map(i => (
+                  <div key={i} style={{
+                    position: 'absolute', top: `${i * 60 * PX_PER_MIN}px`,
+                    left: 0, right: 0, height: `${60 * PX_PER_MIN}px`,
+                    borderBottom: '1px solid #F0EAE0',
+                    background: (i + GRID_START_HOUR) === 12 ? '#FFF8F0' : 'transparent',
+                  }}>
+                    {(i + GRID_START_HOUR) === 12 && (
+                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#C9A84C', fontSize: '12px', opacity: 0.7 }}>Pauză prânz</span>
+                    )}
+                  </div>
+                ))}
+
+                {/* Booking blocks */}
+                {progAzi.map((p, idx) => {
+                  const startMin = timeToMin(p.ora)
+                  const dur = Number(p.durata) || 60
+                  const topPx = (startMin - GRID_START_HOUR * 60) * PX_PER_MIN
+                  const heightPx = Math.max(dur * PX_PER_MIN, 40)
+                  const color = STATUS_COLORS[p.status] || STATUS_COLORS.confirmed
+
+                  if (topPx < 0 || topPx > gridHeight) return null
+
+                  return (
+                    <div key={p.id} style={{
+                      position: 'absolute',
+                      top: `${topPx}px`,
+                      left: `${8 + (idx % 2) * 8}px`,
+                      right: '8px',
+                      height: `${heightPx}px`,
+                      background: color + '22',
+                      border: `2px solid ${color}`,
+                      borderRadius: '10px',
+                      padding: '6px 10px',
+                      overflow: 'hidden',
+                      zIndex: 10,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ora} · {p.nume}</p>
+                          <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu} · {dur}min</p>
+                          {heightPx > 55 && <p style={{ fontSize: '11px', color: '#888' }}>{p.telefon}</p>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', marginLeft: '6px', flexShrink: 0 }}>
+                          {['confirmed', 'cancelled', 'noshow'].map(st => (
+                            <button key={st} onClick={() => updateStatus(p.id, st)}
+                              style={{
+                                padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                                background: p.status === st ? color : '#EEE',
+                                color: p.status === st ? 'white' : '#666', fontSize: '10px'
+                              }}>
+                              {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
+
+            {progAzi.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#AAA', fontSize: '15px' }}>
+                Nicio programare pentru această zi.
+              </div>
+            )}
           </div>
         )}
 
@@ -258,11 +396,9 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0 }}>Clienți ({clienti.length})</h2>
             </div>
-
             <input type="text" placeholder="Caută după nume sau telefon..."
               value={clientSearch} onChange={e => setClientSearch(e.target.value)}
               className="input-field" style={{ maxWidth: '400px', marginBottom: '20px' }} />
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {filteredClienti.map(c => (
                 <div key={c.id} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}
@@ -281,7 +417,6 @@ export default function AdminDashboard() {
                       <span style={{ color: '#999', fontSize: '20px' }}>{selectedClient?.id === c.id ? '▲' : '▼'}</span>
                     </div>
                   </div>
-
                   {selectedClient?.id === c.id && (
                     <div style={{ marginTop: '16px', borderTop: '1px solid #F0EAE0', paddingTop: '16px' }}>
                       <p style={{ color: s.ruby, fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>Istoric programări</p>
@@ -334,19 +469,15 @@ export default function AdminDashboard() {
               Exportați clienții din Mero ca CSV și lipiți conținutul mai jos.<br />
               Coloane acceptate: <strong>nume, telefon, email, data_nastere, observatii</strong>
             </p>
-
             <textarea value={csvText} onChange={e => setCsvText(e.target.value)}
-              rows={12}
-              className="input-field"
+              rows={12} className="input-field"
               placeholder={'nume,telefon,email\nMaria Ionescu,0712345678,maria@email.com\nAna Pop,0723456789,'}
               style={{ marginBottom: '16px', fontFamily: 'monospace', fontSize: '13px' }}
             />
-
             <button onClick={importCSV} disabled={!csvText.trim() || importStatus === 'loading'}
               className="btn-primary" style={{ padding: '14px 32px', fontSize: '14px' }}>
               {importStatus === 'loading' ? 'Se importă...' : 'IMPORTĂ CLIENȚII'}
             </button>
-
             {importStatus && importStatus !== 'loading' && (
               <p style={{ marginTop: '16px', color: '#10B981', fontSize: '15px' }}>{importStatus}</p>
             )}
@@ -360,28 +491,53 @@ export default function AdminDashboard() {
           <div style={{ background: 'white', borderRadius: '24px', padding: '32px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 'normal', marginBottom: '24px' }}>Adaugă programare</h3>
             <form onSubmit={addProgramare}>
-              {[
-                { label: 'Nume client *', key: 'nume', type: 'text', required: true },
-                { label: 'Telefon *', key: 'telefon', type: 'tel', required: true },
-                { label: 'Data *', key: 'data', type: 'text', required: true, placeholder: 'ex: 10 Mai 2026' },
-                { label: 'Ora *', key: 'ora', type: 'time', required: true },
-              ].map(f => (
-                <div key={f.key} style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>{f.label}</label>
-                  <input type={f.type} required={f.required} placeholder={f.placeholder}
-                    value={newProg[f.key]} onChange={e => setNewProg({ ...newProg, [f.key]: e.target.value })}
-                    className="input-field" />
-                </div>
-              ))}
 
+              {/* Nume */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Nume client *</label>
+                <input type="text" required value={newProg.nume} onChange={e => setNewProg({ ...newProg, nume: e.target.value })} className="input-field" />
+              </div>
+
+              {/* Telefon */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Telefon *</label>
+                <input type="tel" required value={newProg.telefon} onChange={e => setNewProg({ ...newProg, telefon: e.target.value })} className="input-field" />
+              </div>
+
+              {/* Data — cu date picker popup */}
+              <div style={{ marginBottom: '14px', position: 'relative' }} ref={datePickerRef}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Data *</label>
+                <input type="text" required readOnly value={newProg.data}
+                  onClick={() => setShowDatePicker(v => !v)}
+                  placeholder="Alege data..."
+                  className="input-field"
+                  style={{ cursor: 'pointer', caretColor: 'transparent' }}
+                />
+                {showDatePicker && (
+                  <DatePickerPopup
+                    value={newProg.data}
+                    onChange={val => setNewProg({ ...newProg, data: val })}
+                    onClose={() => setShowDatePicker(false)}
+                  />
+                )}
+              </div>
+
+              {/* Ora */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Ora *</label>
+                <input type="time" required value={newProg.ora} onChange={e => setNewProg({ ...newProg, ora: e.target.value })} className="input-field" />
+              </div>
+
+              {/* Serviciu */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Serviciu *</label>
                 <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })} className="input-field">
                   <option value="">Alege serviciul</option>
-                  {SERVICII.map(s => <option key={s.name} value={s.name}>{s.name} — {s.pret} lei</option>)}
+                  {SERVICII.map(sv => <option key={sv.name} value={sv.name}>{sv.name} — {sv.pret} lei ({sv.durata} min)</option>)}
                 </select>
               </div>
 
+              {/* Plată */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Plată</label>
                 <select value={newProg.plata} onChange={e => setNewProg({ ...newProg, plata: e.target.value })} className="input-field">
@@ -390,6 +546,7 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
+              {/* Observații */}
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Observații</label>
                 <textarea rows={2} value={newProg.observatii} onChange={e => setNewProg({ ...newProg, observatii: e.target.value })} className="input-field" />
