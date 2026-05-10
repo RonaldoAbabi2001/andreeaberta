@@ -125,6 +125,10 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
   const [savedOk, setSavedOk] = useState(false)
   const [editProg, setEditProg] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [showNewProg, setShowNewProg] = useState(false)
+  const [newProg, setNewProg] = useState({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
+  const [showNewDatePicker, setShowNewDatePicker] = useState(false)
+  const newDateRef = useRef(null)
 
   const clientProg = programari
     .filter(p => p.telefon === client.telefon)
@@ -165,6 +169,24 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
   async function deleteProg(id) {
     await fetch('/api/admin/programari', { method: 'DELETE', headers: authH, body: JSON.stringify({ id }) })
     setConfirmDelete(null)
+    onSaved()
+  }
+
+  async function addNewProg(e) {
+    e.preventDefault()
+    const serv = SERVICII.find(s => s.name === newProg.serviciu)
+    const id = Date.now()
+    await fetch('/api/admin/programari', {
+      method: 'POST', headers: authH,
+      body: JSON.stringify({
+        ...newProg, id,
+        nume: client.nume, telefon: client.telefon,
+        pret: serv?.pret || 0, durata: serv?.durata || 0,
+        status: 'confirmed'
+      })
+    })
+    setShowNewProg(false)
+    setNewProg({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
     onSaved()
   }
 
@@ -238,9 +260,65 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
 
           {/* ── PROGRAMĂRI ── */}
           <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold', color: s.ruby, marginBottom: '16px', letterSpacing: '1px' }}>Programări ({clientProg.length})</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold', color: s.ruby, letterSpacing: '1px', margin: 0 }}>Programări ({clientProg.length})</p>
+              <button onClick={() => setShowNewProg(v => !v)}
+                style={{ background: showNewProg ? '#EEE' : s.ruby, color: showNewProg ? '#555' : 'white', border: 'none', borderRadius: '20px', padding: '7px 16px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                {showNewProg ? 'Anulează' : '+ Programare nouă'}
+              </button>
+            </div>
 
-            {clientProg.length === 0 && <p style={{ color: '#AAA', fontSize: '14px' }}>Nicio programare înregistrată.</p>}
+            {/* Form programare nouă */}
+            {showNewProg && (
+              <form onSubmit={addNewProg} style={{ background: '#F7EFE5', borderRadius: '12px', padding: '16px', marginBottom: '16px', border: '1px solid #C9A84C33' }}>
+                <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>Programare pentru <strong>{client.nume}</strong></p>
+
+                {/* Data cu picker */}
+                <div style={{ marginBottom: '10px', position: 'relative' }} ref={newDateRef}>
+                  <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Data *</label>
+                  <input readOnly required value={newProg.data} onClick={() => setShowNewDatePicker(v => !v)}
+                    style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', boxSizing: 'border-box', background: 'white' }} />
+                  {showNewDatePicker && (
+                    <DatePickerPopup value={newProg.data}
+                      onChange={val => { setNewProg({ ...newProg, data: val }); setShowNewDatePicker(false) }}
+                      onClose={() => setShowNewDatePicker(false)} />
+                  )}
+                </div>
+
+                {/* Ora */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Ora *</label>
+                  <input type="time" required value={newProg.ora} onChange={e => setNewProg({ ...newProg, ora: e.target.value })}
+                    style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }} />
+                </div>
+
+                {/* Serviciu */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Serviciu *</label>
+                  <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })}
+                    style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }}>
+                    <option value="">Alege serviciul</option>
+                    {SERVICII.map(sv => <option key={sv.name} value={sv.name}>{sv.name} — {sv.pret} lei ({sv.durata} min)</option>)}
+                  </select>
+                </div>
+
+                {/* Plată */}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Plată</label>
+                  <select value={newProg.plata} onChange={e => setNewProg({ ...newProg, plata: e.target.value })}
+                    style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }}>
+                    <option value="numerar">Numerar</option>
+                    <option value="transfer">Transfer bancar</option>
+                  </select>
+                </div>
+
+                <button type="submit" style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '20px', padding: '10px 24px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%' }}>
+                  SALVEAZĂ PROGRAMAREA
+                </button>
+              </form>
+            )}
+
+            {clientProg.length === 0 && !showNewProg && <p style={{ color: '#AAA', fontSize: '14px' }}>Nicio programare înregistrată.</p>}
 
             {clientProg.map(p => (
               <div key={p.id} style={{ border: `1px solid ${SC[p.status] || '#E5E7EB'}33`, borderLeft: `4px solid ${SC[p.status] || '#E5E7EB'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', background: '#FAFAFA' }}>
