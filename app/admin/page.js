@@ -1044,7 +1044,13 @@ export default function AdminDashboard() {
       {showAddForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
           <div style={{ background: 'white', borderRadius: '24px', padding: '32px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 'normal', marginBottom: '24px' }}>Adaugă programare</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 'normal', margin: 0 }}>Adaugă programare</h3>
+              <button type="button" onClick={() => setShowAddForm(false)}
+                style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#F0EAE0', color: '#888', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                ✕
+              </button>
+            </div>
             <form onSubmit={addProgramare}>
 
               {/* Nume */}
