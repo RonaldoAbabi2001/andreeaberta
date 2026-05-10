@@ -433,6 +433,7 @@ export default function AdminDashboard() {
   const [importStatus, setImportStatus] = useState(null)
   const [token, setToken] = useState(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [confirmDeleteProg, setConfirmDeleteProg] = useState(null)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
 
@@ -509,6 +510,16 @@ export default function AdminDashboard() {
       body: JSON.stringify({ id, status })
     })
     fetchProgramari()
+  }
+
+  async function deleteProgramare(id) {
+    await fetch('/api/admin/programari', {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ id })
+    })
+    setConfirmDeleteProg(null)
+    await fetchProgramari()
   }
 
   async function importCSV() {
@@ -664,6 +675,8 @@ export default function AdminDashboard() {
 
                   if (topPx < 0 || topPx > gridHeight) return null
 
+                  const isConfirmingDelete = confirmDeleteProg === p.id
+
                   return (
                     <div key={p.id} style={{
                       position: 'absolute',
@@ -671,32 +684,62 @@ export default function AdminDashboard() {
                       left: `${8 + (idx % 2) * 8}px`,
                       right: '8px',
                       height: `${heightPx}px`,
-                      background: color + '22',
-                      border: `2px solid ${color}`,
+                      background: isConfirmingDelete ? '#FEF2F2' : color + '22',
+                      border: `2px solid ${isConfirmingDelete ? '#EF4444' : color}`,
                       borderRadius: '10px',
                       padding: '6px 10px',
                       overflow: 'hidden',
-                      zIndex: 10,
+                      zIndex: isConfirmingDelete ? 20 : 10,
+                      transition: 'background 0.15s, border-color 0.15s',
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ora} · {p.nume}</p>
-                          <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu} · {dur}min</p>
-                          {heightPx > 55 && <p style={{ fontSize: '11px', color: '#888' }}>{p.telefon}</p>}
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px', marginLeft: '6px', flexShrink: 0 }}>
-                          {['confirmed', 'cancelled', 'noshow'].map(st => (
-                            <button key={st} onClick={() => updateStatus(p.id, st)}
-                              style={{
-                                padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer',
-                                background: p.status === st ? color : '#EEE',
-                                color: p.status === st ? 'white' : '#666', fontSize: '10px'
-                              }}>
-                              {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
+                      {isConfirmingDelete ? (
+                        /* Confirmare ștergere */
+                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', gap: '6px' }}>
+                          <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#EF4444', margin: 0 }}>Ștergi programarea lui {p.nume}?</p>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => deleteProgramare(p.id)}
+                              style={{ background: '#EF4444', color: 'white', border: 'none', borderRadius: '20px', padding: '4px 12px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+                              Da, șterge
                             </button>
-                          ))}
+                            <button onClick={() => setConfirmDeleteProg(null)}
+                              style={{ background: '#EEE', border: 'none', borderRadius: '20px', padding: '4px 10px', cursor: 'pointer', fontSize: '11px' }}>
+                              Nu
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        /* View normal */
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', height: '100%' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ora} · {p.nume}</p>
+                            <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu} · {dur}min</p>
+                            {heightPx > 55 && <p style={{ fontSize: '11px', color: '#888' }}>{p.telefon}</p>}
+                            {heightPx > 75 && (
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
+                                {['confirmed', 'cancelled', 'noshow'].map(st => (
+                                  <button key={st} onClick={() => updateStatus(p.id, st)}
+                                    style={{ padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: p.status === st ? color : '#EEE', color: p.status === st ? 'white' : '#666', fontSize: '10px' }}>
+                                    {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '6px', flexShrink: 0 }}>
+                            {heightPx <= 75 && ['confirmed', 'cancelled', 'noshow'].map(st => (
+                              <button key={st} onClick={() => updateStatus(p.id, st)}
+                                style={{ padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: p.status === st ? color : '#EEE', color: p.status === st ? 'white' : '#666', fontSize: '10px' }}>
+                                {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
+                              </button>
+                            ))}
+                            <button onClick={() => setConfirmDeleteProg(p.id)}
+                              title="Șterge programarea"
+                              style={{ padding: '2px 7px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: '#FEE2E2', color: '#EF4444', fontSize: '12px', fontWeight: 'bold', lineHeight: 1.4 }}>
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
