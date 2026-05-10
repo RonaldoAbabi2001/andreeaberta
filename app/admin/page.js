@@ -513,6 +513,8 @@ export default function AdminDashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [confirmDeleteProg, setConfirmDeleteProg] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [analitica, setAnalitica] = useState(null)
+  const [loadingAnalitica, setLoadingAnalitica] = useState(false)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
 
@@ -531,6 +533,14 @@ export default function AdminDashboard() {
     fetchProgramari()
     fetchClienti()
   }, [token])
+
+  useEffect(() => {
+    if (tab !== 'analitica' || !token) return
+    setLoadingAnalitica(true)
+    fetch('/api/admin/analitica', { headers: { 'x-admin-token': token } })
+      .then(r => r.json())
+      .then(d => { setAnalitica(d); setLoadingAnalitica(false) })
+  }, [tab, token])
 
   useEffect(() => {
     function handleClick(e) {
@@ -690,6 +700,7 @@ export default function AdminDashboard() {
           {[
             { id: 'calendar', icon: '📅', label: 'Calendar' },
             { id: 'clienti', icon: '👤', label: 'Clienți' },
+            { id: 'analitica', icon: '📈', label: 'Analitica' },
             { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
             { id: 'import', icon: '📥', label: 'Import CSV' },
           ].map(item => {
@@ -1014,6 +1025,175 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ANALITICA TAB */}
+        {tab === 'analitica' && (
+          <div style={{ padding: '24px', maxWidth: '1100px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+              <div>
+                <h2 style={{ fontSize: '26px', fontWeight: 'normal', margin: '0 0 4px' }}>Analitica</h2>
+                <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>Date agregate în timp real din toate programările</p>
+              </div>
+              <button onClick={() => { setAnalitica(null); setLoadingAnalitica(true); fetch('/api/admin/analitica', { headers: { 'x-admin-token': token } }).then(r => r.json()).then(d => { setAnalitica(d); setLoadingAnalitica(false) }) }}
+                style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontSize: '13px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px' }}>↻</span> Actualizează
+              </button>
+            </div>
+
+            {loadingAnalitica && (
+              <div style={{ textAlign: 'center', padding: '80px', color: '#AAA' }}>
+                <div style={{ fontSize: '40px', marginBottom: '16px' }}>📊</div>
+                <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px' }}>Se calculează datele...</p>
+              </div>
+            )}
+
+            {analitica && !loadingAnalitica && (() => {
+              const { venLunaAc, venLunaTr, progLunaAc, progLunaTr, rataPrecentare, valoreMedie, clientiNoi, clientiReveniti, totalClienti, totalVenituri } = analitica.kpi
+              const venDiff = venLunaTr ? Math.round(((venLunaAc - venLunaTr) / venLunaTr) * 100) : null
+              const progDiff = progLunaTr ? Math.round(((progLunaAc - progLunaTr) / progLunaTr) * 100) : null
+
+              return (
+                <>
+                  {/* ── KPI Row 1 ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '16px' }}>
+                    {[
+                      { label: 'Venituri luna curentă', value: `${venLunaAc} lei`, sub: venDiff !== null ? `${venDiff >= 0 ? '+' : ''}${venDiff}% față de luna trecută` : 'Prima înregistrare', subColor: venDiff === null ? '#888' : venDiff >= 0 ? '#10B981' : '#EF4444', accent: '#9B1B30' },
+                      { label: 'Programări luna curentă', value: progLunaAc, sub: progDiff !== null ? `${progDiff >= 0 ? '+' : ''}${progDiff}% față de luna trecută` : 'Prima înregistrare', subColor: progDiff === null ? '#888' : progDiff >= 0 ? '#10B981' : '#EF4444', accent: '#C9A84C' },
+                      { label: 'Rata de prezentare', value: `${rataPrecentare}%`, sub: 'Confirmate / total luna curentă', subColor: '#888', accent: '#10B981' },
+                      { label: 'Valoare medie programare', value: `${valoreMedie} lei`, sub: 'Medie pe toate programările confirmate', subColor: '#888', accent: '#8B5CF6' },
+                    ].map((k, i) => (
+                      <div key={i} style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${k.accent}` }}>
+                        <p style={{ color: '#888', fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>{k.label}</p>
+                        <p style={{ fontSize: '26px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 8px', fontFamily: 'Georgia, serif' }}>{k.value}</p>
+                        <p style={{ fontSize: '11px', color: k.subColor, margin: 0 }}>{k.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── KPI Row 2 ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+                    {[
+                      { label: 'Clienți noi luna curentă', value: clientiNoi, accent: '#3B82F6' },
+                      { label: 'Clienți reveniți luna curentă', value: clientiReveniti, accent: '#10B981' },
+                      { label: 'Total clienți înregistrați', value: totalClienti, accent: '#C9A84C' },
+                      { label: 'Venituri totale cumulate', value: `${totalVenituri} lei`, accent: '#9B1B30' },
+                    ].map((k, i) => (
+                      <div key={i} style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: `3px solid ${k.accent}` }}>
+                        <p style={{ color: '#888', fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>{k.label}</p>
+                        <p style={{ fontSize: '32px', fontWeight: 'bold', color: k.accent, margin: 0, fontFamily: 'Georgia, serif' }}>{k.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── Venituri 6 luni ── */}
+                  <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', marginBottom: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                    <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Venituri — ultimele 6 luni</p>
+                    <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 24px' }}>Numai programări confirmate</p>
+                    {(() => {
+                      const data = analitica.venitPeLuni
+                      const maxVenit = Math.max(...data.map(d => d.venit), 1)
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '200px' }}>
+                          {data.map((d, i) => {
+                            const pct = d.venit / maxVenit
+                            const isLast = i === data.length - 1
+                            return (
+                              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                                <p style={{ fontSize: '11px', fontWeight: 'bold', color: isLast ? '#9B1B30' : '#555', marginBottom: '6px', textAlign: 'center' }}>{d.venit > 0 ? `${d.venit}` : '—'}</p>
+                                <div style={{ width: '100%', background: isLast ? 'linear-gradient(180deg, #C9392A 0%, #9B1B30 100%)' : 'linear-gradient(180deg, #D4B870 0%, #C9A84C 100%)', borderRadius: '6px 6px 0 0', height: `${Math.max(pct * 150, d.venit > 0 ? 4 : 0)}px`, transition: 'height 0.4s ease' }} />
+                                <div style={{ width: '100%', height: '1px', background: '#F0EAE0' }} />
+                                <p style={{ fontSize: '11px', color: isLast ? '#9B1B30' : '#888', marginTop: '8px', textAlign: 'center', fontWeight: isLast ? 'bold' : 'normal' }}>{d.luna}</p>
+                                <p style={{ fontSize: '10px', color: '#CCC', margin: '2px 0 0' }}>{d.programari} prog.</p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* ── Top servicii + Zile de vârf ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }}>
+
+                    {/* Top servicii */}
+                    <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                      <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Top servicii</p>
+                      <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Ordonate după număr de programări</p>
+                      {(() => {
+                        const data = analitica.serviciiTop
+                        const maxCount = Math.max(...data.map(d => d.count), 1)
+                        return data.map((d, i) => (
+                          <div key={i} style={{ marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '13px', color: '#1C1C1C', fontWeight: i === 0 ? 'bold' : 'normal' }}>{d.name}</span>
+                              <span style={{ fontSize: '11px', color: '#AAA', whiteSpace: 'nowrap', marginLeft: '8px' }}>{d.count}× · {d.venit} lei</span>
+                            </div>
+                            <div style={{ height: '7px', background: '#F5F0EB', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${(d.count / maxCount) * 100}%`, background: i === 0 ? 'linear-gradient(90deg, #9B1B30, #C9392A)' : i < 3 ? 'linear-gradient(90deg, #C9A84C, #D4B870)' : '#D1D5DB', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                            </div>
+                          </div>
+                        ))
+                      })()}
+                    </div>
+
+                    {/* Zile de vârf */}
+                    <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                      <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Zile de vârf</p>
+                      <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Distribuție pe zilele săptămânii</p>
+                      {(() => {
+                        const zile = ['Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm', 'Dum']
+                        const vals = zile.map(z => analitica.zileVarf[z] || 0)
+                        const maxVal = Math.max(...vals, 1)
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '150px' }}>
+                            {zile.map((z, i) => {
+                              const pct = vals[i] / maxVal
+                              const isWeekend = z === 'Sâm' || z === 'Dum'
+                              const isPeak = vals[i] === maxVal && vals[i] > 0
+                              return (
+                                <div key={z} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                                  {vals[i] > 0 && <p style={{ fontSize: '10px', fontWeight: 'bold', color: isPeak ? '#9B1B30' : '#888', marginBottom: '4px' }}>{vals[i]}</p>}
+                                  <div style={{ width: '100%', background: isWeekend ? 'linear-gradient(180deg, #D4B870, #C9A84C)' : isPeak ? 'linear-gradient(180deg, #C9392A, #9B1B30)' : 'linear-gradient(180deg, #BFC3CA, #9CA3AF)', borderRadius: '4px 4px 0 0', height: `${Math.max(pct * 110, vals[i] > 0 ? 4 : 1)}px` }} />
+                                  <p style={{ fontSize: '10px', color: isPeak ? '#9B1B30' : '#888', marginTop: '6px', fontWeight: isPeak ? 'bold' : 'normal' }}>{z}</p>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* ── Ore de vârf ── */}
+                  <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', marginBottom: '8px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                    <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Ore de vârf</p>
+                    <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 24px' }}>Număr de programări pe interval orar (07:00 – 20:00)</p>
+                    {(() => {
+                      const ore = Object.entries(analitica.oreVarf).sort(([a], [b]) => Number(a) - Number(b))
+                      const maxVal = Math.max(...ore.map(([, v]) => v), 1)
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '130px', paddingBottom: '28px' }}>
+                          {ore.map(([h, v]) => {
+                            const pct = v / maxVal
+                            const isPeak = v === maxVal && v > 0
+                            const isHigh = pct > 0.6
+                            return (
+                              <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                                {v > 0 && <p style={{ fontSize: '9px', fontWeight: 'bold', color: isPeak ? '#9B1B30' : '#AAA', marginBottom: '2px' }}>{v}</p>}
+                                <div style={{ width: '100%', background: isPeak ? 'linear-gradient(180deg, #C9392A, #9B1B30)' : isHigh ? 'linear-gradient(180deg, #D4B870, #C9A84C)' : v > 0 ? '#E5E7EB' : '#F5F5F5', borderRadius: '3px 3px 0 0', height: `${Math.max(pct * 80, v > 0 ? 3 : 1)}px` }} />
+                                <p style={{ fontSize: '9px', color: '#999', marginTop: '24px', position: 'absolute', transform: 'rotate(-45deg) translateX(-4px)', whiteSpace: 'nowrap', transformOrigin: 'top left' }}>{h}:00</p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
 
