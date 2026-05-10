@@ -48,9 +48,9 @@ export async function POST(request) {
     const id = Date.now()
 
     await sql`
-      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii)
+      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status)
       VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.serviciu}, ${body.pret || 0},
-              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''})
+              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''}, 'confirmed')
     `
 
     // Auto-creare cont client
