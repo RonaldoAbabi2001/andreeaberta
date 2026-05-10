@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 const SPECIALIST = {
   name: 'Andreea Berta',
   titlu: 'Tehnician Onicolog Certificat',
-  adresa: 'B-dul Dacia nr. 6, Piatra Neamț',
+  adresa: 'EVOLIS MANI · B-dul Dacia nr. 6',
 }
 
 const SERVICII = [
@@ -153,7 +153,7 @@ export default function BookingFlow() {
         <div style={{ marginTop: '32px', background: style.nude, borderRadius: '16px', padding: '24px', maxWidth: '360px', margin: '32px auto 0' }}>
           <p style={{ color: style.ruby, fontWeight: 'bold', marginBottom: '8px' }}>{serviciu.name}</p>
           <p style={{ color: '#555' }}>{formatData(data)} · {ora}</p>
-          <p style={{ color: '#555' }}>Andreea Berta · B-dul Dacia nr. 6, Piatra Neamț</p>
+          <p style={{ color: '#555' }}>Andreea Berta · EVOLIS MANI · B-dul Dacia nr. 6</p>
         </div>
       </div>
     )
@@ -274,7 +274,7 @@ export default function BookingFlow() {
               ['Data', formatData(data)],
               ['Ora', ora],
               ['Durată', `${serviciu.durata} min`],
-              ['Adresă', 'B-dul Dacia nr. 6, Piatra Neamț'],
+              ['Adresă', 'EVOLIS MANI · B-dul Dacia nr. 6'],
             ].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: '#888', fontSize: '13px' }}>{k}</span>
