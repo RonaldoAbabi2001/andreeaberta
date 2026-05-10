@@ -512,6 +512,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [confirmDeleteProg, setConfirmDeleteProg] = useState(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
 
@@ -646,31 +647,73 @@ export default function AdminDashboard() {
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Georgia, serif' }}>
 
       {/* Sidebar */}
-      <div style={{ width: '220px', background: `linear-gradient(180deg, ${s.ruby} 0%, #6A1020 100%)`, color: 'white', padding: '24px 0', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-          <p style={{ fontSize: '16px', letterSpacing: '3px', fontWeight: 'bold' }}>EVOLIS</p>
-          <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Admin Panel</p>
+      <div style={{
+        width: sidebarCollapsed ? '64px' : '220px',
+        background: `linear-gradient(180deg, ${s.ruby} 0%, #6A1020 100%)`,
+        color: 'white', flexShrink: 0, display: 'flex', flexDirection: 'column',
+        transition: 'width 0.25s ease', overflow: 'hidden', position: 'relative'
+      }}>
+        {/* Header */}
+        <div style={{ padding: sidebarCollapsed ? '20px 0' : '20px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', minHeight: '72px' }}>
+          {!sidebarCollapsed && (
+            <div>
+              <p style={{ fontSize: '16px', letterSpacing: '3px', fontWeight: 'bold', margin: 0 }}>EVOLIS</p>
+              <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px', margin: 0 }}>Admin Panel</p>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <span style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'Georgia, serif' }}>E</span>
+          )}
         </div>
+
+        {/* Nav items */}
         {[
-          { id: 'calendar', label: '📅 Calendar' },
-          { id: 'clienti', label: '👤 Clienți' },
-          { id: 'rapoarte', label: '📊 Rapoarte' },
-          { id: 'import', label: '📥 Import CSV' },
+          { id: 'calendar', icon: '📅', label: 'Calendar' },
+          { id: 'clienti', icon: '👤', label: 'Clienți' },
+          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
+          { id: 'import', icon: '📥', label: 'Import CSV' },
         ].map(item => (
-          <button key={item.id} onClick={() => setTab(item.id)}
+          <button key={item.id} onClick={() => setTab(item.id)} title={sidebarCollapsed ? item.label : ''}
             style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '14px 20px', background: tab === item.id ? 'rgba(255,255,255,0.15)' : 'transparent',
+              display: 'flex', alignItems: 'center', gap: '12px',
+              width: '100%', textAlign: 'left',
+              padding: sidebarCollapsed ? '14px 0' : '14px 20px',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              background: tab === item.id ? 'rgba(255,255,255,0.15)' : 'transparent',
               border: 'none', color: 'white', fontSize: '14px', cursor: 'pointer',
               borderLeft: tab === item.id ? `3px solid ${s.gold}` : '3px solid transparent',
-            }}>{item.label}</button>
-        ))}
-        <div style={{ marginTop: 'auto', padding: '20px' }}>
-          <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }}
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', width: '100%' }}>
-            Deconectare
+              whiteSpace: 'nowrap',
+            }}>
+            <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
+            {!sidebarCollapsed && item.label}
           </button>
-        </div>
+        ))}
+
+        {/* Toggle arrow */}
+        <button onClick={() => setSidebarCollapsed(v => !v)}
+          style={{
+            marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '8px', width: '100%', padding: '14px 20px',
+            background: 'rgba(255,255,255,0.08)', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)',
+            color: 'white', cursor: 'pointer', fontSize: '13px',
+          }}>
+          <span style={{ fontSize: '16px', display: 'inline-block', transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}>◀</span>
+          {!sidebarCollapsed && <span>Restrânge</span>}
+        </button>
+
+        {/* Logout */}
+        {!sidebarCollapsed && (
+          <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }}
+            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '12px 20px', cursor: 'pointer', fontSize: '13px', width: '100%', textAlign: 'left' }}>
+            ⎋ Deconectare
+          </button>
+        )}
+        {sidebarCollapsed && (
+          <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }} title="Deconectare"
+            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '12px 0', cursor: 'pointer', fontSize: '16px', width: '100%', textAlign: 'center' }}>
+            ⎋
+          </button>
+        )}
       </div>
 
       {/* Main content */}
