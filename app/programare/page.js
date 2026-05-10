@@ -7,10 +7,14 @@ export default function Programare() {
       <header style={{
         background: 'linear-gradient(135deg, #9B1B30 0%, #7A1525 100%)',
         padding: '20px 40px',
-        boxShadow: '0 4px 20px rgba(155,27,48,0.3)'
+        boxShadow: '0 4px 20px rgba(155,27,48,0.3)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
         <Link href="/" style={{ color: 'white', fontSize: '20px', letterSpacing: '4px', fontFamily: 'Georgia, serif', textDecoration: 'none' }}>
           ANDREEA BERTA
+        </Link>
+        <Link href="/client/login" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', padding: '8px 16px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.25)', letterSpacing: '1px' }}>
+          Contul meu
         </Link>
       </header>
 

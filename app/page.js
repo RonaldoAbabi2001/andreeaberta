@@ -32,9 +32,14 @@ export default function Home() {
             Salon EVOLIS · Piatra Neamț
           </p>
         </div>
-        <Link href="/programare" className="btn-gold" style={{ fontSize: '13px', padding: '12px 28px' }}>
-          REZERVAȚI
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <Link href="/client/login" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', padding: '10px 16px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.25)', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+            Contul meu
+          </Link>
+          <Link href="/programare" className="btn-gold" style={{ fontSize: '13px', padding: '12px 28px' }}>
+            REZERVAȚI
+          </Link>
+        </div>
       </header>
 
       {/* Hero */}
