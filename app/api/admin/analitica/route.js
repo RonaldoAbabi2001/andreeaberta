@@ -111,6 +111,37 @@ export async function GET(request) {
     ? Math.round(confirmed.reduce((s,p) => s + (Number(p.pret)||0), 0) / confirmed.length)
     : 0
 
+  // Sursa clienti
+  const sursaMap = {}
+  clienti.forEach(c => {
+    const sursa = (c.sursa || '').trim().toUpperCase() || 'NECUNOSCUT'
+    sursaMap[sursa] = (sursaMap[sursa] || 0) + 1
+  })
+  const sursaClienti = Object.entries(sursaMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([sursa, count]) => ({ sursa, count }))
+
+  // Oras clienti
+  const orasMap = {}
+  clienti.forEach(c => {
+    const oras = (c.oras || '').trim().toUpperCase() || 'NECUNOSCUT'
+    orasMap[oras] = (orasMap[oras] || 0) + 1
+  })
+  const orasClienti = Object.entries(orasMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([oras, count]) => ({ oras, count }))
+
+  // Tip client
+  const tipMap = {}
+  clienti.forEach(c => {
+    const tip = (c.tip_client || '').trim().toLowerCase() || 'necunoscut'
+    const label = tip === 'fidela' ? 'Fidelă' : tip === 'modela' ? 'Modelă' : tip === 'ocazionala' ? 'Ocazională' : tip === 'prima vizita' ? 'Prima vizită' : 'Necunoscut'
+    tipMap[label] = (tipMap[label] || 0) + 1
+  })
+  const tipClienti = Object.entries(tipMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tip, count]) => ({ tip, count }))
+
   return NextResponse.json({
     kpi: {
       venLunaAc, venLunaTr,
@@ -123,5 +154,8 @@ export async function GET(request) {
     serviciiTop,
     oreVarf,
     zileVarf,
+    sursaClienti,
+    orasClienti,
+    tipClienti,
   })
 }

@@ -1308,6 +1308,93 @@ export default function AdminDashboard() {
                       )
                     })()}
                   </div>
+
+                  {/* ── Profilul clientelei ── */}
+                  <div style={{ marginTop: '20px' }}>
+                    <p style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 'normal', color: '#1C1C1C', margin: '0 0 4px' }}>Profilul clientelei</p>
+                    <p style={{ color: '#AAA', fontSize: '13px', margin: '0 0 20px' }}>Date din secțiunea Clienți — sursa, locație, tip de fidelitate</p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+
+                      {/* Sursa clienti */}
+                      <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', gridColumn: 'span 2' }}>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>De unde vin clientele</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Sursa de achiziție</p>
+                        {(() => {
+                          const data = analitica.sursaClienti
+                          const maxCount = Math.max(...data.map(d => d.count), 1)
+                          const colors = { 'TIKTOK': '#010101', 'INSTAGRAM': '#E1306C', 'RECOMANDARE': '#10B981', 'GOOGLE MAPS': '#4285F4', 'MERO': '#9B1B30', 'FACEBOOK': '#1877F2', 'NECUNOSCUT': '#D1D5DB' }
+                          return data.map((d, i) => (
+                            <div key={i} style={{ marginBottom: '14px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+                                <span style={{ fontSize: '13px', color: '#1C1C1C', fontWeight: i === 0 ? 'bold' : 'normal' }}>{d.sursa}</span>
+                                <span style={{ fontSize: '12px', color: '#888', fontWeight: i === 0 ? 'bold' : 'normal' }}>{d.count} cliente</span>
+                              </div>
+                              <div style={{ height: '8px', background: '#F5F0EB', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${(d.count / maxCount) * 100}%`, background: colors[d.sursa] || '#C9A84C', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                      </div>
+
+                      {/* Tip client */}
+                      <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Tip clientă</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Fidelitate</p>
+                        {(() => {
+                          const data = analitica.tipClienti
+                          const total = data.reduce((s, d) => s + d.count, 0) || 1
+                          const tipColors = { 'Fidelă': '#10B981', 'Modelă': '#C9A84C', 'Ocazională': '#3B82F6', 'Prima vizită': '#8B5CF6', 'Necunoscut': '#D1D5DB' }
+                          return data.map((d, i) => (
+                            <div key={i} style={{ marginBottom: '14px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+                                <span style={{ fontSize: '13px', color: '#1C1C1C' }}>{d.tip}</span>
+                                <span style={{ fontSize: '12px', color: '#888' }}>{d.count} · {Math.round(d.count/total*100)}%</span>
+                              </div>
+                              <div style={{ height: '6px', background: '#F5F0EB', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${(d.count / total) * 100}%`, background: tipColors[d.tip] || '#9CA3AF', borderRadius: '3px' }} />
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                      </div>
+
+                      {/* Oras clienti */}
+                      <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', gridColumn: 'span 3' }}>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Distribuție geografică</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>De unde vin clientele — oraș / zonă</p>
+                        {(() => {
+                          const data = analitica.orasClienti
+                          const total = data.reduce((s, d) => s + d.count, 0) || 1
+                          const maxCount = Math.max(...data.map(d => d.count), 1)
+                          const orasColors = { 'PIATRA NEAMT': '#9B1B30', 'BUCURESTI': '#3B82F6', 'ALT ORAS': '#C9A84C', 'ALTA TARA': '#10B981', 'NECUNOSCUT': '#D1D5DB' }
+                          return (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                              {data.map((d, i) => {
+                                const pct = Math.round(d.count / total * 100)
+                                const color = orasColors[d.oras] || '#8B5CF6'
+                                return (
+                                  <div key={i} style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', border: `1px solid ${color}22` }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1C1C1C' }}>{d.oras}</span>
+                                      <span style={{ fontSize: '22px', fontWeight: 'bold', color }}>{pct}%</span>
+                                    </div>
+                                    <div style={{ height: '6px', background: '#EEEEEE', borderRadius: '3px', overflow: 'hidden', marginBottom: '6px' }}>
+                                      <div style={{ height: '100%', width: `${(d.count / maxCount) * 100}%`, background: color, borderRadius: '3px' }} />
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: '#AAA' }}>{d.count} cliente</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )
+                        })()}
+                      </div>
+
+                    </div>
+                  </div>
+
                 </>
               )
             })()}
