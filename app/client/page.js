@@ -104,6 +104,24 @@ export default function ClientPage() {
             </div>
           ))}
         </div>
+
+        {/* Buton pagina principala */}
+        <div style={{ marginTop: '28px' }}>
+          <Link href="/" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '10px',
+            padding: '12px 30px', borderRadius: '50px',
+            background: 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: 'rgba(255,255,255,0.8)', textDecoration: 'none',
+            fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase',
+            backdropFilter: 'blur(8px)',
+            fontFamily: 'Georgia, serif',
+          }}>
+            <span style={{ color: '#C9A84C', fontSize: '9px' }}>✦</span>
+            Pagina principală
+            <span style={{ color: '#C9A84C', fontSize: '9px' }}>✦</span>
+          </Link>
+        </div>
       </div>
 
       {/* Urmatoarea programare */}
@@ -204,22 +222,8 @@ export default function ClientPage() {
       </div>
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', paddingBottom: '56px' }}>
-        <Link href="/" style={{
-          display: 'inline-flex', alignItems: 'center', gap: '10px',
-          padding: '14px 36px', borderRadius: '50px',
-          background: 'white',
-          border: '1px solid #E8DDD0',
-          color: '#9B1B30', textDecoration: 'none',
-          fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.07)',
-          fontFamily: 'Georgia, serif',
-        }}>
-          <span style={{ fontSize: '10px', color: '#C9A84C' }}>✦</span>
-          Pagina principală
-          <span style={{ fontSize: '10px', color: '#C9A84C' }}>✦</span>
-        </Link>
-        <p style={{ color: '#CCC', fontSize: '11px', letterSpacing: '2px', marginTop: '32px' }}>EVOLIS · B-dul Dacia nr. 6, Piatra Neamț</p>
+      <div style={{ textAlign: 'center', paddingBottom: '48px' }}>
+        <p style={{ color: '#CCC', fontSize: '11px', letterSpacing: '2px' }}>EVOLIS · B-dul Dacia nr. 6, Piatra Neamț</p>
       </div>
     </div>
   )
