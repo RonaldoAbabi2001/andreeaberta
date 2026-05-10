@@ -497,6 +497,35 @@ function MonthOverview({ programari, viewDate, onSelectDay, onClose }) {
   )
 }
 
+function SyncSheetsButton({ token, onDone }) {
+  const [status, setStatus] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  async function sync() {
+    setLoading(true)
+    setStatus(null)
+    const res = await fetch('/api/admin/sync-sheets', {
+      method: 'POST',
+      headers: { 'x-admin-token': token },
+    })
+    const data = await res.json()
+    if (data.error) setStatus('❌ Eroare: ' + data.error)
+    else setStatus(`✅ ${data.inserted} clienți adăugați · ${data.updated} actualizați · ${data.total} total procesați`)
+    setLoading(false)
+    if (onDone) onDone()
+  }
+
+  return (
+    <div>
+      <button onClick={sync} disabled={loading}
+        style={{ background: loading ? '#DDD' : 'linear-gradient(135deg, #C9A84C, #A8883A)', color: 'white', border: 'none', borderRadius: '50px', padding: '12px 28px', cursor: loading ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold', letterSpacing: '0.5px', boxShadow: loading ? 'none' : '0 4px 14px rgba(201,168,76,0.4)' }}>
+        {loading ? 'Se sincronizează...' : '↻ Sincronizează acum'}
+      </button>
+      {status && <p style={{ marginTop: '12px', fontSize: '13px', color: status.startsWith('✅') ? '#10B981' : '#EF4444', lineHeight: 1.5 }}>{status}</p>}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [tab, setTab] = useState('calendar')
@@ -506,6 +535,7 @@ export default function AdminDashboard() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
+  const [clientiSubTab, setClientiSubTab] = useState('toti')
   const [selectedClient, setSelectedClient] = useState(null)
   const [csvText, setCsvText] = useState('')
   const [importStatus, setImportStatus] = useState(null)
@@ -960,37 +990,119 @@ export default function AdminDashboard() {
         {/* CLIENTI TAB */}
         {tab === 'clienti' && (
           <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0 }}>Clienți ({clienti.length})</h2>
             </div>
-            <input type="text" placeholder="Caută după nume sau telefon..."
-              value={clientSearch} onChange={e => setClientSearch(e.target.value)}
-              className="input-field" style={{ maxWidth: '400px', marginBottom: '20px' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {filteredClienti.map(c => {
-                const nrProg = programari.filter(p => p.telefon === c.telefon).length
-                const nrConf = programari.filter(p => p.telefon === c.telefon && p.status === 'confirmed').length
-                return (
-                  <div key={c.id}
-                    onClick={() => setSelectedClient(c)}
-                    style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s' }}>
+
+            {/* Sub-tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {[
+                { id: 'toti', label: `Toți clienții (${clienti.filter(c => c.tip_client !== 'modela').length})` },
+                { id: 'modele', label: `✦ Modele (${clienti.filter(c => c.tip_client === 'modela').length})` },
+              ].map(st => (
+                <button key={st.id} onClick={() => setClientiSubTab(st.id)}
+                  style={{
+                    padding: '9px 20px', borderRadius: '50px', border: 'none', cursor: 'pointer',
+                    fontSize: '13px', fontFamily: 'Georgia, serif',
+                    background: clientiSubTab === st.id
+                      ? (st.id === 'modele' ? 'linear-gradient(135deg, #C9A84C, #A8883A)' : s.ruby)
+                      : 'white',
+                    color: clientiSubTab === st.id ? 'white' : '#888',
+                    boxShadow: clientiSubTab === st.id ? '0 4px 14px rgba(0,0,0,0.2)' : '0 1px 4px rgba(0,0,0,0.06)',
+                    transition: 'all 0.2s',
+                  }}>{st.label}</button>
+              ))}
+              <input type="text" placeholder="Caută după nume sau telefon..."
+                value={clientSearch} onChange={e => setClientSearch(e.target.value)}
+                className="input-field" style={{ marginLeft: 'auto', maxWidth: '280px', margin: '0 0 0 auto' }} />
+            </div>
+
+            {/* MODELE sub-tab */}
+            {clientiSubTab === 'modele' && (() => {
+              const modele = clienti.filter(c => c.tip_client === 'modela' &&
+                (c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) || c.telefon?.includes(clientSearch)))
+              return (
+                <div>
+                  <div style={{ background: 'linear-gradient(135deg, #FDF8EC, #F5EDD0)', border: '1px solid #C9A84C33', borderRadius: '16px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '20px' }}>✦</span>
                     <div>
-                      <p style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>{c.nume}</p>
-                      <p style={{ color: '#666', fontSize: '13px' }}>{c.telefon}{c.email ? ` · ${c.email}` : ''}</p>
-                      <p style={{ color: '#AAA', fontSize: '12px', marginTop: '3px' }}>{nrProg} programări · {nrConf} confirmate</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
-                        onClick={e => e.stopPropagation()}
-                        style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>
-                        WhatsApp
-                      </a>
-                      <span style={{ color: '#9B1B30', fontSize: '13px', fontWeight: 'bold' }}>Deschide →</span>
+                      <p style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#A8883A', fontWeight: 'bold', margin: '0 0 2px' }}>Secțiunea Modele</p>
+                      <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Clienți care colaborează ca modele pentru conținut — tratament prioritar, monitorizare rezistență la 7 zile</p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+                    {modele.map(c => {
+                      const nrProg = programari.filter(p => p.telefon === c.telefon).length
+                      return (
+                        <div key={c.id} onClick={() => setSelectedClient(c)}
+                          style={{ background: 'white', borderRadius: '16px', padding: '18px 20px', boxShadow: '0 2px 12px rgba(201,168,76,0.12)', cursor: 'pointer', border: '1px solid rgba(201,168,76,0.25)', transition: 'box-shadow 0.2s', position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #C9A84C, #F5D07A, #C9A84C)' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <p style={{ fontWeight: 'bold', fontSize: '16px', margin: 0 }}>{c.nume}</p>
+                                <span style={{ background: 'linear-gradient(135deg, #C9A84C, #A8883A)', color: 'white', fontSize: '9px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '20px', letterSpacing: '1px', whiteSpace: 'nowrap' }}>MODEL</span>
+                              </div>
+                              <p style={{ color: '#666', fontSize: '13px', margin: '0 0 3px' }}>{c.telefon}</p>
+                              {c.oras && <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 3px' }}>📍 {c.oras}</p>}
+                              {c.instagram && <p style={{ color: '#C9A84C', fontSize: '12px', margin: '0 0 3px' }}>@{c.instagram}</p>}
+                              <p style={{ color: '#BBB', fontSize: '12px', margin: '6px 0 0' }}>{nrProg} programări{c.sursa ? ` · ${c.sursa}` : ''}</p>
+                              {c.observatii && <p style={{ color: '#AAA', fontSize: '11px', marginTop: '6px', fontStyle: 'italic', lineHeight: 1.4 }}>{c.observatii}</p>}
+                            </div>
+                            <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+                              onClick={e => e.stopPropagation()}
+                              style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', textDecoration: 'none', flexShrink: 0, marginLeft: '10px' }}>
+                              WA
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {modele.length === 0 && (
+                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#AAA' }}>
+                        Nicio modelă găsită{clientSearch ? ` pentru "${clientSearch}"` : ''}.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* TOȚI CLIENȚII sub-tab */}
+            {clientiSubTab === 'toti' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {filteredClienti.filter(c => c.tip_client !== 'modela').map(c => {
+                  const nrProg = programari.filter(p => p.telefon === c.telefon).length
+                  const nrConf = programari.filter(p => p.telefon === c.telefon && p.status === 'confirmed').length
+                  const isFidela = c.tip_client === 'fidela'
+                  return (
+                    <div key={c.id} onClick={() => setSelectedClient(c)}
+                      style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s', borderLeft: isFidela ? '3px solid #10B981' : '3px solid transparent' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <p style={{ fontWeight: 'bold', fontSize: '16px', margin: 0 }}>{c.nume}</p>
+                          {isFidela && <span style={{ background: '#ECFDF5', color: '#10B981', fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.5px' }}>FIDELĂ</span>}
+                          {c.tip_client && c.tip_client !== 'fidela' && c.tip_client !== 'modela' && (
+                            <span style={{ background: '#F3F4F6', color: '#6B7280', fontSize: '10px', padding: '2px 8px', borderRadius: '20px' }}>{c.tip_client}</span>
+                          )}
+                        </div>
+                        <p style={{ color: '#666', fontSize: '13px', margin: '0 0 2px' }}>{c.telefon}{c.email ? ` · ${c.email}` : ''}</p>
+                        {c.oras && <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 2px' }}>📍 {c.oras}</p>}
+                        <p style={{ color: '#AAA', fontSize: '12px', marginTop: '3px' }}>{nrProg} programări · {nrConf} confirmate{c.sursa ? ` · ${c.sursa}` : ''}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+                          onClick={e => e.stopPropagation()}
+                          style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>
+                          WhatsApp
+                        </a>
+                        <span style={{ color: '#9B1B30', fontSize: '13px', fontWeight: 'bold' }}>Deschide →</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1200,9 +1312,20 @@ export default function AdminDashboard() {
         {/* IMPORT CSV TAB */}
         {tab === 'import' && (
           <div style={{ padding: '24px', maxWidth: '700px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'normal', marginBottom: '8px' }}>Import clienți CSV</h2>
-            <p style={{ color: '#888', marginBottom: '24px', fontSize: '14px', lineHeight: 1.7 }}>
-              Exportați clienții din Mero ca CSV și lipiți conținutul mai jos.<br />
+            <h2 style={{ fontSize: '24px', fontWeight: 'normal', marginBottom: '8px' }}>Import clienți</h2>
+
+            {/* Sync Google Sheets */}
+            <div style={{ background: 'linear-gradient(135deg, #FDF8EC, #F5EDD0)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '16px', padding: '20px 24px', marginBottom: '28px' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold', color: '#A8883A', margin: '0 0 6px' }}>✦ Sincronizare Google Sheets</p>
+              <p style={{ color: '#888', fontSize: '13px', margin: '0 0 16px', lineHeight: 1.6 }}>
+                Importă automat toți clienții din foaia Google Sheets (ANALITICA SALON CLIENTI).<br />
+                Clienții existenți nu se duplică — se actualizează doar câmpurile goale.
+              </p>
+              <SyncSheetsButton token={token} onDone={fetchClienti} />
+            </div>
+
+            <p style={{ color: '#888', marginBottom: '16px', fontSize: '14px', lineHeight: 1.7 }}>
+              Sau importați manual din CSV (export Mero):<br />
               Coloane acceptate: <strong>nume, telefon, email, data_nastere, observatii</strong>
             </p>
             <textarea value={csvText} onChange={e => setCsvText(e.target.value)}
