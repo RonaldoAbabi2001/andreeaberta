@@ -95,8 +95,8 @@ export default function ClientPage() {
         <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
           {[
             { val: viitoare.length, label: 'Programări viitoare' },
-            { val: programari.filter(p => p.status === 'confirmed').length, label: 'Confirmate total' },
-            { val: totalCheltuit + ' lei', label: 'Total servicii' },
+            { val: programari.filter(p => p.status === 'confirmed').length, label: 'Vizite confirmate' },
+            { val: trecute.length, label: 'Vizite efectuate' },
           ].map((st, i) => (
             <div key={i} style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '18px', padding: '18px 28px', minWidth: '130px' }}>
               <p style={{ color: 'white', fontSize: '26px', fontWeight: 'bold', margin: '0 0 4px' }}>{st.val}</p>
