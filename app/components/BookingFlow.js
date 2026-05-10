@@ -316,24 +316,34 @@ export default function BookingFlow() {
               style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: style.ruby, padding: '4px 14px', lineHeight: 1 }}>›</button>
           </div>
 
-          <div ref={scrollRef} onScroll={handleDateScroll} className="date-carousel"
-            style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {allDates.map((d, i) => {
-              const selected = data && data.toDateString() === d.toDateString()
-              const isFirstOfMonth = d.getDate() === 1 || i === 0
-              const monthKey = `${d.getFullYear()}-${d.getMonth()}`
-              return (
-                <div key={i}
-                  ref={isFirstOfMonth ? el => { if (el) dayRefs.current[monthKey] = el } : undefined}
-                  onClick={() => { setData(d); setOra(null) }}
-                  style={{ minWidth: '60px', borderRadius: '14px', padding: '10px 8px', textAlign: 'center', cursor: 'pointer', flexShrink: 0, background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#EEE'}`, boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
-                >
-                  <p style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{ZILE[d.getDay()]}</p>
-                  <p style={{ fontSize: '18px', fontWeight: 'bold' }}>{d.getDate()}</p>
-                  <p style={{ fontSize: '10px', opacity: 0.7 }}>{LUNI[d.getMonth()].slice(0,3)}</p>
-                </div>
-              )
-            })}
+          <div style={{ position: 'relative' }}>
+            {/* Săgeată stânga */}
+            <button onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+              style={{ position: 'absolute', left: '-14px', top: '50%', transform: 'translateY(-60%)', zIndex: 10, background: 'white', border: `1.5px solid #EEE`, borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>‹</button>
+
+            <div ref={scrollRef} onScroll={handleDateScroll} className="date-carousel"
+              style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {allDates.map((d, i) => {
+                const selected = data && data.toDateString() === d.toDateString()
+                const isFirstOfMonth = d.getDate() === 1 || i === 0
+                const monthKey = `${d.getFullYear()}-${d.getMonth()}`
+                return (
+                  <div key={i}
+                    ref={isFirstOfMonth ? el => { if (el) dayRefs.current[monthKey] = el } : undefined}
+                    onClick={() => { setData(d); setOra(null) }}
+                    style={{ minWidth: '60px', borderRadius: '14px', padding: '10px 8px', textAlign: 'center', cursor: 'pointer', flexShrink: 0, background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#EEE'}`, boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
+                  >
+                    <p style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{ZILE[d.getDay()]}</p>
+                    <p style={{ fontSize: '18px', fontWeight: 'bold' }}>{d.getDate()}</p>
+                    <p style={{ fontSize: '10px', opacity: 0.7 }}>{LUNI[d.getMonth()].slice(0,3)}</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Săgeată dreapta */}
+            <button onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+              style={{ position: 'absolute', right: '-14px', top: '50%', transform: 'translateY(-60%)', zIndex: 10, background: 'white', border: `1.5px solid #EEE`, borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>›</button>
           </div>
 
           {data && (
