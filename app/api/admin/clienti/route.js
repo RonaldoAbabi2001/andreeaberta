@@ -12,16 +12,12 @@ async function getDb() {
   const sql = neon(process.env.DATABASE_URL)
   await sql`
     CREATE TABLE IF NOT EXISTS clienti (
-      id BIGINT PRIMARY KEY,
-      nume TEXT,
-      telefon TEXT,
-      email TEXT,
-      data_nastere TEXT,
-      observatii TEXT,
-      sursa TEXT DEFAULT 'manual',
-      creat TIMESTAMPTZ DEFAULT NOW()
+      id BIGINT PRIMARY KEY, nume TEXT, telefon TEXT, email TEXT,
+      data_nastere TEXT, observatii TEXT, sursa TEXT DEFAULT 'manual',
+      parola TEXT, creat TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS parola TEXT`
   return sql
 }
 

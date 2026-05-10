@@ -53,6 +53,23 @@ export async function POST(request) {
               ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''})
     `
 
+    // Auto-creare cont client
+    await sql`
+      CREATE TABLE IF NOT EXISTS clienti (
+        id BIGINT PRIMARY KEY, nume TEXT, telefon TEXT, email TEXT,
+        data_nastere TEXT, observatii TEXT, sursa TEXT DEFAULT 'site',
+        parola TEXT, creat TIMESTAMPTZ DEFAULT NOW()
+      )
+    `
+    await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS parola TEXT`
+    const existing = await sql`SELECT id FROM clienti WHERE telefon = ${body.telefon}`
+    if (existing.length === 0) {
+      await sql`
+        INSERT INTO clienti (id, nume, telefon, email, parola, sursa)
+        VALUES (${Date.now() + 1}, ${body.nume}, ${body.telefon}, ${body.email || ''}, ${body.telefon}, 'site')
+      `
+    }
+
     await sendTelegram(
       `🔔 <b>Programare nouă!</b>\n\n` +
       `👤 <b>${body.nume}</b>\n` +
