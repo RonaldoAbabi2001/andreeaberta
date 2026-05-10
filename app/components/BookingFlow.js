@@ -42,13 +42,14 @@ function generateSlots(durata) {
   return slots
 }
 
-function getNext14Days() {
+function getDaysOfMonth(month, year) {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const isCurrentMonth = month === today.getMonth() && year === today.getFullYear()
+  const startDay = isCurrentMonth ? today.getDate() : 1
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
   const days = []
-  const today = new Date()
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    days.push(d)
+  for (let d = startDay; d <= daysInMonth; d++) {
+    days.push(new Date(year, month, d))
   }
   return days
 }
@@ -82,6 +83,8 @@ export default function BookingFlow() {
   const [status, setStatus] = useState(null)
   const [clientExistent, setClientExistent] = useState(null)
   const [loggedInClient, setLoggedInClient] = useState(null)
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth())
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
 
   // Restore state from sessionStorage on mount
   useEffect(() => {
@@ -130,8 +133,20 @@ export default function BookingFlow() {
     } catch {}
   }, [step, serviciu, data, ora, plata, form, clientExistent, status])
 
-  const days = getNext14Days()
+  const today = new Date(); today.setHours(0,0,0,0)
+  const isCurrentMonth = viewMonth === today.getMonth() && viewYear === today.getFullYear()
+  const days = getDaysOfMonth(viewMonth, viewYear)
   const slots = serviciu ? generateSlots(serviciu.durata) : []
+
+  function prevMonth() {
+    if (isCurrentMonth) return
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
 
   async function checkTelefon(telefon) {
     if (loggedInClient) return
@@ -258,6 +273,17 @@ export default function BookingFlow() {
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 3</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '8px' }}>Alegeți data și ora</h2>
           <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '20px' }}>{serviciu.name} · {serviciu.durata} min</p>
+
+          {/* Month navigator */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <button onClick={prevMonth} disabled={isCurrentMonth}
+              style={{ background: 'none', border: 'none', fontSize: '22px', cursor: isCurrentMonth ? 'not-allowed' : 'pointer', color: isCurrentMonth ? '#CCC' : style.ruby, padding: '4px 12px', lineHeight: 1 }}>‹</button>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 'bold', color: style.ruby, margin: 0 }}>
+              {LUNI[viewMonth]} {viewYear}
+            </p>
+            <button onClick={nextMonth}
+              style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: style.ruby, padding: '4px 12px', lineHeight: 1 }}>›</button>
+          </div>
 
           <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px' }}>
             {days.map((d, i) => {

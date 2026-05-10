@@ -897,11 +897,12 @@ export default function AdminDashboard() {
 
                 {/* Booking blocks */}
                 {progAzi.map((p, idx) => {
-                  const startMin = timeToMin(p.ora)
+                  const startMin = p.ora ? timeToMin(p.ora) : 9 * 60
                   const dur = Number(p.durata) || 60
                   const topPx = (startMin - GRID_START_HOUR * 60) * PX_PER_MIN
                   const heightPx = Math.max(dur * PX_PER_MIN, 40)
                   const color = STATUS_COLORS[p.status] || STATUS_COLORS.confirmed
+                  const noTime = !p.ora
 
                   if (topPx < 0 || topPx > gridHeight) return null
 
@@ -952,7 +953,7 @@ export default function AdminDashboard() {
                         /* View normal */
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', height: '100%' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ora} · {p.nume}</p>
+                            <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{noTime ? '📋 ' : p.ora + ' · '}{p.nume}</p>
                             <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu} · {dur}min</p>
                             {heightPx > 55 && <p style={{ fontSize: '11px', color: '#888' }}>{p.telefon}</p>}
                             {heightPx > 75 && (
