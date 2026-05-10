@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SpinWheel from './components/SpinWheel'
+import ClientPortalSection from './components/ClientPortalSection'
 
 const SERVICII = [
   { name: 'Manichiură Clasică', pret: '70 lei', durata: '30 min' },
@@ -69,6 +70,9 @@ export default function Home() {
           REZERVAȚI O ȘEDINȚĂ
         </Link>
       </section>
+
+      {/* Portal client — apare doar daca e logat */}
+      <ClientPortalSection />
 
       {/* Servicii */}
       <section style={{ padding: '80px 40px', maxWidth: '1000px', margin: '0 auto' }}>
