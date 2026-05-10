@@ -62,6 +62,19 @@ export async function POST(request) {
       )
     `
     await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS parola TEXT`
+    await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS telefon_secundar TEXT`
+
+    const telefonOriginal = body.telefonOriginal || null
+    const telefonNou = body.telefon
+
+    // Dacă clienta e logată și și-a schimbat telefonul → salvez ca număr secundar
+    if (telefonOriginal && telefonOriginal !== telefonNou) {
+      await sql`
+        UPDATE clienti SET telefon_secundar = ${telefonNou}
+        WHERE telefon = ${telefonOriginal}
+      `
+    }
+
     const existing = await sql`SELECT id FROM clienti WHERE telefon = ${body.telefon}`
     if (existing.length === 0) {
       await sql`

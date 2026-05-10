@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const SPECIALIST = {
   name: 'Andreea Berta',
@@ -60,12 +60,13 @@ function formatData(d) {
 }
 
 const style = {
-  ruby: '#9B1B30',
-  rubyDark: '#7A1525',
-  gold: '#C9A84C',
-  nude: '#F7EFE5',
-  white: '#FFFFFF',
-  text: '#1C1C1C',
+  ruby: '#9B1B30', rubyDark: '#7A1525', gold: '#C9A84C',
+  nude: '#F7EFE5', white: '#FFFFFF', text: '#1C1C1C',
+}
+
+const lockedStyle = {
+  background: '#F5F5F5', color: '#AAA', cursor: 'not-allowed',
+  borderColor: '#E5E5E5',
 }
 
 export default function BookingFlow() {
@@ -76,22 +77,43 @@ export default function BookingFlow() {
   const [plata, setPlata] = useState(null)
   const [form, setForm] = useState({ nume: '', telefon: '', email: '' })
   const [status, setStatus] = useState(null)
-  const [clientExistent, setClientExistent] = useState(null) // null=necunoscut, true/false
+  const [clientExistent, setClientExistent] = useState(null)
+  const [loggedInClient, setLoggedInClient] = useState(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('client_info')
+      if (raw) {
+        const c = JSON.parse(raw)
+        setLoggedInClient(c)
+        setForm({ nume: c.nume || '', telefon: c.telefon || '', email: c.email || '' })
+        setClientExistent(true)
+      }
+    } catch {}
+  }, [])
 
   const days = getNext14Days()
   const slots = serviciu ? generateSlots(serviciu.durata) : []
 
   async function checkTelefon(telefon) {
+    if (loggedInClient) return
     const digits = telefon.replace(/\D/g, '')
     if (digits.length < 10) { setClientExistent(null); return }
     const res = await fetch(`/api/client/check?telefon=${encodeURIComponent(telefon.trim())}`)
-    const data = await res.json()
-    setClientExistent(data.exists)
+    const d = await res.json()
+    setClientExistent(d.exists)
   }
+
+  const telefonSchimbat = loggedInClient && form.telefon.trim() !== loggedInClient.telefon.trim()
+    && form.telefon.replace(/\D/g, '').length >= 10
+
+  const emailOk = !!loggedInClient || clientExistent === true || !!form.email
+  const canSubmit = !!form.nume && !!form.telefon && emailOk && !!plata && status !== 'loading'
 
   const handleConfirm = async () => {
     setStatus('loading')
     try {
+      const clientToken = localStorage.getItem('client_token')
       const res = await fetch('/api/programare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,8 +125,9 @@ export default function BookingFlow() {
           pret: serviciu.pret,
           durata: serviciu.durata,
           data: formatData(data),
-          ora,
-          plata,
+          ora, plata,
+          clientToken: clientToken || null,
+          telefonOriginal: loggedInClient?.telefon || null,
         })
       })
       if (res.ok) setStatus('success')
@@ -117,11 +140,11 @@ export default function BookingFlow() {
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: '56px', marginBottom: '16px' }}>✓</div>
         <h3 style={{ fontFamily: 'Georgia, serif', color: style.ruby, fontSize: '28px', fontWeight: 'normal', marginBottom: '12px' }}>
-          Vă mulțumim, {form.nume}!
+          Vă mulțumim, {form.nume.split(' ')[0]}!
         </h3>
         <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
-          Programarea dumneavoastră a fost înregistrată.<br />
-          Vă contactăm la <strong>{form.telefon}</strong> pentru confirmare.
+          Programarea dumneavoastră a fost confirmată.<br />
+          Vă contactăm la <strong>{form.telefon}</strong> pentru orice detalii.
         </p>
         <div style={{ marginTop: '32px', background: style.nude, borderRadius: '16px', padding: '24px', maxWidth: '360px', margin: '32px auto 0' }}>
           <p style={{ color: style.ruby, fontWeight: 'bold', marginBottom: '8px' }}>{serviciu.name}</p>
@@ -138,11 +161,7 @@ export default function BookingFlow() {
       {/* Progress bar */}
       <div style={{ display: 'flex', marginBottom: '32px', gap: '4px' }}>
         {[1,2,3,4].map(s => (
-          <div key={s} style={{
-            flex: 1, height: '4px', borderRadius: '4px',
-            background: s <= step ? style.ruby : '#E0D0C0',
-            transition: 'background 0.3s'
-          }} />
+          <div key={s} style={{ flex: 1, height: '4px', borderRadius: '4px', background: s <= step ? style.ruby : '#E0D0C0', transition: 'background 0.3s' }} />
         ))}
       </div>
 
@@ -151,23 +170,12 @@ export default function BookingFlow() {
         <div>
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 1</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți specialistul</h2>
-          <div
-            onClick={() => setStep(2)}
-            style={{
-              background: style.white, borderRadius: '20px', padding: '24px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.08)', cursor: 'pointer',
-              border: '2px solid transparent', transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '20px'
-            }}
+          <div onClick={() => setStep(2)}
+            style={{ background: style.white, borderRadius: '20px', padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', cursor: 'pointer', border: '2px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '20px' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = style.ruby}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
           >
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%',
-              background: `linear-gradient(135deg, ${style.ruby}, ${style.rubyDark})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: '24px', fontFamily: 'Georgia, serif', flexShrink: 0
-            }}>A</div>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `linear-gradient(135deg, ${style.ruby}, ${style.rubyDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '24px', fontFamily: 'Georgia, serif', flexShrink: 0 }}>A</div>
             <div>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '18px', marginBottom: '4px' }}>{SPECIALIST.name}</p>
               <p style={{ color: '#888', fontSize: '13px' }}>{SPECIALIST.titlu}</p>
@@ -185,15 +193,8 @@ export default function BookingFlow() {
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți serviciul</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {SERVICII.map(s => (
-              <div key={s.name}
-                onClick={() => { setServiciu(s); setStep(3) }}
-                style={{
-                  background: style.white, borderRadius: '14px', padding: '16px 20px',
-                  cursor: 'pointer', border: '1.5px solid #EEE',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                }}
+              <div key={s.name} onClick={() => { setServiciu(s); setStep(3) }}
+                style={{ background: style.white, borderRadius: '14px', padding: '16px 20px', cursor: 'pointer', border: '1.5px solid #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = style.ruby; e.currentTarget.style.background = style.nude }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#EEE'; e.currentTarget.style.background = style.white }}
               >
@@ -205,9 +206,7 @@ export default function BookingFlow() {
               </div>
             ))}
           </div>
-          <button onClick={() => setStep(1)} style={{ marginTop: '20px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>
-            ← Înapoi
-          </button>
+          <button onClick={() => setStep(1)} style={{ marginTop: '20px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>← Înapoi</button>
         </div>
       )}
 
@@ -218,22 +217,12 @@ export default function BookingFlow() {
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '8px' }}>Alegeți data și ora</h2>
           <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '20px' }}>{serviciu.name} · {serviciu.durata} min</p>
 
-          {/* Date bar */}
           <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px' }}>
             {days.map((d, i) => {
               const selected = data && data.toDateString() === d.toDateString()
               return (
-                <div key={i}
-                  onClick={() => { setData(d); setOra(null) }}
-                  style={{
-                    minWidth: '60px', borderRadius: '14px', padding: '10px 8px',
-                    textAlign: 'center', cursor: 'pointer', flexShrink: 0,
-                    background: selected ? style.ruby : style.white,
-                    color: selected ? 'white' : style.text,
-                    border: `1.5px solid ${selected ? style.ruby : '#EEE'}`,
-                    boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
-                    transition: 'all 0.2s'
-                  }}
+                <div key={i} onClick={() => { setData(d); setOra(null) }}
+                  style={{ minWidth: '60px', borderRadius: '14px', padding: '10px 8px', textAlign: 'center', cursor: 'pointer', flexShrink: 0, background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#EEE'}`, boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
                 >
                   <p style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{ZILE[d.getDay()]}</p>
                   <p style={{ fontSize: '18px', fontWeight: 'bold' }}>{d.getDate()}</p>
@@ -243,7 +232,6 @@ export default function BookingFlow() {
             })}
           </div>
 
-          {/* Ore disponibile */}
           {data && (
             <div>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
@@ -251,22 +239,12 @@ export default function BookingFlow() {
                 {slots.map(slot => {
                   const selected = ora === slot
                   return (
-                    <div key={slot}
-                      onClick={() => setOra(slot)}
-                      style={{
-                        padding: '10px 18px', borderRadius: '50px', cursor: 'pointer',
-                        background: selected ? style.ruby : style.white,
-                        color: selected ? 'white' : style.text,
-                        border: `1.5px solid ${selected ? style.ruby : '#DDD'}`,
-                        fontWeight: selected ? 'bold' : 'normal',
-                        fontSize: '14px', transition: 'all 0.2s',
-                        boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none'
-                      }}
+                    <div key={slot} onClick={() => setOra(slot)}
+                      style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}
                     >{slot}</div>
                   )
                 })}
               </div>
-
               {ora && (
                 <button onClick={() => setStep(4)} className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px' }}>
                   CONTINUAȚI →
@@ -274,10 +252,7 @@ export default function BookingFlow() {
               )}
             </div>
           )}
-
-          <button onClick={() => setStep(2)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>
-            ← Înapoi
-          </button>
+          <button onClick={() => setStep(2)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>← Înapoi</button>
         </div>
       )}
 
@@ -289,30 +264,19 @@ export default function BookingFlow() {
 
           {/* Recap card */}
           <div style={{ background: style.nude, borderRadius: '20px', padding: '24px', marginBottom: '24px', border: `1px solid ${style.gold}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Specialist</span>
-              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Andreea Berta</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Serviciu</span>
-              <span style={{ fontSize: '14px', textAlign: 'right', maxWidth: '200px' }}>{serviciu.name}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Data</span>
-              <span style={{ fontSize: '14px' }}>{formatData(data)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Ora</span>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: style.ruby }}>{ora}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Durată</span>
-              <span style={{ fontSize: '14px' }}>{serviciu.durata} min</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: '#888', fontSize: '13px' }}>Adresă</span>
-              <span style={{ fontSize: '14px' }}>Salon EVOLIS, Piatra Neamț</span>
-            </div>
+            {[
+              ['Specialist', 'Andreea Berta'],
+              ['Serviciu', serviciu.name],
+              ['Data', formatData(data)],
+              ['Ora', ora],
+              ['Durată', `${serviciu.durata} min`],
+              ['Adresă', 'Salon EVOLIS, Piatra Neamț'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888', fontSize: '13px' }}>{k}</span>
+                <span style={{ fontSize: '14px', textAlign: 'right', maxWidth: '220px', fontWeight: k === 'Ora' ? 'bold' : 'normal', color: k === 'Ora' ? style.ruby : 'inherit' }}>{v}</span>
+              </div>
+            ))}
             <div style={{ borderTop: `1px solid ${style.gold}`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 'bold' }}>Total</span>
               <span style={{ fontWeight: 'bold', color: style.ruby, fontSize: '18px' }}>{serviciu.pret} lei</span>
@@ -323,77 +287,75 @@ export default function BookingFlow() {
           <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Metoda de plată</p>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
             {[{ id: 'numerar', label: '💵 Numerar în salon' }, { id: 'transfer', label: '🏦 Transfer bancar' }].map(p => (
-              <div key={p.id}
-                onClick={() => setPlata(p.id)}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: '14px', cursor: 'pointer', textAlign: 'center',
-                  background: plata === p.id ? style.ruby : style.white,
-                  color: plata === p.id ? 'white' : style.text,
-                  border: `1.5px solid ${plata === p.id ? style.ruby : '#DDD'}`,
-                  fontSize: '14px', transition: 'all 0.2s'
-                }}
+              <div key={p.id} onClick={() => setPlata(p.id)}
+                style={{ flex: 1, padding: '14px', borderRadius: '14px', cursor: 'pointer', textAlign: 'center', background: plata === p.id ? style.ruby : style.white, color: plata === p.id ? 'white' : style.text, border: `1.5px solid ${plata === p.id ? style.ruby : '#DDD'}`, fontSize: '14px', transition: 'all 0.2s' }}
               >{p.label}</div>
             ))}
           </div>
 
           {/* Date contact */}
+          {/* Nume — blocat dacă e logată */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
               Nume și prenume *
+              {loggedInClient && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#CCC', letterSpacing: '1px' }}>🔒 blocat</span>}
             </label>
-            <input
-              type="text" required
-              value={form.nume}
-              onChange={e => setForm({ ...form, nume: e.target.value })}
-              className="input-field"
-              placeholder="Ex: Maria Ionescu"
+            <input type="text" required value={form.nume} readOnly={!!loggedInClient}
+              onChange={e => !loggedInClient && setForm({ ...form, nume: e.target.value })}
+              className="input-field" placeholder="Ex: Maria Ionescu"
+              style={loggedInClient ? lockedStyle : {}}
             />
           </div>
+
+          {/* Telefon — editabil */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
               Telefon *
             </label>
-            <input
-              type="tel" required
-              value={form.telefon}
+            <input type="tel" required value={form.telefon}
               onChange={e => {
                 setForm({ ...form, telefon: e.target.value })
                 checkTelefon(e.target.value)
               }}
-              className="input-field"
-              placeholder="07XX XXX XXX"
+              className="input-field" placeholder="07XX XXX XXX"
             />
-            {clientExistent === true && (
+            {telefonSchimbat && (
+              <p style={{ fontSize: '11px', color: style.gold, marginTop: '6px' }}>
+                📱 Numărul nou va fi salvat ca număr secundar în fișa ta.
+              </p>
+            )}
+            {!loggedInClient && clientExistent === true && (
               <p style={{ fontSize: '12px', color: '#10B981', marginTop: '6px' }}>✓ Client existent — cont activ</p>
             )}
           </div>
 
-          {clientExistent !== true && (
+          {/* Email — blocat dacă e logată, ascuns dacă e client existent fără cont */}
+          {loggedInClient ? (
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
+                Email
+                <span style={{ marginLeft: '8px', fontSize: '10px', color: '#CCC', letterSpacing: '1px' }}>🔒 blocat</span>
+              </label>
+              <input type="email" value={form.email} readOnly className="input-field" style={lockedStyle} />
+            </div>
+          ) : clientExistent !== true ? (
             <div style={{ marginBottom: '24px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
                 Email * <span style={{ fontSize: '10px', color: '#AAA', letterSpacing: '1px' }}>(pentru accesul la contul tău)</span>
               </label>
-              <input
-                type="email" required={clientExistent !== true}
-                value={form.email}
+              <input type="email" required value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
-                className="input-field"
-                placeholder="adresa@email.com"
+                className="input-field" placeholder="adresa@email.com"
               />
             </div>
-          )}
-          {clientExistent === true && <div style={{ marginBottom: '24px' }} />}
+          ) : <div style={{ marginBottom: '24px' }} />}
 
           {status === 'error' && (
             <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '16px' }}>A apărut o eroare. Încercați din nou.</p>
           )}
 
-          <button
-            onClick={handleConfirm}
-            disabled={!form.nume || !form.telefon || (!clientExistent && !form.email) || !plata || status === 'loading'}
-            className="btn-primary"
-            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: (!form.nume || !form.telefon || (!clientExistent && !form.email) || !plata) ? 0.5 : 1 }}
-          >
+          <button onClick={handleConfirm} disabled={!canSubmit} className="btn-primary"
+            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: canSubmit ? 1 : 0.5 }}>
             {status === 'loading' ? 'Se procesează...' : 'CONFIRMAȚI PROGRAMAREA'}
           </button>
 

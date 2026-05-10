@@ -228,7 +228,8 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
 
             {[
               { label: 'Nume complet', key: 'nume', type: 'text' },
-              { label: 'Telefon', key: 'telefon', type: 'tel' },
+              { label: 'Telefon principal', key: 'telefon', type: 'tel' },
+              { label: 'Telefon secundar', key: 'telefon_secundar', type: 'tel', placeholder: 'adăugat automat la schimbare' },
               { label: 'Email', key: 'email', type: 'email' },
               { label: 'Data nașterii', key: 'data_nastere', type: 'text', placeholder: 'ex: 15 Martie 1995' },
             ].map(f => (
