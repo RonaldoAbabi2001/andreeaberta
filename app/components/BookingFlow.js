@@ -76,9 +76,18 @@ export default function BookingFlow() {
   const [plata, setPlata] = useState(null)
   const [form, setForm] = useState({ nume: '', telefon: '', email: '' })
   const [status, setStatus] = useState(null)
+  const [clientExistent, setClientExistent] = useState(null) // null=necunoscut, true/false
 
   const days = getNext14Days()
   const slots = serviciu ? generateSlots(serviciu.durata) : []
+
+  async function checkTelefon(telefon) {
+    const digits = telefon.replace(/\D/g, '')
+    if (digits.length < 10) { setClientExistent(null); return }
+    const res = await fetch(`/api/client/check?telefon=${encodeURIComponent(telefon.trim())}`)
+    const data = await res.json()
+    setClientExistent(data.exists)
+  }
 
   const handleConfirm = async () => {
     setStatus('loading')
@@ -347,23 +356,33 @@ export default function BookingFlow() {
             <input
               type="tel" required
               value={form.telefon}
-              onChange={e => setForm({ ...form, telefon: e.target.value })}
+              onChange={e => {
+                setForm({ ...form, telefon: e.target.value })
+                checkTelefon(e.target.value)
+              }}
               className="input-field"
               placeholder="07XX XXX XXX"
             />
+            {clientExistent === true && (
+              <p style={{ fontSize: '12px', color: '#10B981', marginTop: '6px' }}>✓ Client existent — cont activ</p>
+            )}
           </div>
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
-              Email * <span style={{ fontSize: '10px', color: '#AAA', letterSpacing: '1px' }}>(pentru accesul la contul tău)</span>
-            </label>
-            <input
-              type="email" required
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              className="input-field"
-              placeholder="adresa@email.com"
-            />
-          </div>
+
+          {clientExistent !== true && (
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
+                Email * <span style={{ fontSize: '10px', color: '#AAA', letterSpacing: '1px' }}>(pentru accesul la contul tău)</span>
+              </label>
+              <input
+                type="email" required={clientExistent !== true}
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                className="input-field"
+                placeholder="adresa@email.com"
+              />
+            </div>
+          )}
+          {clientExistent === true && <div style={{ marginBottom: '24px' }} />}
 
           {status === 'error' && (
             <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '16px' }}>A apărut o eroare. Încercați din nou.</p>
@@ -371,9 +390,9 @@ export default function BookingFlow() {
 
           <button
             onClick={handleConfirm}
-            disabled={!form.nume || !form.telefon || !form.email || !plata || status === 'loading'}
+            disabled={!form.nume || !form.telefon || (!clientExistent && !form.email) || !plata || status === 'loading'}
             className="btn-primary"
-            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: (!form.nume || !form.telefon || !form.email || !plata) ? 0.5 : 1 }}
+            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: (!form.nume || !form.telefon || (!clientExistent && !form.email) || !plata) ? 0.5 : 1 }}
           >
             {status === 'loading' ? 'Se procesează...' : 'CONFIRMAȚI PROGRAMAREA'}
           </button>
