@@ -644,11 +644,12 @@ export default function AdminDashboard() {
   const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', white: '#fff', text: '#1C1C1C' }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Georgia, serif' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'Georgia, serif' }}>
 
       {/* Sidebar */}
       <div style={{
         width: sidebarCollapsed ? '68px' : '224px',
+        height: '100vh',
         background: 'linear-gradient(160deg, #9B1B30 0%, #7A1525 55%, #5C0F1A 100%)',
         color: 'white', flexShrink: 0, display: 'flex', flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', overflow: 'hidden', position: 'relative',
