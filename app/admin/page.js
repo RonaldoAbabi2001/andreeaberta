@@ -119,6 +119,219 @@ function DatePickerPopup({ value, onChange, onClose }) {
   )
 }
 
+function ClientDrawer({ client, programari, token, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...client })
+  const [saving, setSaving] = useState(false)
+  const [savedOk, setSavedOk] = useState(false)
+  const [editProg, setEditProg] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  const clientProg = programari
+    .filter(p => p.telefon === client.telefon)
+    .sort((a, b) => {
+      const da = parseDateRO(a.data), db = parseDateRO(b.data)
+      if (!da || !db) return 0
+      return db - da
+    })
+
+  const authH = { 'Content-Type': 'application/json', 'x-admin-token': token }
+
+  async function saveClient() {
+    setSaving(true)
+    await fetch('/api/admin/clienti', { method: 'PATCH', headers: authH, body: JSON.stringify(form) })
+    setSaving(false)
+    setSavedOk(true)
+    setTimeout(() => setSavedOk(false), 2000)
+    onSaved()
+  }
+
+  async function deleteClient() {
+    await fetch('/api/admin/clienti', { method: 'DELETE', headers: authH, body: JSON.stringify({ id: client.id }) })
+    onClose()
+    onSaved()
+  }
+
+  async function updateProgStatus(id, status) {
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id, status }) })
+    onSaved()
+  }
+
+  async function saveProg(p) {
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify(p) })
+    setEditProg(null)
+    onSaved()
+  }
+
+  async function deleteProg(id) {
+    await fetch('/api/admin/programari', { method: 'DELETE', headers: authH, body: JSON.stringify({ id }) })
+    setConfirmDelete(null)
+    onSaved()
+  }
+
+  const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
+  const SC = { pending: '#F59E0B', confirmed: '#10B981', cancelled: '#EF4444', noshow: '#6B7280' }
+  const totalPret = clientProg.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + (Number(p.pret) || 0), 0)
+
+  return (
+    <>
+      {/* Overlay */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
+
+      {/* Drawer */}
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '520px', maxWidth: '100vw', background: '#F8F4F0', zIndex: 201, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Header */}
+        <div style={{ background: `linear-gradient(135deg, ${s.ruby} 0%, #6A1020 100%)`, color: 'white', padding: '24px 28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontSize: '11px', letterSpacing: '3px', opacity: 0.7, marginBottom: '4px' }}>FIȘA CLIENTULUI</p>
+              <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '24px', fontWeight: 'normal', margin: 0 }}>{form.nume || '—'}</h2>
+              <p style={{ fontSize: '14px', opacity: 0.85, marginTop: '4px' }}>{form.telefon}</p>
+            </div>
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+          {/* Stats bar */}
+          <div style={{ display: 'flex', gap: '24px', marginTop: '20px' }}>
+            <div><p style={{ fontSize: '20px', fontWeight: 'bold' }}>{clientProg.length}</p><p style={{ fontSize: '11px', opacity: 0.7 }}>programări</p></div>
+            <div><p style={{ fontSize: '20px', fontWeight: 'bold' }}>{clientProg.filter(p => p.status === 'confirmed').length}</p><p style={{ fontSize: '11px', opacity: 0.7 }}>confirmate</p></div>
+            <div><p style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalPret} lei</p><p style={{ fontSize: '11px', opacity: 0.7 }}>total încasat</p></div>
+          </div>
+        </div>
+
+        <div style={{ padding: '24px 28px', flex: 1 }}>
+
+          {/* ── DATE PERSONALE ── */}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold', color: s.ruby, marginBottom: '16px', letterSpacing: '1px' }}>Date personale</p>
+
+            {[
+              { label: 'Nume complet', key: 'nume', type: 'text' },
+              { label: 'Telefon', key: 'telefon', type: 'tel' },
+              { label: 'Email', key: 'email', type: 'email' },
+              { label: 'Data nașterii', key: 'data_nastere', type: 'text', placeholder: 'ex: 15 Martie 1995' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>{f.label}</label>
+                <input type={f.type} value={form[f.key] || ''} placeholder={f.placeholder || ''}
+                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                  style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>Observații</label>
+              <textarea rows={3} value={form.observatii || ''} onChange={e => setForm({ ...form, observatii: e.target.value })}
+                style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button onClick={saveClient} disabled={saving}
+                style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '10px 24px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                {saving ? 'Se salvează...' : savedOk ? '✓ Salvat!' : 'SALVEAZĂ DATELE'}
+              </button>
+              <a href={`https://wa.me/${form.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+                style={{ background: '#25D366', color: 'white', borderRadius: '50px', padding: '10px 18px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold' }}>
+                WhatsApp
+              </a>
+            </div>
+          </div>
+
+          {/* ── PROGRAMĂRI ── */}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold', color: s.ruby, marginBottom: '16px', letterSpacing: '1px' }}>Programări ({clientProg.length})</p>
+
+            {clientProg.length === 0 && <p style={{ color: '#AAA', fontSize: '14px' }}>Nicio programare înregistrată.</p>}
+
+            {clientProg.map(p => (
+              <div key={p.id} style={{ border: `1px solid ${SC[p.status] || '#E5E7EB'}33`, borderLeft: `4px solid ${SC[p.status] || '#E5E7EB'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', background: '#FAFAFA' }}>
+                {editProg?.id === p.id ? (
+                  /* ── Edit programare form ── */
+                  <div>
+                    {[
+                      { label: 'Data', key: 'data', type: 'text' },
+                      { label: 'Ora', key: 'ora', type: 'time' },
+                      { label: 'Serviciu', key: 'serviciu', type: 'text' },
+                      { label: 'Preț (lei)', key: 'pret', type: 'number' },
+                      { label: 'Observații', key: 'observatii', type: 'text' },
+                    ].map(f => (
+                      <div key={f.key} style={{ marginBottom: '8px' }}>
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>{f.label}</label>
+                        <input type={f.type} value={editProg[f.key] || ''}
+                          onChange={e => setEditProg({ ...editProg, [f.key]: e.target.value })}
+                          style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }} />
+                      </div>
+                    ))}
+                    <div style={{ marginBottom: '10px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Status</label>
+                      <select value={editProg.status} onChange={e => setEditProg({ ...editProg, status: e.target.value })}
+                        style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}>
+                        {['confirmed', 'pending', 'cancelled', 'noshow'].map(st => <option key={st} value={st}>{st}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => saveProg(editProg)} style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '20px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Salvează</button>
+                      <button onClick={() => setEditProg(null)} style={{ background: '#EEE', border: 'none', borderRadius: '20px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px' }}>Anulează</button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── View programare ── */
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '3px' }}>{p.serviciu}</p>
+                        <p style={{ fontSize: '13px', color: '#666' }}>{p.data} · {p.ora} · {p.pret} lei</p>
+                        {p.observatii && <p style={{ fontSize: '12px', color: '#999', marginTop: '3px', fontStyle: 'italic' }}>{p.observatii}</p>}
+                      </div>
+                      <span style={{ fontSize: '11px', background: (SC[p.status] || '#ccc') + '22', color: SC[p.status] || '#ccc', padding: '3px 10px', borderRadius: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{p.status}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      {['confirmed', 'pending', 'cancelled', 'noshow'].map(st => (
+                        <button key={st} onClick={() => updateProgStatus(p.id, st)}
+                          style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: p.status === st ? SC[st] : '#F0EAE0', color: p.status === st ? 'white' : '#555', fontWeight: p.status === st ? 'bold' : 'normal' }}>
+                          {st === 'confirmed' ? '✓ confirmată' : st === 'pending' ? '⏳ așteptare' : st === 'cancelled' ? '✗ anulată' : '— neprezentare'}
+                        </button>
+                      ))}
+                      <button onClick={() => setEditProg({ ...p })}
+                        style={{ padding: '4px 10px', borderRadius: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', fontSize: '11px', background: 'white', color: '#555', marginLeft: 'auto' }}>
+                        ✏️ Editează
+                      </button>
+                      {confirmDelete === p.id ? (
+                        <>
+                          <button onClick={() => deleteProg(p.id)} style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Confirm șterge</button>
+                          <button onClick={() => setConfirmDelete(null)} style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EEE', color: '#555' }}>Nu</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(p.id)} style={{ padding: '4px 10px', borderRadius: '20px', border: '1px solid #EF444444', cursor: 'pointer', fontSize: '11px', background: 'white', color: '#EF4444' }}>🗑 Șterge</button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* ── ZONA PERICULOASĂ ── */}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: '3px solid #EF4444' }}>
+            <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#EF4444', marginBottom: '8px' }}>Șterge client</p>
+            <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>Se șterg datele clientului. Programările rămân în baza de date.</p>
+            {confirmDelete === 'client' ? (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={deleteClient} style={{ background: '#EF4444', color: 'white', border: 'none', borderRadius: '20px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Confirm ștergere</button>
+                <button onClick={() => setConfirmDelete(null)} style={{ background: '#EEE', border: 'none', borderRadius: '20px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px' }}>Anulează</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete('client')} style={{ background: '#FEF2F2', color: '#EF4444', border: '1px solid #EF4444', borderRadius: '20px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                Șterge clientul
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function MonthOverview({ programari, viewDate, onSelectDay, onClose }) {
   const today = new Date()
   const [month, setMonth] = useState(viewDate.getMonth())
@@ -508,13 +721,17 @@ export default function AdminDashboard() {
               value={clientSearch} onChange={e => setClientSearch(e.target.value)}
               className="input-field" style={{ maxWidth: '400px', marginBottom: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {filteredClienti.map(c => (
-                <div key={c.id} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}
-                  onClick={() => setSelectedClient(selectedClient?.id === c.id ? null : c)}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {filteredClienti.map(c => {
+                const nrProg = programari.filter(p => p.telefon === c.telefon).length
+                const nrConf = programari.filter(p => p.telefon === c.telefon && p.status === 'confirmed').length
+                return (
+                  <div key={c.id}
+                    onClick={() => setSelectedClient(c)}
+                    style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s' }}>
                     <div>
                       <p style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>{c.nume}</p>
-                      <p style={{ color: '#666', fontSize: '14px' }}>{c.telefon} {c.email && `· ${c.email}`}</p>
+                      <p style={{ color: '#666', fontSize: '13px' }}>{c.telefon}{c.email ? ` · ${c.email}` : ''}</p>
+                      <p style={{ color: '#AAA', fontSize: '12px', marginTop: '3px' }}>{nrProg} programări · {nrConf} confirmate</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
@@ -522,28 +739,24 @@ export default function AdminDashboard() {
                         style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>
                         WhatsApp
                       </a>
-                      <span style={{ color: '#999', fontSize: '20px' }}>{selectedClient?.id === c.id ? '▲' : '▼'}</span>
+                      <span style={{ color: '#9B1B30', fontSize: '13px', fontWeight: 'bold' }}>Deschide →</span>
                     </div>
                   </div>
-                  {selectedClient?.id === c.id && (
-                    <div style={{ marginTop: '16px', borderTop: '1px solid #F0EAE0', paddingTop: '16px' }}>
-                      <p style={{ color: s.ruby, fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>Istoric programări</p>
-                      {clientProgramari(c.telefon).length === 0
-                        ? <p style={{ color: '#999', fontSize: '13px' }}>Nicio programare înregistrată.</p>
-                        : clientProgramari(c.telefon).map(p => (
-                          <div key={p.id} style={{ background: s.nude, borderRadius: '10px', padding: '10px 14px', marginBottom: '8px' }}>
-                            <p style={{ fontSize: '14px', fontWeight: 'bold' }}>{p.serviciu}</p>
-                            <p style={{ fontSize: '13px', color: '#666' }}>{p.data} · {p.ora} · {p.pret} lei</p>
-                            <span style={{ fontSize: '11px', background: STATUS_COLORS[p.status] + '22', color: STATUS_COLORS[p.status], padding: '2px 8px', borderRadius: '20px' }}>{p.status}</span>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
+        )}
+
+        {/* Client drawer */}
+        {selectedClient && (
+          <ClientDrawer
+            client={selectedClient}
+            programari={programari}
+            token={token}
+            onClose={() => setSelectedClient(null)}
+            onSaved={async () => { await fetchProgramari(); await fetchClienti() }}
+          />
         )}
 
         {/* RAPOARTE TAB */}

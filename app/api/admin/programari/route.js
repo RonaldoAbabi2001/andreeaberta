@@ -34,8 +34,27 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const { id, status } = await request.json()
+  const body = await request.json()
   const sql = await getDb()
-  await sql`UPDATE programari SET status = ${status} WHERE id = ${id}`
+  if (body.status !== undefined && Object.keys(body).length === 2) {
+    await sql`UPDATE programari SET status = ${body.status} WHERE id = ${body.id}`
+  } else {
+    await sql`
+      UPDATE programari SET
+        nume = ${body.nume}, telefon = ${body.telefon}, serviciu = ${body.serviciu},
+        pret = ${body.pret || 0}, durata = ${body.durata || 0},
+        data = ${body.data}, ora = ${body.ora}, plata = ${body.plata || 'numerar'},
+        observatii = ${body.observatii || ''}, status = ${body.status || 'confirmed'}
+      WHERE id = ${body.id}
+    `
+  }
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(request) {
+  if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await request.json()
+  const sql = await getDb()
+  await sql`DELETE FROM programari WHERE id = ${id}`
   return NextResponse.json({ success: true })
 }

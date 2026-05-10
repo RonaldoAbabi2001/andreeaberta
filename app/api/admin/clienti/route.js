@@ -25,6 +25,30 @@ async function getDb() {
   return sql
 }
 
+export async function DELETE(request) {
+  if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await request.json()
+  const sql = await getDb()
+  await sql`DELETE FROM clienti WHERE id = ${id}`
+  return NextResponse.json({ success: true })
+}
+
+export async function PATCH(request) {
+  if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const body = await request.json()
+  const sql = await getDb()
+  await sql`
+    UPDATE clienti SET
+      nume = ${body.nume || ''},
+      telefon = ${body.telefon || ''},
+      email = ${body.email || ''},
+      data_nastere = ${body.data_nastere || ''},
+      observatii = ${body.observatii || ''}
+    WHERE id = ${body.id}
+  `
+  return NextResponse.json({ success: true })
+}
+
 export async function GET(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sql = await getDb()
