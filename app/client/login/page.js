@@ -21,7 +21,7 @@ export default function ClientLogin() {
     if (data.success) {
       localStorage.setItem('client_token', data.token)
       localStorage.setItem('client_info', JSON.stringify({ nume: data.nume, telefon: data.telefon, email: data.email }))
-      router.push('/')
+      router.push('/client')
     } else {
       setError(data.error || 'Eroare la autentificare.')
     }
