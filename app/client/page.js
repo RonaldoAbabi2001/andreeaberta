@@ -106,20 +106,22 @@ export default function ClientPage() {
         </div>
 
         {/* Buton pagina principala */}
-        <div style={{ marginTop: '28px' }}>
+        <div style={{ marginTop: '32px' }}>
           <Link href="/" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '10px',
-            padding: '12px 30px', borderRadius: '50px',
-            background: 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: 'rgba(255,255,255,0.8)', textDecoration: 'none',
-            fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase',
-            backdropFilter: 'blur(8px)',
-            fontFamily: 'Georgia, serif',
+            display: 'inline-flex', alignItems: 'center', gap: '12px',
+            padding: '14px 36px', borderRadius: '50px',
+            background: 'linear-gradient(135deg, #F9E4A0 0%, #C9A84C 40%, #A8883A 65%, #F5D07A 100%)',
+            boxShadow: '0 4px 24px rgba(201,168,76,0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
+            color: '#5C3D00', textDecoration: 'none',
+            fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase',
+            fontFamily: 'Georgia, serif', fontWeight: 'bold',
+            position: 'relative', overflow: 'hidden',
           }}>
-            <span style={{ color: '#C9A84C', fontSize: '9px' }}>✦</span>
+            {/* shimmer */}
+            <span style={{ position: 'absolute', top: '3px', left: '18px', width: '32px', height: '5px', background: 'rgba(255,255,255,0.3)', borderRadius: '4px', transform: 'rotate(-20deg)', pointerEvents: 'none' }} />
+            <span style={{ fontSize: '10px', opacity: 0.8 }}>✦</span>
             Pagina principală
-            <span style={{ color: '#C9A84C', fontSize: '9px' }}>✦</span>
+            <span style={{ fontSize: '10px', opacity: 0.8 }}>✦</span>
           </Link>
         </div>
       </div>
