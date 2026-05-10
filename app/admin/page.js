@@ -119,6 +119,93 @@ function DatePickerPopup({ value, onChange, onClose }) {
   )
 }
 
+function MonthOverview({ programari, viewDate, onSelectDay, onClose }) {
+  const today = new Date()
+  const [month, setMonth] = useState(viewDate.getMonth())
+  const [year, setYear] = useState(viewDate.getFullYear())
+
+  const countPerDay = {}
+  programari.forEach(p => {
+    if (p.status === 'cancelled' || p.status === 'noshow') return
+    const key = p.data?.trim()
+    if (key) countPerDay[key] = (countPerDay[key] || 0) + 1
+  })
+
+  function circleStyle(count) {
+    if (count === 0) return { border: '2px solid #E5E7EB', background: 'transparent' }
+    const color = count <= 2 ? '#10B981' : count <= 4 ? '#F59E0B' : '#EF4444'
+    const fills = [0, 0.2, 0.4, 0.6, 0.75, 0.88, 1]
+    const opacity = fills[Math.min(count, 6)]
+    return { border: `2px solid ${color}`, background: color, opacity }
+  }
+
+  function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
+  function nextMonth() { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  const isViewDay = d => viewDate.getDate() === d && viewDate.getMonth() === month && viewDate.getFullYear() === year
+  const isToday = d => today.getDate() === d && today.getMonth() === month && today.getFullYear() === year
+
+  return (
+    <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 300, background: 'white', borderRadius: '20px', boxShadow: '0 16px 56px rgba(0,0,0,0.18)', padding: '20px 24px', minWidth: '360px', marginTop: '10px' }}>
+      {/* Navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9B1B30', padding: '4px 10px', borderRadius: '8px' }}>‹</button>
+        <span style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C' }}>{LUNI[month]} {year}</span>
+        <button onClick={nextMonth} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9B1B30', padding: '4px 10px', borderRadius: '8px' }}>›</button>
+      </div>
+
+      {/* Day headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
+        {ZILE.map(z => (
+          <div key={z} style={{ textAlign: 'center', fontSize: '10px', color: '#AAA', fontWeight: 'bold', letterSpacing: '1px', padding: '4px 0' }}>{z}</div>
+        ))}
+      </div>
+
+      {/* Days */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const key = formatDateRO(new Date(year, month, d))
+          const count = countPerDay[key] || 0
+          const cs = circleStyle(count)
+          const selected = isViewDay(d)
+          const todayMark = isToday(d)
+
+          return (
+            <button key={i} onClick={() => { onSelectDay(new Date(year, month, d)); onClose() }}
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 2px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '10px', outline: selected ? '2px solid #9B1B30' : todayMark ? '2px solid #C9A84C' : 'none' }}>
+              {/* Circle */}
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', border: cs.border, background: cs.background }}>
+                <span style={{ fontSize: '13px', fontWeight: selected || todayMark ? 'bold' : 'normal', color: count > 0 && cs.opacity > 0.5 ? 'white' : '#1C1C1C', position: 'relative', zIndex: 1 }}>{d}</span>
+              </div>
+              {/* Count badge */}
+              {count > 0 && (
+                <span style={{ fontSize: '9px', color: count <= 2 ? '#10B981' : count <= 4 ? '#F59E0B' : '#EF4444', marginTop: '2px', fontWeight: 'bold' }}>{count}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #F0EAE0' }}>
+        {[['#10B981', '1-2 prog.'], ['#F59E0B', '3-4 prog.'], ['#EF4444', '5+ prog.']].map(([c, l]) => (
+          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c }} />
+            <span style={{ fontSize: '11px', color: '#888' }}>{l}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [tab, setTab] = useState('calendar')
@@ -126,6 +213,7 @@ export default function AdminDashboard() {
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showMonthOverview, setShowMonthOverview] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [selectedClient, setSelectedClient] = useState(null)
   const [csvText, setCsvText] = useState('')
@@ -133,6 +221,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const datePickerRef = useRef(null)
+  const monthOverviewRef = useRef(null)
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
@@ -152,9 +241,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     function handleClick(e) {
-      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
-        setShowDatePicker(false)
-      }
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) setShowDatePicker(false)
+      if (monthOverviewRef.current && !monthOverviewRef.current.contains(e.target)) setShowMonthOverview(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -293,9 +381,23 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
                   style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
-                <h2 style={{ fontSize: '20px', fontWeight: 'normal', margin: 0 }}>
-                  {ZILE[viewDate.getDay()]}, {dateStr(viewDate)}
-                </h2>
+
+                {/* Data clickabilă — deschide MonthOverview */}
+                <div style={{ position: 'relative' }} ref={monthOverviewRef}>
+                  <button onClick={() => setShowMonthOverview(v => !v)}
+                    style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
+                    {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
+                  </button>
+                  {showMonthOverview && (
+                    <MonthOverview
+                      programari={programari}
+                      viewDate={viewDate}
+                      onSelectDay={d => setViewDate(d)}
+                      onClose={() => setShowMonthOverview(false)}
+                    />
+                  )}
+                </div>
+
                 <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
                   style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
                 <button onClick={() => setViewDate(new Date())}
