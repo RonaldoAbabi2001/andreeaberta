@@ -550,6 +550,7 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [analitica, setAnalitica] = useState(null)
   const [loadingAnalitica, setLoadingAnalitica] = useState(false)
+  const [analiticaKey, setAnaliticaKey] = useState(0)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
 
@@ -571,11 +572,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (tab !== 'analitica' || !token) return
+    setAnalitica(null)
     setLoadingAnalitica(true)
     fetch('/api/admin/analitica', { headers: { 'x-admin-token': token } })
       .then(r => r.json())
       .then(d => { setAnalitica(d); setLoadingAnalitica(false) })
-  }, [tab, token])
+      .catch(() => setLoadingAnalitica(false))
+  }, [tab, token, analiticaKey])
 
   useEffect(() => {
     function handleClick(e) {
@@ -1153,9 +1156,11 @@ export default function AdminDashboard() {
                 <h2 style={{ fontSize: '26px', fontWeight: 'normal', margin: '0 0 4px' }}>Analitica</h2>
                 <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>Date agregate în timp real din toate programările</p>
               </div>
-              <button onClick={() => { setAnalitica(null); setLoadingAnalitica(true); fetch('/api/admin/analitica', { headers: { 'x-admin-token': token } }).then(r => r.json()).then(d => { setAnalitica(d); setLoadingAnalitica(false) }) }}
-                style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontSize: '13px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '14px' }}>↻</span> Actualizează
+              <button onClick={() => setAnaliticaKey(k => k + 1)}
+                disabled={loadingAnalitica}
+                style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '9px 18px', cursor: loadingAnalitica ? 'default' : 'pointer', fontSize: '13px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px', opacity: loadingAnalitica ? 0.5 : 1 }}>
+                <span style={{ fontSize: '14px', display: 'inline-block', animation: loadingAnalitica ? 'spin 1s linear infinite' : 'none' }}>↻</span>
+                {loadingAnalitica ? 'Se încarcă...' : 'Actualizează'}
               </button>
             </div>
 

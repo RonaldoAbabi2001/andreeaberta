@@ -97,3 +97,22 @@ body {
 .input-field:focus {
   border-color: var(--ruby);
 }
+
+/* Dezactivare copiere text pe site */
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Permite selectare în input-uri și textarea */
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

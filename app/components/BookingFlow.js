@@ -209,9 +209,6 @@ export default function BookingFlow() {
         <div>
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 1</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți specialistul</h2>
-          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#999', fontSize: '14px', textDecoration: 'none', marginBottom: '20px' }}>
-            ← Înapoi la pagina principală
-          </Link>
           <div onClick={() => setStep(2)}
             style={{ background: style.white, borderRadius: '20px', padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', cursor: 'pointer', border: '2px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '20px' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = style.ruby}
@@ -225,6 +222,9 @@ export default function BookingFlow() {
             </div>
             <div style={{ marginLeft: 'auto', color: style.ruby, fontSize: '20px' }}>›</div>
           </div>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#999', fontSize: '14px', textDecoration: 'none', marginTop: '16px' }}>
+            ← Înapoi la pagina principală
+          </Link>
         </div>
       )}
 
