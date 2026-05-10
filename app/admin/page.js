@@ -510,7 +510,11 @@ function SyncSheetsButton({ token, onDone }) {
     })
     const data = await res.json()
     if (data.error) setStatus('❌ Eroare: ' + data.error)
-    else setStatus(`✅ ${data.inserted} clienți adăugați · ${data.updated} actualizați · ${data.total} total procesați`)
+    else setStatus(
+      `✅ Clienți: ${data.clienti.inserted} adăugați, ${data.clienti.updated} actualizați\n` +
+      `📅 Programări istorice: ${data.programari.inserted} importate, ${data.programari.skipped} deja existente\n` +
+      `📊 Total rânduri procesate: ${data.total_rows}`
+    )
     setLoading(false)
     if (onDone) onDone()
   }
@@ -521,7 +525,7 @@ function SyncSheetsButton({ token, onDone }) {
         style={{ background: loading ? '#DDD' : 'linear-gradient(135deg, #C9A84C, #A8883A)', color: 'white', border: 'none', borderRadius: '50px', padding: '12px 28px', cursor: loading ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold', letterSpacing: '0.5px', boxShadow: loading ? 'none' : '0 4px 14px rgba(201,168,76,0.4)' }}>
         {loading ? 'Se sincronizează...' : '↻ Sincronizează acum'}
       </button>
-      {status && <p style={{ marginTop: '12px', fontSize: '13px', color: status.startsWith('✅') ? '#10B981' : '#EF4444', lineHeight: 1.5 }}>{status}</p>}
+      {status && <pre style={{ marginTop: '12px', fontSize: '12px', color: status.startsWith('✅') ? '#10B981' : '#EF4444', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif', background: 'none', border: 'none', padding: 0 }}>{status}</pre>}
     </div>
   )
 }
@@ -1321,7 +1325,7 @@ export default function AdminDashboard() {
                 Importă automat toți clienții din foaia Google Sheets (ANALITICA SALON CLIENTI).<br />
                 Clienții existenți nu se duplică — se actualizează doar câmpurile goale.
               </p>
-              <SyncSheetsButton token={token} onDone={fetchClienti} />
+              <SyncSheetsButton token={token} onDone={async () => { await fetchClienti(); await fetchProgramari() }} />
             </div>
 
             <p style={{ color: '#888', marginBottom: '16px', fontSize: '14px', lineHeight: 1.7 }}>
