@@ -648,72 +648,131 @@ export default function AdminDashboard() {
 
       {/* Sidebar */}
       <div style={{
-        width: sidebarCollapsed ? '64px' : '220px',
-        background: `linear-gradient(180deg, ${s.ruby} 0%, #6A1020 100%)`,
+        width: sidebarCollapsed ? '68px' : '224px',
+        background: 'linear-gradient(160deg, #9B1B30 0%, #7A1525 55%, #5C0F1A 100%)',
         color: 'white', flexShrink: 0, display: 'flex', flexDirection: 'column',
-        transition: 'width 0.25s ease', overflow: 'hidden', position: 'relative'
+        transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', overflow: 'hidden', position: 'relative',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.18)',
       }}>
+
         {/* Header */}
-        <div style={{ padding: sidebarCollapsed ? '20px 0' : '20px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', minHeight: '72px' }}>
-          {!sidebarCollapsed && (
-            <div>
-              <p style={{ fontSize: '16px', letterSpacing: '3px', fontWeight: 'bold', margin: 0 }}>EVOLIS</p>
-              <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px', margin: 0 }}>Admin Panel</p>
+        <div style={{ padding: sidebarCollapsed ? '22px 0 18px' : '22px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '76px' }}>
+          {sidebarCollapsed ? (
+            /* "E" auriu cu reflexie */
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '12px',
+                background: 'linear-gradient(145deg, #7A1525 0%, #5C0F1A 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{
+                  fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: 'bold', lineHeight: 1,
+                  background: 'linear-gradient(180deg, #F9E4A0 0%, #C9A84C 45%, #F5D07A 75%, #C9A84C 100%)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 1px 2px rgba(201,168,76,0.5))',
+                }}>E</span>
+              </div>
+              {/* Shimmer overlay */}
+              <div style={{ position: 'absolute', top: '4px', left: '8px', width: '12px', height: '4px', background: 'rgba(255,255,255,0.18)', borderRadius: '4px', transform: 'rotate(-20deg)' }} />
             </div>
-          )}
-          {sidebarCollapsed && (
-            <span style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'Georgia, serif' }}>E</span>
+          ) : (
+            <div style={{ width: '100%' }}>
+              <p style={{ fontSize: '15px', letterSpacing: '4px', fontWeight: 'bold', margin: 0, fontFamily: 'Georgia, serif' }}>EVOLIS</p>
+              <p style={{ fontSize: '10px', opacity: 0.5, marginTop: '3px', margin: '3px 0 0', letterSpacing: '2px', textTransform: 'uppercase' }}>Admin Panel</p>
+            </div>
           )}
         </div>
 
         {/* Nav items */}
-        {[
-          { id: 'calendar', icon: '📅', label: 'Calendar' },
-          { id: 'clienti', icon: '👤', label: 'Clienți' },
-          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
-          { id: 'import', icon: '📥', label: 'Import CSV' },
-        ].map(item => (
-          <button key={item.id} onClick={() => setTab(item.id)} title={sidebarCollapsed ? item.label : ''}
+        <div style={{ padding: '10px 0', flex: 1 }}>
+          {[
+            { id: 'calendar', icon: '📅', label: 'Calendar' },
+            { id: 'clienti', icon: '👤', label: 'Clienți' },
+            { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
+            { id: 'import', icon: '📥', label: 'Import CSV' },
+          ].map(item => {
+            const active = tab === item.id
+            return (
+              <button key={item.id} onClick={() => setTab(item.id)} title={sidebarCollapsed ? item.label : ''}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  width: '100%', textAlign: 'left',
+                  padding: sidebarCollapsed ? '13px 0' : '12px 16px',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                  background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.65)',
+                  fontSize: '13.5px', cursor: 'pointer', whiteSpace: 'nowrap',
+                  borderRadius: sidebarCollapsed ? '0' : '0 24px 24px 0',
+                  marginRight: sidebarCollapsed ? '0' : '10px',
+                  transition: 'background 0.18s, color 0.18s',
+                  position: 'relative',
+                }}>
+                {/* Active gold bar */}
+                {active && !sidebarCollapsed && (
+                  <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '3px', borderRadius: '0 3px 3px 0', background: 'linear-gradient(180deg, #F9E4A0, #C9A84C)' }} />
+                )}
+                {/* Icon bubble when collapsed + active */}
+                <div style={{
+                  width: sidebarCollapsed ? '36px' : '28px',
+                  height: sidebarCollapsed ? '36px' : '28px',
+                  borderRadius: sidebarCollapsed ? '10px' : '8px',
+                  background: active
+                    ? 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))'
+                    : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: active && sidebarCollapsed ? 'inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.18s',
+                }}>
+                  <span style={{ fontSize: sidebarCollapsed ? '18px' : '16px' }}>{item.icon}</span>
+                </div>
+                {!sidebarCollapsed && <span style={{ fontWeight: active ? '600' : '400' }}>{item.label}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Footer: toggle + logout */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '10px 0 8px' }}>
+          {/* Toggle button */}
+          <button onClick={() => setSidebarCollapsed(v => !v)}
+            title={sidebarCollapsed ? 'Extinde' : 'Restrânge'}
             style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              width: '100%', textAlign: 'left',
-              padding: sidebarCollapsed ? '14px 0' : '14px 20px',
-              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-              background: tab === item.id ? 'rgba(255,255,255,0.15)' : 'transparent',
-              border: 'none', color: 'white', fontSize: '14px', cursor: 'pointer',
-              borderLeft: tab === item.id ? `3px solid ${s.gold}` : '3px solid transparent',
-              whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              gap: '10px', width: '100%',
+              padding: sidebarCollapsed ? '10px 0' : '10px 18px',
+              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.45)',
+              cursor: 'pointer', fontSize: '13px', transition: 'color 0.15s',
             }}>
-            <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
-            {!sidebarCollapsed && item.label}
+            {/* Chevron pill */}
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '8px',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'background 0.15s',
+            }}>
+              <span style={{ fontSize: '13px', display: 'inline-block', transform: sidebarCollapsed ? 'scaleX(-1)' : 'none', transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)', opacity: 0.7 }}>‹</span>
+            </div>
+            {!sidebarCollapsed && <span style={{ letterSpacing: '0.5px' }}>Restrânge</span>}
           </button>
-        ))}
 
-        {/* Toggle arrow */}
-        <button onClick={() => setSidebarCollapsed(v => !v)}
-          style={{
-            marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: '8px', width: '100%', padding: '14px 20px',
-            background: 'rgba(255,255,255,0.08)', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)',
-            color: 'white', cursor: 'pointer', fontSize: '13px',
-          }}>
-          <span style={{ fontSize: '16px', display: 'inline-block', transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}>◀</span>
-          {!sidebarCollapsed && <span>Restrânge</span>}
-        </button>
-
-        {/* Logout */}
-        {!sidebarCollapsed && (
+          {/* Logout */}
           <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }}
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '12px 20px', cursor: 'pointer', fontSize: '13px', width: '100%', textAlign: 'left' }}>
-            ⎋ Deconectare
+            title={sidebarCollapsed ? 'Deconectare' : ''}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              gap: '10px', width: '100%',
+              padding: sidebarCollapsed ? '10px 0' : '10px 18px',
+              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.35)',
+              cursor: 'pointer', fontSize: '13px',
+            }}>
+            <span style={{ fontSize: '15px', opacity: 0.6 }}>⎋</span>
+            {!sidebarCollapsed && <span>Deconectare</span>}
           </button>
-        )}
-        {sidebarCollapsed && (
-          <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/admin/login') }} title="Deconectare"
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '12px 0', cursor: 'pointer', fontSize: '16px', width: '100%', textAlign: 'center' }}>
-            ⎋
-          </button>
-        )}
+        </div>
       </div>
 
       {/* Main content */}
