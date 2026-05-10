@@ -74,7 +74,7 @@ export default function BookingFlow() {
   const [data, setData] = useState(null)
   const [ora, setOra] = useState(null)
   const [plata, setPlata] = useState(null)
-  const [form, setForm] = useState({ nume: '', telefon: '' })
+  const [form, setForm] = useState({ nume: '', telefon: '', email: '' })
   const [status, setStatus] = useState(null)
 
   const days = getNext14Days()
@@ -89,6 +89,7 @@ export default function BookingFlow() {
         body: JSON.stringify({
           nume: form.nume,
           telefon: form.telefon,
+          email: form.email,
           serviciu: serviciu.name,
           pret: serviciu.pret,
           durata: serviciu.durata,
@@ -339,7 +340,7 @@ export default function BookingFlow() {
               placeholder="Ex: Maria Ionescu"
             />
           </div>
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
               Telefon *
             </label>
@@ -351,6 +352,18 @@ export default function BookingFlow() {
               placeholder="07XX XXX XXX"
             />
           </div>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
+              Email * <span style={{ fontSize: '10px', color: '#AAA', letterSpacing: '1px' }}>(pentru accesul la contul tău)</span>
+            </label>
+            <input
+              type="email" required
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              className="input-field"
+              placeholder="adresa@email.com"
+            />
+          </div>
 
           {status === 'error' && (
             <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '16px' }}>A apărut o eroare. Încercați din nou.</p>
@@ -358,9 +371,9 @@ export default function BookingFlow() {
 
           <button
             onClick={handleConfirm}
-            disabled={!form.nume || !form.telefon || !plata || status === 'loading'}
+            disabled={!form.nume || !form.telefon || !form.email || !plata || status === 'loading'}
             className="btn-primary"
-            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: (!form.nume || !form.telefon || !plata) ? 0.5 : 1 }}
+            style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px', opacity: (!form.nume || !form.telefon || !form.email || !plata) ? 0.5 : 1 }}
           >
             {status === 'loading' ? 'Se procesează...' : 'CONFIRMAȚI PROGRAMAREA'}
           </button>

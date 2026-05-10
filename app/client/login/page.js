@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function ClientLogin() {
-  const [form, setForm] = useState({ telefon: '', parola: '' })
+  const [form, setForm] = useState({ email: '', parola: '' })
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -37,10 +37,10 @@ export default function ClientLogin() {
 
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>Număr de telefon</label>
-            <input type="tel" required value={form.telefon}
-              onChange={e => setForm({ ...form, telefon: e.target.value })}
-              className="input-field" placeholder="07XXXXXXXX" />
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>Email</label>
+            <input type="email" required value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              className="input-field" placeholder="adresa@email.com" />
           </div>
 
           <div style={{ marginBottom: '8px' }}>
