@@ -798,6 +798,14 @@ export default function AdminDashboard() {
 
                   const isConfirmingDelete = confirmDeleteProg === p.id
 
+                  function openClientFromProg(e) {
+                    e.stopPropagation()
+                    const found = clienti.find(c => c.telefon === p.telefon)
+                    if (found) { setSelectedClient(found); return }
+                    // client nu e în tabela clienti — creăm un obiect temporar
+                    setSelectedClient({ id: `temp_${p.id}`, nume: p.nume, telefon: p.telefon, email: '', data_nastere: '', observatii: '', sursa: 'site' })
+                  }
+
                   return (
                     <div key={p.id} style={{
                       position: 'absolute',
@@ -812,7 +820,10 @@ export default function AdminDashboard() {
                       overflow: 'hidden',
                       zIndex: isConfirmingDelete ? 20 : 10,
                       transition: 'background 0.15s, border-color 0.15s',
-                    }}>
+                      cursor: isConfirmingDelete ? 'default' : 'pointer',
+                    }}
+                    onClick={isConfirmingDelete ? undefined : openClientFromProg}
+                    >
                       {isConfirmingDelete ? (
                         /* Confirmare ștergere */
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', gap: '6px' }}>
@@ -838,7 +849,7 @@ export default function AdminDashboard() {
                             {heightPx > 75 && (
                               <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
                                 {['confirmed', 'cancelled', 'noshow'].map(st => (
-                                  <button key={st} onClick={() => updateStatus(p.id, st)}
+                                  <button key={st} onClick={e => { e.stopPropagation(); updateStatus(p.id, st) }}
                                     style={{ padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: p.status === st ? color : '#EEE', color: p.status === st ? 'white' : '#666', fontSize: '10px' }}>
                                     {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
                                   </button>
@@ -848,12 +859,12 @@ export default function AdminDashboard() {
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '6px', flexShrink: 0 }}>
                             {heightPx <= 75 && ['confirmed', 'cancelled', 'noshow'].map(st => (
-                              <button key={st} onClick={() => updateStatus(p.id, st)}
+                              <button key={st} onClick={e => { e.stopPropagation(); updateStatus(p.id, st) }}
                                 style={{ padding: '2px 6px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: p.status === st ? color : '#EEE', color: p.status === st ? 'white' : '#666', fontSize: '10px' }}>
                                 {st === 'confirmed' ? '✓' : st === 'cancelled' ? '✗' : '—'}
                               </button>
                             ))}
-                            <button onClick={() => setConfirmDeleteProg(p.id)}
+                            <button onClick={e => { e.stopPropagation(); setConfirmDeleteProg(p.id) }}
                               title="Șterge programarea"
                               style={{ padding: '2px 7px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: '#FEE2E2', color: '#EF4444', fontSize: '12px', fontWeight: 'bold', lineHeight: 1.4 }}>
                               ×
