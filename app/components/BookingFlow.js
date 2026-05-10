@@ -69,6 +69,8 @@ const lockedStyle = {
   borderColor: '#E5E5E5',
 }
 
+const STORAGE_KEY = 'booking_flow_state'
+
 export default function BookingFlow() {
   const [step, setStep] = useState(1)
   const [serviciu, setServiciu] = useState(null)
@@ -80,7 +82,23 @@ export default function BookingFlow() {
   const [clientExistent, setClientExistent] = useState(null)
   const [loggedInClient, setLoggedInClient] = useState(null)
 
+  // Restore state from sessionStorage on mount
   useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const s = JSON.parse(saved)
+        if (s.step) setStep(s.step)
+        if (s.serviciu) setServiciu(s.serviciu)
+        if (s.data) setData(new Date(s.data))
+        if (s.ora) setOra(s.ora)
+        if (s.plata) setPlata(s.plata)
+        if (s.form) setForm(s.form)
+        if (s.clientExistent !== undefined) setClientExistent(s.clientExistent)
+      }
+    } catch {}
+
+    // Pre-fill from logged-in client
     try {
       const raw = localStorage.getItem('client_info')
       if (raw) {
@@ -89,11 +107,27 @@ export default function BookingFlow() {
         const parts = (c.nume || '').trim().split(' ')
         const prenume = parts[0] || ''
         const nume = parts.slice(1).join(' ') || ''
-        setForm({ prenume, nume, telefon: c.telefon || '', email: c.email || '' })
+        setForm(prev => ({
+          prenume: prev.prenume || prenume,
+          nume: prev.nume || nume,
+          telefon: prev.telefon || c.telefon || '',
+          email: prev.email || c.email || '',
+        }))
         setClientExistent(true)
       }
     } catch {}
   }, [])
+
+  // Save state to sessionStorage on every change
+  useEffect(() => {
+    if (status === 'success') { sessionStorage.removeItem(STORAGE_KEY); return }
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        step, serviciu, data: data ? data.toISOString() : null,
+        ora, plata, form, clientExistent,
+      }))
+    } catch {}
+  }, [step, serviciu, data, ora, plata, form, clientExistent, status])
 
   const days = getNext14Days()
   const slots = serviciu ? generateSlots(serviciu.durata) : []
