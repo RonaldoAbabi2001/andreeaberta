@@ -75,7 +75,7 @@ export default function BookingFlow() {
   const [data, setData] = useState(null)
   const [ora, setOra] = useState(null)
   const [plata, setPlata] = useState(null)
-  const [form, setForm] = useState({ nume: '', telefon: '', email: '' })
+  const [form, setForm] = useState({ prenume: '', nume: '', telefon: '', email: '' })
   const [status, setStatus] = useState(null)
   const [clientExistent, setClientExistent] = useState(null)
   const [loggedInClient, setLoggedInClient] = useState(null)
@@ -86,7 +86,10 @@ export default function BookingFlow() {
       if (raw) {
         const c = JSON.parse(raw)
         setLoggedInClient(c)
-        setForm({ nume: c.nume || '', telefon: c.telefon || '', email: c.email || '' })
+        const parts = (c.nume || '').trim().split(' ')
+        const prenume = parts[0] || ''
+        const nume = parts.slice(1).join(' ') || ''
+        setForm({ prenume, nume, telefon: c.telefon || '', email: c.email || '' })
         setClientExistent(true)
       }
     } catch {}
@@ -107,8 +110,9 @@ export default function BookingFlow() {
   const telefonSchimbat = loggedInClient && form.telefon.trim() !== loggedInClient.telefon.trim()
     && form.telefon.replace(/\D/g, '').length >= 10
 
+  const numeComplet = `${form.prenume.trim()} ${form.nume.trim()}`.trim()
   const emailOk = !!loggedInClient || clientExistent === true || !!form.email
-  const canSubmit = !!form.nume && !!form.telefon && emailOk && !!plata && status !== 'loading'
+  const canSubmit = !!form.prenume && !!form.nume && !!form.telefon && emailOk && !!plata && status !== 'loading'
 
   const handleConfirm = async () => {
     setStatus('loading')
@@ -118,7 +122,7 @@ export default function BookingFlow() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nume: form.nume,
+          nume: numeComplet,
           telefon: form.telefon,
           email: form.email,
           serviciu: serviciu.name,
@@ -140,7 +144,7 @@ export default function BookingFlow() {
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: '56px', marginBottom: '16px' }}>✓</div>
         <h3 style={{ fontFamily: 'Georgia, serif', color: style.ruby, fontSize: '28px', fontWeight: 'normal', marginBottom: '12px' }}>
-          Vă mulțumim, {form.nume.split(' ')[0]}!
+          Vă mulțumim, {form.prenume}!
         </h3>
         <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
           Programarea dumneavoastră a fost confirmată.<br />
@@ -294,17 +298,30 @@ export default function BookingFlow() {
           </div>
 
           {/* Date contact */}
-          {/* Nume — blocat dacă e logată */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
-              Nume și prenume *
-              {loggedInClient && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#CCC', letterSpacing: '1px' }}>🔒 blocat</span>}
-            </label>
-            <input type="text" required value={form.nume} readOnly={!!loggedInClient}
-              onChange={e => !loggedInClient && setForm({ ...form, nume: e.target.value })}
-              className="input-field" placeholder="Ex: Maria Ionescu"
-              style={loggedInClient ? lockedStyle : {}}
-            />
+          {/* Prenume + Nume — blocate dacă e logată */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
+                Prenume *
+                {loggedInClient && <span style={{ marginLeft: '6px', fontSize: '10px', color: '#CCC' }}>🔒</span>}
+              </label>
+              <input type="text" required value={form.prenume} readOnly={!!loggedInClient}
+                onChange={e => !loggedInClient && setForm({ ...form, prenume: e.target.value })}
+                className="input-field" placeholder="Ex: Maria"
+                style={loggedInClient ? lockedStyle : {}}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
+                Nume *
+                {loggedInClient && <span style={{ marginLeft: '6px', fontSize: '10px', color: '#CCC' }}>🔒</span>}
+              </label>
+              <input type="text" required value={form.nume} readOnly={!!loggedInClient}
+                onChange={e => !loggedInClient && setForm({ ...form, nume: e.target.value })}
+                className="input-field" placeholder="Ex: Ionescu"
+                style={loggedInClient ? lockedStyle : {}}
+              />
+            </div>
           </div>
 
           {/* Telefon — editabil */}
