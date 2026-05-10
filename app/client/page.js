@@ -73,7 +73,7 @@ export default function ClientPage() {
         <Link href="/" style={{ color: 'white', fontSize: '16px', letterSpacing: '4px', textDecoration: 'none', opacity: 0.9 }}>ANDREEA BERTA</Link>
         <button onClick={() => { localStorage.removeItem('client_token'); router.push('/') }}
           style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '50px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', letterSpacing: '1px', backdropFilter: 'blur(8px)' }}>
-          Ieșire
+          Deconectează
         </button>
       </header>
 
@@ -203,10 +203,23 @@ export default function ClientPage() {
         )}
       </div>
 
-      {/* Footer discret */}
-      <div style={{ textAlign: 'center', paddingBottom: '40px' }}>
-        <p style={{ color: '#DDD', fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>EVOLIS · Piatra Neamț</p>
-        <p style={{ color: '#CCC', fontSize: '11px' }}>B-dul Dacia nr. 6, Bl. E1, Sc. A, Ap. 11</p>
+      {/* Footer */}
+      <div style={{ textAlign: 'center', paddingBottom: '56px' }}>
+        <Link href="/" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '10px',
+          padding: '14px 36px', borderRadius: '50px',
+          background: 'white',
+          border: '1px solid #E8DDD0',
+          color: '#9B1B30', textDecoration: 'none',
+          fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.07)',
+          fontFamily: 'Georgia, serif',
+        }}>
+          <span style={{ fontSize: '10px', color: '#C9A84C' }}>✦</span>
+          Pagina principală
+          <span style={{ fontSize: '10px', color: '#C9A84C' }}>✦</span>
+        </Link>
+        <p style={{ color: '#CCC', fontSize: '11px', letterSpacing: '2px', marginTop: '32px' }}>EVOLIS · B-dul Dacia nr. 6, Piatra Neamț</p>
       </div>
     </div>
   )
