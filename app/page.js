@@ -19,23 +19,24 @@ export default function Home() {
       {/* Header */}
       <header style={{
         background: 'linear-gradient(135deg, #9B1B30 0%, #7A1525 100%)',
-        padding: '20px 40px',
+        padding: '16px 20px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 4px 20px rgba(155,27,48,0.3)'
+        boxShadow: '0 4px 20px rgba(155,27,48,0.3)',
+        gap: '12px',
       }}>
-        <div>
-          <h1 style={{ color: 'white', fontSize: '22px', letterSpacing: '4px', margin: 0, fontFamily: 'Georgia, serif' }}>
+        <div style={{ minWidth: 0, flexShrink: 1 }}>
+          <h1 style={{ color: 'white', fontSize: 'clamp(14px, 4vw, 22px)', letterSpacing: 'clamp(1px, 1vw, 4px)', margin: 0, fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>
             ANDREEA BERTA
           </h1>
-          <p style={{ color: '#E2C97E', fontSize: '11px', letterSpacing: '3px', margin: '4px 0 0', textTransform: 'uppercase' }}>
+          <p style={{ color: '#E2C97E', fontSize: 'clamp(9px, 2vw, 11px)', letterSpacing: '2px', margin: '4px 0 0', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             Salon EVOLIS · Piatra Neamț
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
           <ClientHeaderButton />
-          <Link href="/programare" className="btn-gold" style={{ fontSize: '13px', padding: '12px 28px' }}>
+          <Link href="/programare" className="btn-gold" style={{ fontSize: 'clamp(11px, 2.5vw, 13px)', padding: 'clamp(8px, 2vw, 12px) clamp(14px, 3vw, 24px)', whiteSpace: 'nowrap' }}>
             REZERVAȚI
           </Link>
         </div>
