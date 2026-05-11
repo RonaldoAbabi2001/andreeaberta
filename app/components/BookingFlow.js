@@ -316,13 +316,13 @@ export default function BookingFlow() {
               style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: style.ruby, padding: '4px 14px', lineHeight: 1 }}>›</button>
           </div>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             {/* Săgeată stânga */}
             <button onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
-              style={{ position: 'absolute', left: '-14px', top: '50%', transform: 'translateY(-60%)', zIndex: 10, background: 'white', border: `1.5px solid #EEE`, borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>‹</button>
+              style={{ flexShrink: 0, background: 'white', border: '1.5px solid #EEE', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>‹</button>
 
             <div ref={scrollRef} onScroll={handleDateScroll} className="date-carousel"
-              style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '24px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '12px', marginBottom: '0', scrollbarWidth: 'none', msOverflowStyle: 'none', flex: 1 }}>
               {allDates.map((d, i) => {
                 const selected = data && data.toDateString() === d.toDateString()
                 const isFirstOfMonth = d.getDate() === 1 || i === 0
@@ -343,8 +343,9 @@ export default function BookingFlow() {
 
             {/* Săgeată dreapta */}
             <button onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-              style={{ position: 'absolute', right: '-14px', top: '50%', transform: 'translateY(-60%)', zIndex: 10, background: 'white', border: `1.5px solid #EEE`, borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>›</button>
+              style={{ flexShrink: 0, background: 'white', border: '1.5px solid #EEE', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: style.ruby, fontSize: '18px', lineHeight: 1 }}>›</button>
           </div>
+          <div style={{ marginBottom: '20px' }} />
 
           {data && (
             <div>
