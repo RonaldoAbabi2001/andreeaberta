@@ -859,8 +859,9 @@ export default function AdminDashboard() {
                   <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
                     style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
                 </div>
-                <button onClick={() => setViewDate(new Date())}
-                  style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '6px 20px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>Azi</button>
+                {viewDate.toDateString() === new Date().toDateString() && (
+                  <span style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '6px 20px', fontSize: '12px', color: s.ruby }}>Azi</span>
+                )}
               </div>
 
               {/* Dreapta — + Adaugă (doar desktop) */}
