@@ -694,12 +694,12 @@ export default function AdminDashboard() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'Georgia, serif' }}>
 
-      {/* Sidebar */}
-      <div style={{
+      {/* Sidebar — desktop only */}
+      <div className="admin-sidebar" style={{
         width: sidebarCollapsed ? '68px' : '224px',
         height: '100vh',
         background: 'linear-gradient(160deg, #9B1B30 0%, #7A1525 55%, #5C0F1A 100%)',
-        color: 'white', flexShrink: 0, display: 'flex', flexDirection: 'column',
+        color: 'white', flexShrink: 0, flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', overflow: 'hidden', position: 'relative',
         boxShadow: '4px 0 24px rgba(0,0,0,0.18)',
       }}>
@@ -826,7 +826,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, background: '#F8F4F0', overflow: 'auto' }}>
+      <div className="admin-content" style={{ flex: 1, background: '#F8F4F0', overflow: 'auto' }}>
 
         {/* CALENDAR TAB */}
         {tab === 'calendar' && (
@@ -1524,6 +1524,40 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Bottom nav — doar mobil */}
+      <nav className="admin-bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+        background: 'linear-gradient(160deg, #9B1B30 0%, #7A1525 100%)',
+        borderTop: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.2)',
+        justifyContent: 'space-around', alignItems: 'center',
+        padding: '6px 0 8px',
+      }}>
+        {[
+          { id: 'calendar', icon: '📅', label: 'Calendar' },
+          { id: 'clienti', icon: '👤', label: 'Clienți' },
+          { id: 'analitica', icon: '📈', label: 'Analitica' },
+          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
+          { id: 'import', icon: '📥', label: 'Import' },
+        ].map(item => {
+          const active = tab === item.id
+          return (
+            <button key={item.id} onClick={() => setTab(item.id)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '4px 10px', borderRadius: '12px',
+                color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)',
+                transition: 'color 0.15s',
+              }}>
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
+              {active && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C9A84C', marginTop: '1px' }} />}
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }
