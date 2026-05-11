@@ -832,34 +832,35 @@ export default function AdminDashboard() {
         {/* CALENDAR TAB */}
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
-            {/* Header calendar — 3 coloane: stânga | centru | dreapta */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', marginBottom: '24px' }}>
-              {/* Stânga — Azi */}
-              <div>
-                <button onClick={() => setViewDate(new Date())}
-                  style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>Azi</button>
-              </div>
+            {/* Header calendar */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', marginBottom: '24px' }}>
+              {/* Stânga — gol pentru simetrie */}
+              <div />
 
-              {/* Centru — ‹ dată › */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
-                  style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
-                <div style={{ position: 'relative' }} ref={monthOverviewRef}>
-                  <button onClick={() => setShowMonthOverview(v => !v)}
-                    style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
-                    {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
-                  </button>
-                  {showMonthOverview && (
-                    <MonthOverview
-                      programari={programari}
-                      viewDate={viewDate}
-                      onSelectDay={d => setViewDate(d)}
-                      onClose={() => setShowMonthOverview(false)}
-                    />
-                  )}
+              {/* Centru — ‹ dată › cu Azi dedesubt */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
+                    style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
+                  <div style={{ position: 'relative' }} ref={monthOverviewRef}>
+                    <button onClick={() => setShowMonthOverview(v => !v)}
+                      style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
+                      {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
+                    </button>
+                    {showMonthOverview && (
+                      <MonthOverview
+                        programari={programari}
+                        viewDate={viewDate}
+                        onSelectDay={d => setViewDate(d)}
+                        onClose={() => setShowMonthOverview(false)}
+                      />
+                    )}
+                  </div>
+                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
+                    style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
                 </div>
-                <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
-                  style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
+                <button onClick={() => setViewDate(new Date())}
+                  style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '6px 20px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>Azi</button>
               </div>
 
               {/* Dreapta — + Adaugă (doar desktop) */}
