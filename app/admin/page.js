@@ -538,6 +538,7 @@ export default function AdminDashboard() {
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showFabMenu, setShowFabMenu] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [clientiSubTab, setClientiSubTab] = useState('toti')
@@ -831,35 +832,36 @@ export default function AdminDashboard() {
         {/* CALENDAR TAB */}
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
-                  style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
+            {/* Header calendar — centrat */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', gap: '10px' }}>
+              <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
+                style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
 
-                {/* Data clickabilă — deschide MonthOverview */}
-                <div style={{ position: 'relative' }} ref={monthOverviewRef}>
-                  <button onClick={() => setShowMonthOverview(v => !v)}
-                    style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
-                    {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
-                  </button>
-                  {showMonthOverview && (
-                    <MonthOverview
-                      programari={programari}
-                      viewDate={viewDate}
-                      onSelectDay={d => setViewDate(d)}
-                      onClose={() => setShowMonthOverview(false)}
-                    />
-                  )}
-                </div>
-
-                <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
-                  style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
-                <button onClick={() => setViewDate(new Date())}
-                  style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>Azi</button>
+              {/* Data clickabilă — deschide MonthOverview */}
+              <div style={{ position: 'relative' }} ref={monthOverviewRef}>
+                <button onClick={() => setShowMonthOverview(v => !v)}
+                  style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
+                  {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
+                </button>
+                {showMonthOverview && (
+                  <MonthOverview
+                    programari={programari}
+                    viewDate={viewDate}
+                    onSelectDay={d => setViewDate(d)}
+                    onClose={() => setShowMonthOverview(false)}
+                  />
+                )}
               </div>
-              <button onClick={openAddForm}
-                style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '12px 24px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
-                + Adaugă programare
+
+              <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
+                style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
+              <button onClick={() => setViewDate(new Date())}
+                style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>Azi</button>
+
+              {/* Buton + doar pe desktop */}
+              <button onClick={openAddForm} className="admin-add-desktop"
+                style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '10px 22px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', marginLeft: '12px' }}>
+                + Adaugă
               </button>
             </div>
 
@@ -1534,23 +1536,53 @@ export default function AdminDashboard() {
         justifyContent: 'space-around', alignItems: 'center',
         padding: '6px 0 8px',
       }}>
+        {/* Primele 2 tab-uri */}
         {[
           { id: 'calendar', icon: '📅', label: 'Calendar' },
           { id: 'clienti', icon: '👤', label: 'Clienți' },
-          { id: 'analitica', icon: '📈', label: 'Analitica' },
-          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
-          { id: 'import', icon: '📥', label: 'Import' },
         ].map(item => {
           const active = tab === item.id
           return (
-            <button key={item.id} onClick={() => setTab(item.id)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                padding: '4px 10px', borderRadius: '12px',
-                color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)',
-                transition: 'color 0.15s',
-              }}>
+            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false) }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
+              {active && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C9A84C', marginTop: '1px' }} />}
+            </button>
+          )
+        })}
+
+        {/* FAB — buton + în cerc */}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Meniu popup */}
+          {showFabMenu && (
+            <div style={{ position: 'absolute', bottom: '64px', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: '8px', minWidth: '180px', zIndex: 200 }}>
+              <button onClick={() => { setShowAddForm(true); setShowFabMenu(false) }}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px' }}>
+                <span style={{ fontSize: '18px' }}>📅</span> Programare nouă
+              </button>
+              <button onClick={() => { alert('Blochează timp — în curând'); setShowFabMenu(false) }}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px' }}>
+                <span style={{ fontSize: '18px' }}>🔒</span> Blochează timp
+              </button>
+            </div>
+          )}
+          <button onClick={() => setShowFabMenu(v => !v)}
+            style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #F0DC8A, #C9A84C)', border: 'none', cursor: 'pointer', fontSize: '26px', color: '#1C1C1C', fontWeight: 'bold', boxShadow: '0 4px 16px rgba(201,168,76,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, marginBottom: '2px', transform: showFabMenu ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>
+            +
+          </button>
+          <span style={{ fontSize: '9px', color: showFabMenu ? '#F9E4A0' : 'rgba(255,255,255,0.55)', fontFamily: 'Georgia, serif' }}>Adaugă</span>
+        </div>
+
+        {/* Ultimele 2 tab-uri */}
+        {[
+          { id: 'analitica', icon: '📈', label: 'Analitica' },
+          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
+        ].map(item => {
+          const active = tab === item.id
+          return (
+            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false) }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
               <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
               {active && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C9A84C', marginTop: '1px' }} />}

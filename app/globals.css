@@ -136,4 +136,5 @@ input, textarea {
   .admin-sidebar { display: none !important; }
   .admin-bottom-nav { display: flex; }
   .admin-content { padding-bottom: 70px; }
+  .admin-add-desktop { display: none !important; }
 }
