@@ -34,11 +34,8 @@ export default function Home() {
             Salon EVOLIS · Piatra Neamț
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <ClientHeaderButton />
-          <Link href="/programare" className="btn-gold" style={{ fontSize: 'clamp(11px, 2.5vw, 13px)', padding: 'clamp(8px, 2vw, 12px) clamp(14px, 3vw, 24px)', whiteSpace: 'nowrap' }}>
-            REZERVAȚI
-          </Link>
         </div>
       </header>
 
