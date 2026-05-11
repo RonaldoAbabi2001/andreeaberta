@@ -85,6 +85,7 @@ export default function BookingFlow() {
   const [loggedInClient, setLoggedInClient] = useState(null)
   const [visibleMonth, setVisibleMonth] = useState(() => new Date().getMonth())
   const [visibleYear, setVisibleYear] = useState(() => new Date().getFullYear())
+  const [ocupate, setOcupate] = useState([])
   const scrollRef = useRef(null)
   const dayRefs = useRef({})
 
@@ -140,6 +141,33 @@ export default function BookingFlow() {
   const slots = serviciu ? generateSlots(serviciu.durata) : []
 
   const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
+
+  function timeToMin(t) {
+    if (!t) return 0
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + m
+  }
+
+  function isBlocked(slot) {
+    if (!serviciu) return false
+    const slotMin = timeToMin(slot)
+    return ocupate.some(p => {
+      if (!p.ora) return false
+      const pMin = timeToMin(p.ora)
+      const pDurata = Number(p.durata) || 0
+      return slotMin < pMin + pDurata && slotMin + serviciu.durata > pMin
+    })
+  }
+
+  async function fetchOcupate(d) {
+    if (!d) return
+    try {
+      const dataStr = formatData(d)
+      const res = await fetch(`/api/programare/ocupate?data=${encodeURIComponent(dataStr)}`)
+      const rows = await res.json()
+      setOcupate(Array.isArray(rows) ? rows : [])
+    } catch { setOcupate([]) }
+  }
 
   function scrollToMonth(month, year) {
     const key = `${year}-${month}`
@@ -330,7 +358,7 @@ export default function BookingFlow() {
                 return (
                   <div key={i}
                     ref={isFirstOfMonth ? el => { if (el) dayRefs.current[monthKey] = el } : undefined}
-                    onClick={() => { setData(d); setOra(null) }}
+                    onClick={() => { setData(d); setOra(null); fetchOcupate(d) }}
                     style={{ minWidth: '60px', borderRadius: '14px', padding: '10px 8px', textAlign: 'center', cursor: 'pointer', flexShrink: 0, background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#EEE'}`, boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
                   >
                     <p style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px' }}>{ZILE[d.getDay()]}</p>
@@ -352,6 +380,12 @@ export default function BookingFlow() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
                 {slots.map(slot => {
                   const selected = ora === slot
+                  const blocked = isBlocked(slot)
+                  if (blocked) return (
+                    <div key={slot} title="Oră rezervată"
+                      style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'not-allowed', background: '#F5F5F5', color: '#BBBBB', border: '1.5px solid #E8E8E8', fontSize: '14px', textDecoration: 'line-through', opacity: 0.55, userSelect: 'none' }}
+                    >{slot}</div>
+                  )
                   return (
                     <div key={slot} onClick={() => setOra(slot)}
                       style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}

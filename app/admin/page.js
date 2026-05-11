@@ -128,6 +128,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
   const [showNewProg, setShowNewProg] = useState(false)
   const [newProg, setNewProg] = useState({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
   const [showNewDatePicker, setShowNewDatePicker] = useState(false)
+  const [drawerOverlapWarning, setDrawerOverlapWarning] = useState(null)
   const newDateRef = useRef(null)
 
   const clientProg = programari
@@ -172,9 +173,31 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
     onSaved()
   }
 
-  async function addNewProg(e) {
-    e.preventDefault()
+  async function addNewProg(e, forceOverlap = false) {
+    if (e && e.preventDefault) e.preventDefault()
     const serv = SERVICII.find(s => s.name === newProg.serviciu)
+    const durataNoua = serv?.durata || 0
+
+    if (!forceOverlap && newProg.ora && durataNoua) {
+      const minNoua = timeToMin(newProg.ora)
+      const conflicte = programari.filter(p => {
+        if (p.data?.trim() !== newProg.data?.trim()) return false
+        if (p.status === 'cancelled') return false
+        if (!p.ora) return false
+        const pMin = timeToMin(p.ora)
+        const pDur = Number(p.durata) || 0
+        return minNoua < pMin + pDur && minNoua + durataNoua > pMin
+      })
+      if (conflicte.length > 0) {
+        const c = conflicte[0]
+        setDrawerOverlapWarning({
+          msg: `Suprapunere cu ${c.nume} — ${c.ora} (${c.durata} min).\nConfirmi programarea?`,
+          onConfirm: () => { setDrawerOverlapWarning(null); addNewProg(null, true) }
+        })
+        return
+      }
+    }
+
     const id = Date.now()
     await fetch('/api/admin/programari', {
       method: 'POST', headers: authH,
@@ -407,6 +430,27 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
           </div>
         </div>
       </div>
+
+      {/* Dialog confirmare suprapunere în drawer */}
+      {drawerOverlapWarning && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', maxWidth: '380px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚠️</div>
+            <h3 style={{ fontFamily: 'Georgia, serif', color: '#9B1B30', fontSize: '18px', fontWeight: 'normal', marginBottom: '12px' }}>Suprapunere programare</h3>
+            <p style={{ color: '#555', fontSize: '14px', lineHeight: 1.7, marginBottom: '28px', whiteSpace: 'pre-line' }}>{drawerOverlapWarning.msg}</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setDrawerOverlapWarning(null)}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid #DDD', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#555' }}>
+                Anulează
+              </button>
+              <button onClick={drawerOverlapWarning.onConfirm}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #9B1B30, #7A1525)', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
+                Confirmă
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -558,6 +602,7 @@ export default function AdminDashboard() {
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
   })
+  const [overlapWarning, setOverlapWarning] = useState(null)
 
   useEffect(() => {
     const t = localStorage.getItem('admin_token')
@@ -613,9 +658,31 @@ export default function AdminDashboard() {
     setShowAddForm(true)
   }
 
-  async function addProgramare(e) {
-    e.preventDefault()
+  async function addProgramare(e, forceOverlap = false) {
+    if (e && e.preventDefault) e.preventDefault()
     const serv = SERVICII.find(s => s.name === newProg.serviciu)
+    const durataNoua = serv?.durata || 0
+
+    if (!forceOverlap && newProg.ora && durataNoua) {
+      const minNoua = timeToMin(newProg.ora)
+      const conflicte = programari.filter(p => {
+        if (p.data?.trim() !== newProg.data?.trim()) return false
+        if (p.status === 'cancelled') return false
+        if (!p.ora) return false
+        const pMin = timeToMin(p.ora)
+        const pDur = Number(p.durata) || 0
+        return minNoua < pMin + pDur && minNoua + durataNoua > pMin
+      })
+      if (conflicte.length > 0) {
+        const c = conflicte[0]
+        setOverlapWarning({
+          msg: `Suprapunere cu ${c.nume} — ${c.ora} (${c.durata} min).\nConfirmi programarea?`,
+          onConfirm: () => { setOverlapWarning(null); addProgramare(null, true) }
+        })
+        return
+      }
+    }
+
     await fetch('/api/admin/programari', {
       method: 'POST',
       headers: authHeaders(),
@@ -1598,6 +1665,27 @@ export default function AdminDashboard() {
           )
         })}
       </nav>
+
+      {/* Dialog confirmare suprapunere */}
+      {overlapWarning && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', maxWidth: '380px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚠️</div>
+            <h3 style={{ fontFamily: 'Georgia, serif', color: '#9B1B30', fontSize: '18px', fontWeight: 'normal', marginBottom: '12px' }}>Suprapunere programare</h3>
+            <p style={{ color: '#555', fontSize: '14px', lineHeight: 1.7, marginBottom: '28px', whiteSpace: 'pre-line' }}>{overlapWarning.msg}</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setOverlapWarning(null)}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1.5px solid #DDD', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#555' }}>
+                Anulează
+              </button>
+              <button onClick={overlapWarning.onConfirm}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #9B1B30, #7A1525)', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
+                Confirmă
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
