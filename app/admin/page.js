@@ -923,10 +923,10 @@ export default function AdminDashboard() {
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
             {/* Header calendar */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', marginBottom: '20px', minHeight: '80px' }}>
 
               {/* Stânga — Specialist + Orar */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '160px' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', flexDirection: 'column', gap: '8px', width: '160px' }}>
 
                 {/* Card 1: selector specialist */}
                 <div style={{ position: 'relative' }}>
@@ -1019,7 +1019,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Dreapta — toggle Zilnic / Săptămânal */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+              <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
                 <div style={{ background: 'white', borderRadius: '12px', padding: '4px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                   {[{ id: 'day', label: 'Zilnic' }, { id: 'week', label: 'Săptămânal' }].map(v => (
                     <button key={v.id} onClick={() => setViewMode(v.id)}
