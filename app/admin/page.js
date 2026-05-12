@@ -599,6 +599,7 @@ export default function AdminDashboard() {
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
   const [slotPopup, setSlotPopup] = useState(null)
+  const [hoveredSlot, setHoveredSlot] = useState(null)
   const [showDesktopFab, setShowDesktopFab] = useState(false)
 
   const [newProg, setNewProg] = useState({
@@ -945,27 +946,29 @@ export default function AdminDashboard() {
             {/* Calendar grid — absolute positioning */}
             <div style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', display: 'flex' }}>
               {/* Hour labels column */}
-              <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px` }}>
+              <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px`, overflow: 'visible' }}>
                 {Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR).map(h => (
                   <div key={h} style={{ position: 'absolute', top: `${(h - GRID_START_HOUR) * 60 * PX_PER_MIN}px`, width: '100%' }}>
-                    {/* Ora exactă */}
                     <div style={{ padding: '0 10px', color: '#999', fontSize: '12px', lineHeight: `${15 * PX_PER_MIN}px`, borderBottom: '1px solid #F0EAE0' }}>
                       {String(h % 24).padStart(2, '0')}:00
                     </div>
-                    {/* :15 */}
-                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8', display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
-                      <span style={{ fontSize: '9px', color: '#CCC' }}>:15</span>
-                    </div>
-                    {/* :30 */}
-                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px solid #EDE4DC', display: 'flex', alignItems: 'center', paddingLeft: '18px' }}>
-                      <span style={{ fontSize: '10px', color: '#BBB' }}>{String(h % 24).padStart(2,'0')}:30</span>
-                    </div>
-                    {/* :45 */}
-                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8', display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
-                      <span style={{ fontSize: '9px', color: '#CCC' }}>:45</span>
-                    </div>
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8' }} />
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px solid #EDE4DC' }} />
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8' }} />
                   </div>
                 ))}
+                {/* Label hover dinamic */}
+                {hoveredSlot && (
+                  <div style={{
+                    position: 'absolute', top: `${hoveredSlot.top}px`, left: 0, right: 0,
+                    height: `${15 * PX_PER_MIN}px`, display: 'flex', alignItems: 'center',
+                    paddingLeft: '8px', pointerEvents: 'none', zIndex: 5,
+                  }}>
+                    <span style={{ fontSize: '11px', color: s.ruby, fontWeight: 'bold', background: 'white', padding: '1px 4px', borderRadius: '4px' }}>
+                      {hoveredSlot.time}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Bookings area */}
@@ -981,16 +984,14 @@ export default function AdminDashboard() {
                   return (
                     <div key={i}
                       onClick={e => { e.stopPropagation(); setSlotPopup({ top: topPx, time: timeStr }) }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(155,27,48,0.04)'; setHoveredSlot({ top: topPx, time: timeStr }) }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; setHoveredSlot(null) }}
                       style={{
                         position: 'absolute', top: `${topPx}px`, left: 0, right: 0,
                         height: `${15 * PX_PER_MIN}px`,
                         borderBottom: isHalfHour ? '1px solid #EDE4DC' : '1px dashed #F5EEE8',
-                        zIndex: 1, cursor: 'pointer',
-                        background: (h + GRID_START_HOUR) === 12 && i % 4 < 4 ? 'transparent' : 'transparent',
-                        transition: 'background 0.12s',
+                        zIndex: 1, cursor: 'pointer', transition: 'background 0.12s',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(155,27,48,0.04)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     />
                   )
                 })}
@@ -1015,8 +1016,9 @@ export default function AdminDashboard() {
                     background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
                     zIndex: 50, minWidth: '200px', overflow: 'hidden', border: '1px solid #EDE4DC',
                   }}>
-                    <div style={{ background: s.nude, padding: '8px 14px', fontSize: '12px', color: s.ruby, fontWeight: 'bold', letterSpacing: '1px', borderBottom: '1px solid #EDE4DC' }}>
-                      {slotPopup.time}
+                    <div style={{ background: s.nude, padding: '8px 14px', fontSize: '12px', color: s.ruby, fontWeight: 'bold', letterSpacing: '1px', borderBottom: '1px solid #EDE4DC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{slotPopup.time}</span>
+                      <button onClick={() => setSlotPopup(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#AAA', fontSize: '16px', lineHeight: 1, padding: '0 0 0 8px' }}>✕</button>
                     </div>
                     <button onClick={() => {
                       setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: slotPopup.time, serviciu: '', plata: 'numerar', observatii: '' })
