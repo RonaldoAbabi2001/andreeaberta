@@ -1263,14 +1263,13 @@ export default function AdminDashboard() {
                   )
                 })}
               </div>
-            </div>
+            </div>}
 
             {progAzi.length === 0 && viewMode === 'day' && (
               <div style={{ textAlign: 'center', padding: '40px', color: '#AAA', fontSize: '15px' }}>
                 Nicio programare pentru această zi.
               </div>
             )}
-            </div>}
 
           </div>
         )}
