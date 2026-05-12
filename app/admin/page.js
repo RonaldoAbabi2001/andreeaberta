@@ -592,7 +592,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [confirmDeleteProg, setConfirmDeleteProg] = useState(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [analitica, setAnalitica] = useState(null)
   const [loadingAnalitica, setLoadingAnalitica] = useState(false)
   const [analiticaKey, setAnaliticaKey] = useState(0)
