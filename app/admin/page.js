@@ -601,6 +601,8 @@ export default function AdminDashboard() {
   const [slotPopup, setSlotPopup] = useState(null)
   const [hoveredSlot, setHoveredSlot] = useState(null)
   const [showDesktopFab, setShowDesktopFab] = useState(false)
+  const [acSuggestions, setAcSuggestions] = useState([])
+  const [acField, setAcField] = useState(null)
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
@@ -1601,16 +1603,64 @@ export default function AdminDashboard() {
             </div>
             <form onSubmit={addProgramare}>
 
-              {/* Nume */}
-              <div style={{ marginBottom: '14px' }}>
+              {/* Nume cu autocomplete */}
+              <div style={{ marginBottom: '14px', position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Nume client *</label>
-                <input type="text" required value={newProg.nume} onChange={e => setNewProg({ ...newProg, nume: e.target.value })} className="input-field" />
+                <input type="text" required value={newProg.nume}
+                  onChange={e => {
+                    const v = e.target.value
+                    setNewProg({ ...newProg, nume: v })
+                    if (v.length >= 2) {
+                      const matches = clienti.filter(c => c.nume?.toLowerCase().includes(v.toLowerCase())).slice(0, 6)
+                      setAcSuggestions(matches); setAcField('nume')
+                    } else { setAcSuggestions([]); setAcField(null) }
+                  }}
+                  onBlur={() => setTimeout(() => { setAcSuggestions([]); setAcField(null) }, 150)}
+                  className="input-field" placeholder="Caută după nume..." />
+                {acField === 'nume' && acSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.14)', zIndex: 200, overflow: 'hidden', border: '1px solid #EDE4DC', marginTop: '4px' }}>
+                    {acSuggestions.map(c => (
+                      <button key={c.id} type="button"
+                        onMouseDown={() => { setNewProg({ ...newProg, nume: c.nume, telefon: c.telefon || '' }); setAcSuggestions([]); setAcField(null) }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F5EEE8' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <span style={{ fontSize: '14px', color: '#1C1C1C' }}>{c.nume}</span>
+                        <span style={{ fontSize: '12px', color: '#999' }}>{c.telefon}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Telefon */}
-              <div style={{ marginBottom: '14px' }}>
+              {/* Telefon cu autocomplete */}
+              <div style={{ marginBottom: '14px', position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Telefon *</label>
-                <input type="tel" required value={newProg.telefon} onChange={e => setNewProg({ ...newProg, telefon: e.target.value })} className="input-field" />
+                <input type="tel" required value={newProg.telefon}
+                  onChange={e => {
+                    const v = e.target.value
+                    setNewProg({ ...newProg, telefon: v })
+                    if (v.length >= 3) {
+                      const matches = clienti.filter(c => c.telefon?.includes(v)).slice(0, 6)
+                      setAcSuggestions(matches); setAcField('telefon')
+                    } else { setAcSuggestions([]); setAcField(null) }
+                  }}
+                  onBlur={() => setTimeout(() => { setAcSuggestions([]); setAcField(null) }, 150)}
+                  className="input-field" placeholder="07XX XXX XXX" />
+                {acField === 'telefon' && acSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.14)', zIndex: 200, overflow: 'hidden', border: '1px solid #EDE4DC', marginTop: '4px' }}>
+                    {acSuggestions.map(c => (
+                      <button key={c.id} type="button"
+                        onMouseDown={() => { setNewProg({ ...newProg, nume: c.nume, telefon: c.telefon || '' }); setAcSuggestions([]); setAcField(null) }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F5EEE8' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <span style={{ fontSize: '14px', color: '#1C1C1C' }}>{c.nume}</span>
+                        <span style={{ fontSize: '12px', color: '#999' }}>{c.telefon}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Data — cu date picker popup */}
