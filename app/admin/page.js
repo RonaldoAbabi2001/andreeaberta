@@ -931,15 +931,15 @@ export default function AdminDashboard() {
                 {/* Card 1: selector specialist */}
                 <div style={{ position: 'relative' }}>
                   <div onClick={() => { setShowSpecialistPicker(v => !v); setShowScheduleOptions(false) }}
-                    style={{ background: 'white', borderRadius: '14px', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', border: `1px solid ${showSpecialistPicker ? s.ruby : 'transparent'}`, transition: 'border-color 0.15s' }}
+                    style={{ background: 'white', borderRadius: '12px', padding: '7px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: `1px solid ${showSpecialistPicker ? s.ruby : 'transparent'}`, transition: 'border-color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#FAF5F0'}
                     onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '16px', fontFamily: 'Georgia, serif', flexShrink: 0 }}>A</div>
+                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontFamily: 'Georgia, serif', flexShrink: 0 }}>A</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Andreea Berta</p>
-                      <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>Tehnician</p>
+                      <p style={{ fontSize: '12px', fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Andreea Berta</p>
+                      <p style={{ fontSize: '10px', color: '#999', margin: 0 }}>Tehnician</p>
                     </div>
-                    <span style={{ fontSize: '12px', color: s.ruby, flexShrink: 0, transform: showSpecialistPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
+                    <span style={{ fontSize: '11px', color: s.ruby, flexShrink: 0, transform: showSpecialistPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
                   </div>
                   {showSpecialistPicker && (
                     <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0' }}>
@@ -965,12 +965,12 @@ export default function AdminDashboard() {
                 {/* Card 2: orar lucru */}
                 <div style={{ position: 'relative' }}>
                   <div onClick={() => { setShowScheduleOptions(v => !v); setShowSpecialistPicker(false) }}
-                    style={{ background: 'white', borderRadius: '12px', padding: '8px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: `1px solid ${showScheduleOptions ? s.gold : 'transparent'}`, transition: 'border-color 0.15s' }}
+                    style={{ background: 'white', borderRadius: '10px', padding: '5px 10px', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', border: `1px solid ${showScheduleOptions ? s.gold : 'transparent'}`, transition: 'border-color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#FAF5F0'}
                     onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                    <span style={{ fontSize: '13px' }}>🗓</span>
-                    <p style={{ fontSize: '12px', color: '#666', margin: 0, flex: 1 }}>Andreea Berta</p>
-                    <span style={{ fontSize: '11px', color: s.gold, flexShrink: 0, transform: showScheduleOptions ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '11px', fontFamily: 'Georgia, serif', flexShrink: 0 }}>A</div>
+                    <p style={{ fontSize: '11px', color: '#777', margin: 0, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Andreea Berta</p>
+                    <span style={{ fontSize: '10px', color: s.gold, flexShrink: 0, transform: showScheduleOptions ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
                   </div>
                   {showScheduleOptions && (
                     <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0', padding: '6px' }}>
