@@ -22,12 +22,13 @@ export async function POST(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
-  const id = Date.now()
+  const id = body.id || Date.now()
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS tip_vizita TEXT DEFAULT 'client'`
   await sql`
-    INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status)
+    INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, tip_vizita)
     VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.serviciu}, ${body.pret || 0},
             ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || 'numerar'},
-            ${body.observatii || ''}, 'confirmed')
+            ${body.observatii || ''}, 'confirmed', ${body.tip_vizita || 'client'})
   `
   return NextResponse.json({ success: true, id })
 }

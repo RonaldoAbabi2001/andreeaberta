@@ -73,12 +73,18 @@ export async function POST(request) {
   }
 
   const sql = await getDb()
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS tip_client TEXT`
   const existing = await sql`SELECT id FROM clienti WHERE telefon = ${body.telefon}`
-  if (existing.length > 0) return NextResponse.json({ success: true, id: existing[0].id, duplicate: true })
+  if (existing.length > 0) {
+    if (body.tip_client) {
+      await sql`UPDATE clienti SET tip_client = ${body.tip_client} WHERE telefon = ${body.telefon}`
+    }
+    return NextResponse.json({ success: true, id: existing[0].id, duplicate: true })
+  }
   const id = Date.now()
   await sql`
-    INSERT INTO clienti (id, nume, telefon, email, data_nastere, observatii, sursa)
-    VALUES (${id}, ${body.nume || ''}, ${body.telefon}, ${body.email || ''}, ${body.data_nastere || ''}, ${body.observatii || ''}, ${body.sursa || 'manual'})
+    INSERT INTO clienti (id, nume, telefon, email, data_nastere, observatii, sursa, tip_client)
+    VALUES (${id}, ${body.nume || ''}, ${body.telefon}, ${body.email || ''}, ${body.data_nastere || ''}, ${body.observatii || ''}, ${body.sursa || 'manual'}, ${body.tip_client || null})
   `
   return NextResponse.json({ success: true, id })
 }

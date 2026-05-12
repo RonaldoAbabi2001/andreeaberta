@@ -622,7 +622,7 @@ export default function AdminDashboard() {
   const [acField, setAcField] = useState(null)
 
   const [newProg, setNewProg] = useState({
-    nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
+    nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: '', tip_vizita: 'client'
   })
   const [overlapWarning, setOverlapWarning] = useState(null)
 
@@ -710,10 +710,11 @@ export default function AdminDashboard() {
       headers: authHeaders(),
       body: JSON.stringify({ ...newProg, pret: serv?.pret || 0, durata: serv?.durata || 0 })
     })
+    // Creare/actualizare client — dacă e modelă, setează tip_client
     await fetch('/api/admin/clienti', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ nume: newProg.nume, telefon: newProg.telefon, sursa: 'admin' })
+      body: JSON.stringify({ nume: newProg.nume, telefon: newProg.telefon, sursa: 'admin', tip_client: newProg.tip_vizita === 'modela' ? 'modela' : undefined })
     })
     setShowAddForm(false)
     await fetchProgramari()
@@ -1865,6 +1866,20 @@ export default function AdminDashboard() {
                   <option value="">Alege serviciul</option>
                   {SERVICII.map(sv => <option key={sv.name} value={sv.name}>{sv.name} — {sv.pret} lei ({sv.durata} min)</option>)}
                 </select>
+              </div>
+
+              {/* Tip vizită */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>Tip vizită</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {[{ id: 'client', label: '👤 Client', desc: 'Vizită plătită' }, { id: 'modela', label: '✦ Modelă', desc: 'Conținut / gratuită' }].map(t => (
+                    <div key={t.id} onClick={() => setNewProg({ ...newProg, tip_vizita: t.id })}
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: '12px', cursor: 'pointer', border: `2px solid ${newProg.tip_vizita === t.id ? (t.id === 'modela' ? s.gold : s.ruby) : '#E8E8E8'}`, background: newProg.tip_vizita === t.id ? (t.id === 'modela' ? '#FDF8EC' : '#FFF5F6') : 'white', transition: 'all 0.15s', textAlign: 'center' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 2px', color: newProg.tip_vizita === t.id ? (t.id === 'modela' ? '#A8883A' : s.ruby) : '#555' }}>{t.label}</p>
+                      <p style={{ fontSize: '10px', color: '#AAA', margin: 0 }}>{t.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Plată */}
