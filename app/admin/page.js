@@ -3,7 +3,20 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
+const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
 const LUNI = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+
+function getWeekDays(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const mon = new Date(d)
+  mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(mon)
+    dd.setDate(mon.getDate() + i)
+    return dd
+  })
+}
 
 const SERVICII = [
   { name: 'Manichiură Clasică', pret: 70, durata: 30 },
@@ -581,9 +594,11 @@ export default function AdminDashboard() {
   const [programari, setProgramari] = useState([])
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState('day')
   const [showAddForm, setShowAddForm] = useState(false)
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
+  const [scheduleModal, setScheduleModal] = useState(null)
   const [clientSearch, setClientSearch] = useState('')
   const [clientiSubTab, setClientiSubTab] = useState('toti')
   const [selectedClient, setSelectedClient] = useState(null)
@@ -751,6 +766,7 @@ export default function AdminDashboard() {
   }
 
   const dateStr = formatDateRO
+  const weekDays = getWeekDays(viewDate)
   const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim())
   const filteredClienti = clienti.filter(c =>
     c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
@@ -905,48 +921,161 @@ export default function AdminDashboard() {
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
             {/* Header calendar */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', marginBottom: '24px' }}>
-              {/* Stânga — gol pentru simetrie */}
-              <div />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', gap: '16px', marginBottom: '20px' }}>
 
-              {/* Centru — ‹ dată › cu Azi dedesubt */}
+              {/* Stânga — Specialist + Orar */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Card specialist */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'default' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '16px', fontFamily: 'Georgia, serif', flexShrink: 0 }}>A</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '13px', fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Andreea Berta</p>
+                    <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>Tehnician</p>
+                  </div>
+                </div>
+
+                {/* Card orar lucru */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  {[
+                    { id: 'repetitiv', icon: '🔁', label: 'Orar repetitiv' },
+                    { id: 'azi',       icon: '📋', label: 'Orar azi' },
+                    { id: 'inchide',   icon: '🔒', label: 'Închide ziua' },
+                  ].map(opt => (
+                    <button key={opt.id} onClick={() => setScheduleModal(opt.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', borderRadius: '10px', padding: '7px 10px', cursor: 'pointer', fontSize: '12px', color: opt.id === 'inchide' ? '#EF4444' : '#555', textAlign: 'left', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = s.nude}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <span style={{ fontSize: '14px' }}>{opt.icon}</span> {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Centru — ‹ dată/săptămână › */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - 1); setViewDate(d) }}
+                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - (viewMode === 'week' ? 7 : 1)); setViewDate(d) }}
                     style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
                   <div style={{ position: 'relative' }} ref={monthOverviewRef}>
                     <button onClick={() => setShowMonthOverview(v => !v)}
-                      style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C' }}>
-                      {ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>
+                      style={{ background: 'white', border: `1px solid ${showMonthOverview ? s.ruby : '#DDD'}`, borderRadius: '10px', padding: '8px 18px', cursor: 'pointer', fontSize: viewMode === 'week' ? '14px' : '18px', fontFamily: 'Georgia, serif', fontWeight: 'normal', color: '#1C1C1C', whiteSpace: 'nowrap' }}>
+                      {viewMode === 'week'
+                        ? `${weekDays[0].getDate()} ${LUNI[weekDays[0].getMonth()].slice(0,3)} — ${weekDays[6].getDate()} ${LUNI[weekDays[6].getMonth()].slice(0,3)} ${weekDays[6].getFullYear()}`
+                        : <>{ZILE[viewDate.getDay()]}, {dateStr(viewDate)} <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span></>
+                      }
+                      {viewMode === 'week' && <span style={{ fontSize: '12px', color: s.ruby, marginLeft: '4px' }}>▾</span>}
                     </button>
                     {showMonthOverview && (
-                      <MonthOverview
-                        programari={programari}
-                        viewDate={viewDate}
-                        onSelectDay={d => setViewDate(d)}
-                        onClose={() => setShowMonthOverview(false)}
-                      />
+                      <MonthOverview programari={programari} viewDate={viewDate} onSelectDay={d => setViewDate(d)} onClose={() => setShowMonthOverview(false)} />
                     )}
                   </div>
-                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + 1); setViewDate(d) }}
+                  <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() + (viewMode === 'week' ? 7 : 1)); setViewDate(d) }}
                     style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>›</button>
                 </div>
-                {viewDate.toDateString() === new Date().toDateString() && (
+                {viewDate.toDateString() === new Date().toDateString() && viewMode === 'day' && (
                   <span style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '8px', padding: '6px 20px', fontSize: '12px', color: s.ruby }}>Azi</span>
                 )}
               </div>
 
-              {/* Dreapta — + Adaugă (doar desktop) */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowAddForm(true)} className="admin-add-desktop"
-                  style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '10px 22px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
-                  + Adaugă
-                </button>
+              {/* Dreapta — toggle Zilnic / Săptămânal */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+                <div style={{ background: 'white', borderRadius: '12px', padding: '4px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                  {[{ id: 'day', label: 'Zilnic' }, { id: 'week', label: 'Săptămânal' }].map(v => (
+                    <button key={v.id} onClick={() => setViewMode(v.id)}
+                      style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontFamily: 'Georgia, serif', background: viewMode === v.id ? s.ruby : 'transparent', color: viewMode === v.id ? 'white' : '#888', fontWeight: viewMode === v.id ? 'bold' : 'normal', transition: 'all 0.2s' }}>
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Calendar grid — absolute positioning */}
-            <div style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', display: 'flex' }}>
+            {/* VIEW SĂPTĂMÂNAL */}
+            {viewMode === 'week' && (
+              <div style={{ background: 'white', borderRadius: '16px', overflow: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+                {/* Header zile */}
+                <div style={{ display: 'flex', borderBottom: '1px solid #F0EAE0', position: 'sticky', top: 0, background: 'white', zIndex: 20 }}>
+                  <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0' }} />
+                  {weekDays.map((d, i) => {
+                    const isToday = d.toDateString() === new Date().toDateString()
+                    const isSelected = d.toDateString() === viewDate.toDateString()
+                    const progZi = programari.filter(p => p.data?.trim() === dateStr(d).trim() && p.status !== 'cancelled')
+                    return (
+                      <div key={i} onClick={() => { setViewDate(d); setViewMode('day') }}
+                        style={{ flex: 1, padding: '10px 4px', textAlign: 'center', cursor: 'pointer', borderRight: i < 6 ? '1px solid #F0EAE0' : 'none', background: isSelected ? s.nude : 'transparent', transition: 'background 0.15s' }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#FAF5F0' }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
+                        <p style={{ fontSize: '10px', color: isToday ? s.ruby : '#999', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>{ZILE[d.getDay()]}</p>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isToday ? s.ruby : 'transparent', color: isToday ? 'white' : '#1C1C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2px', fontSize: '14px', fontWeight: isToday ? 'bold' : 'normal' }}>{d.getDate()}</div>
+                        {progZi.length > 0 && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.gold, margin: '0 auto' }} />}
+                      </div>
+                    )
+                  })}
+                </div>
+                {/* Grid ore + coloane zile */}
+                <div style={{ display: 'flex', height: `${gridHeight}px`, position: 'relative' }}>
+                  {/* Ore */}
+                  <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px` }}>
+                    {Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR).map(h => (
+                      <div key={h} style={{ position: 'absolute', top: `${(h - GRID_START_HOUR) * 60 * PX_PER_MIN}px`, width: '100%', padding: '0 8px', color: '#BBB', fontSize: '11px', lineHeight: `${60 * PX_PER_MIN}px`, borderBottom: '1px solid #F0EAE0' }}>
+                        {String(h % 24).padStart(2, '0')}:00
+                      </div>
+                    ))}
+                  </div>
+                  {/* Coloane zile */}
+                  {weekDays.map((d, di) => {
+                    const progZi = programari.filter(p => p.data?.trim() === dateStr(d).trim() && p.status !== 'cancelled')
+                    const isToday = d.toDateString() === new Date().toDateString()
+                    return (
+                      <div key={di} style={{ flex: 1, position: 'relative', height: `${gridHeight}px`, borderRight: di < 6 ? '1px solid #F0EAE0' : 'none', background: isToday ? 'rgba(155,27,48,0.015)' : 'transparent' }}>
+                        {/* Linii ore */}
+                        {Array.from({ length: GRID_HOURS }, (_, i) => i).map(i => (
+                          <div key={i} style={{ position: 'absolute', top: `${i * 60 * PX_PER_MIN}px`, left: 0, right: 0, height: `${60 * PX_PER_MIN}px`, borderBottom: '1px solid #F0EAE0' }} />
+                        ))}
+                        {/* Linii 30 min */}
+                        {Array.from({ length: GRID_HOURS }, (_, i) => i).map(i => (
+                          <div key={`h${i}`} style={{ position: 'absolute', top: `${(i * 60 + 30) * PX_PER_MIN}px`, left: 0, right: 0, borderBottom: '1px solid #F5EEE8' }} />
+                        ))}
+                        {/* Slot click săptămânal */}
+                        {Array.from({ length: GRID_HOURS * 4 }, (_, i) => {
+                          const totalMin = GRID_START_HOUR * 60 + i * 15
+                          const h = Math.floor(totalMin / 60)
+                          const m = totalMin % 60
+                          const timeStr = `${String(h % 24).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+                          const topPx = i * 15 * PX_PER_MIN
+                          return (
+                            <div key={i} onClick={e => { e.stopPropagation(); setViewDate(d); setSlotPopup({ top: topPx, time: timeStr }) }}
+                              style={{ position: 'absolute', top: `${topPx}px`, left: 0, right: 0, height: `${15 * PX_PER_MIN}px`, zIndex: 1, cursor: 'pointer' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(155,27,48,0.05)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'} />
+                          )
+                        })}
+                        {/* Programări */}
+                        {progZi.map(p => {
+                          const startMin = p.ora ? timeToMin(p.ora) : 9 * 60
+                          const dur = Number(p.durata) || 60
+                          const topPx = (startMin - GRID_START_HOUR * 60) * PX_PER_MIN
+                          const heightPx = Math.max(dur * PX_PER_MIN, 20)
+                          const color = STATUS_COLORS[p.status] || STATUS_COLORS.confirmed
+                          return (
+                            <div key={p.id} onClick={() => {
+                              const found = clienti.find(c => c.telefon === p.telefon)
+                              setSelectedClient(found || { id: `temp_${p.id}`, nume: p.nume, telefon: p.telefon, email: '', data_nastere: '', observatii: '', sursa: 'site' })
+                            }} style={{ position: 'absolute', top: `${topPx}px`, left: '2px', right: '2px', height: `${heightPx}px`, background: color + '22', border: `1.5px solid ${color}`, borderRadius: '6px', padding: '2px 4px', overflow: 'hidden', zIndex: 10, cursor: 'pointer' }}>
+                              <p style={{ fontSize: '10px', fontWeight: 'bold', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1C1C1C' }}>{p.ora} {p.nume}</p>
+                              {heightPx > 28 && <p style={{ fontSize: '9px', color: '#666', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu}</p>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW ZILNIC */}
+            {viewMode === 'day' && <div style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', display: 'flex' }}>
               {/* Hour labels column */}
               <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px`, overflow: 'visible' }}>
                 {Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR).map(h => (
@@ -1136,11 +1265,13 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {progAzi.length === 0 && (
+            {progAzi.length === 0 && viewMode === 'day' && (
               <div style={{ textAlign: 'center', padding: '40px', color: '#AAA', fontSize: '15px' }}>
                 Nicio programare pentru această zi.
               </div>
             )}
+            </div>}
+
           </div>
         )}
 
@@ -1787,6 +1918,62 @@ export default function AdminDashboard() {
           )
         })}
       </nav>
+
+      {/* Modal orar lucru */}
+      {scheduleModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '24px', padding: '32px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 'normal', margin: 0, color: s.ruby }}>
+                {scheduleModal === 'repetitiv' && '🔁 Orar repetitiv'}
+                {scheduleModal === 'azi' && '📋 Orar pentru azi'}
+                {scheduleModal === 'inchide' && '🔒 Închide ziua de lucru'}
+              </h3>
+              <button onClick={() => setScheduleModal(null)} style={{ background: '#F0EAE0', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+
+            {scheduleModal === 'repetitiv' && (
+              <div>
+                <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Setează orarul săptămânal implicit — se aplică în fiecare săptămână.</p>
+                {['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'].map(zi => (
+                  <div key={zi} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                    <span style={{ width: '80px', fontSize: '13px', color: '#555' }}>{zi}</span>
+                    <input type="time" defaultValue="09:00" className="input-field" style={{ flex: 1 }} />
+                    <span style={{ fontSize: '12px', color: '#999' }}>—</span>
+                    <input type="time" defaultValue="19:00" className="input-field" style={{ flex: 1 }} />
+                  </div>
+                ))}
+                <button className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '14px', marginTop: '16px' }} onClick={() => setScheduleModal(null)}>SALVEAZĂ ORARUL</button>
+              </div>
+            )}
+
+            {scheduleModal === 'azi' && (
+              <div>
+                <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Modifică orarul doar pentru <strong>{dateStr(viewDate)}</strong> — nu afectează celelalte zile.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '13px', color: '#555' }}>Program:</span>
+                  <input type="time" defaultValue="09:00" className="input-field" style={{ flex: 1 }} />
+                  <span style={{ fontSize: '12px', color: '#999' }}>—</span>
+                  <input type="time" defaultValue="19:00" className="input-field" style={{ flex: 1 }} />
+                </div>
+                <button className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '14px' }} onClick={() => setScheduleModal(null)}>SALVEAZĂ PENTRU AZI</button>
+              </div>
+            )}
+
+            {scheduleModal === 'inchide' && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+                <p style={{ color: '#666', fontSize: '14px', marginBottom: '8px' }}>Ești sigură că vrei să marchezi <strong>{dateStr(viewDate)}</strong> ca zi liberă?</p>
+                <p style={{ color: '#AAA', fontSize: '12px', marginBottom: '28px' }}>Clientele nu vor mai putea face programări în această zi.</p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => setScheduleModal(null)} style={{ flex: 1, padding: '13px', borderRadius: '50px', border: '1.5px solid #DDD', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#555' }}>Anulează</button>
+                  <button onClick={() => setScheduleModal(null)} style={{ flex: 1, padding: '13px', borderRadius: '50px', border: 'none', background: '#EF4444', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>Închide ziua</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* FAB fix desktop — jos dreapta */}
       <div className="admin-fab-desktop" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 200, flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
