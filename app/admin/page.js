@@ -598,6 +598,7 @@ export default function AdminDashboard() {
   const [analiticaKey, setAnaliticaKey] = useState(0)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
+  const [slotPopup, setSlotPopup] = useState(null)
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
@@ -945,32 +946,97 @@ export default function AdminDashboard() {
               {/* Hour labels column */}
               <div style={{ width: '70px', flexShrink: 0, borderRight: '1px solid #F0EAE0', position: 'relative', height: `${gridHeight}px` }}>
                 {Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR).map(h => (
-                  <div key={h} style={{
-                    position: 'absolute', top: `${(h - GRID_START_HOUR) * 60 * PX_PER_MIN}px`,
-                    width: '100%', padding: '0 10px',
-                    color: '#999', fontSize: '12px', lineHeight: `${60 * PX_PER_MIN}px`,
-                    borderBottom: '1px solid #F0EAE0',
-                  }}>
-                    {String(h % 24).padStart(2, '0')}:00
+                  <div key={h} style={{ position: 'absolute', top: `${(h - GRID_START_HOUR) * 60 * PX_PER_MIN}px`, width: '100%' }}>
+                    {/* Ora exactă */}
+                    <div style={{ padding: '0 10px', color: '#999', fontSize: '12px', lineHeight: `${15 * PX_PER_MIN}px`, borderBottom: '1px solid #F0EAE0' }}>
+                      {String(h % 24).padStart(2, '0')}:00
+                    </div>
+                    {/* :15 */}
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8', display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
+                      <span style={{ fontSize: '9px', color: '#CCC' }}>:15</span>
+                    </div>
+                    {/* :30 */}
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px solid #EDE4DC', display: 'flex', alignItems: 'center', paddingLeft: '18px' }}>
+                      <span style={{ fontSize: '10px', color: '#BBB' }}>{String(h % 24).padStart(2,'0')}:30</span>
+                    </div>
+                    {/* :45 */}
+                    <div style={{ height: `${15 * PX_PER_MIN}px`, borderBottom: '1px dashed #F5EEE8', display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
+                      <span style={{ fontSize: '9px', color: '#CCC' }}>:45</span>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Bookings area */}
-              <div style={{ flex: 1, position: 'relative', height: `${gridHeight}px` }}>
-                {/* Hour grid lines */}
+              <div style={{ flex: 1, position: 'relative', height: `${gridHeight}px` }} onClick={() => setSlotPopup(null)}>
+                {/* 15-minute clickable slots */}
+                {Array.from({ length: GRID_HOURS * 4 }, (_, i) => {
+                  const totalMin = GRID_START_HOUR * 60 + i * 15
+                  const h = Math.floor(totalMin / 60)
+                  const m = totalMin % 60
+                  const timeStr = `${String(h % 24).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+                  const topPx = i * 15 * PX_PER_MIN
+                  const isHalfHour = m === 0 || m === 30
+                  return (
+                    <div key={i}
+                      onClick={e => { e.stopPropagation(); setSlotPopup({ top: topPx, time: timeStr }) }}
+                      style={{
+                        position: 'absolute', top: `${topPx}px`, left: 0, right: 0,
+                        height: `${15 * PX_PER_MIN}px`,
+                        borderBottom: isHalfHour ? '1px solid #EDE4DC' : '1px dashed #F5EEE8',
+                        zIndex: 1, cursor: 'pointer',
+                        background: (h + GRID_START_HOUR) === 12 && i % 4 < 4 ? 'transparent' : 'transparent',
+                        transition: 'background 0.12s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(155,27,48,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    />
+                  )
+                })}
+
+                {/* Pauza pranz label */}
                 {Array.from({ length: GRID_HOURS }, (_, i) => i).map(i => (
-                  <div key={i} style={{
-                    position: 'absolute', top: `${i * 60 * PX_PER_MIN}px`,
-                    left: 0, right: 0, height: `${60 * PX_PER_MIN}px`,
-                    borderBottom: '1px solid #F0EAE0',
-                    background: (i + GRID_START_HOUR) === 12 ? '#FFF8F0' : 'transparent',
-                  }}>
-                    {(i + GRID_START_HOUR) === 12 && (
+                  (i + GRID_START_HOUR) === 12 && (
+                    <div key={i} style={{
+                      position: 'absolute', top: `${i * 60 * PX_PER_MIN}px`,
+                      left: 0, right: 0, height: `${60 * PX_PER_MIN}px`,
+                      background: '#FFF8F0', zIndex: 0, pointerEvents: 'none',
+                    }}>
                       <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#C9A84C', fontSize: '12px', opacity: 0.7 }}>Pauză prânz</span>
-                    )}
-                  </div>
+                    </div>
+                  )
                 ))}
+
+                {/* Slot popup menu */}
+                {slotPopup && (
+                  <div onClick={e => e.stopPropagation()} style={{
+                    position: 'absolute', top: `${slotPopup.top}px`, left: '50%', transform: 'translateX(-50%)',
+                    background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                    zIndex: 50, minWidth: '200px', overflow: 'hidden', border: '1px solid #EDE4DC',
+                  }}>
+                    <div style={{ background: s.nude, padding: '8px 14px', fontSize: '12px', color: s.ruby, fontWeight: 'bold', letterSpacing: '1px', borderBottom: '1px solid #EDE4DC' }}>
+                      {slotPopup.time}
+                    </div>
+                    <button onClick={() => {
+                      setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: slotPopup.time, serviciu: '', plata: 'numerar', observatii: '' })
+                      setSlotPopup(null)
+                      setShowAddForm(true)
+                    }} style={{ display: 'block', width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      📅 Programare nouă
+                    </button>
+                    <button onClick={() => {
+                      setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: slotPopup.time, serviciu: 'Timp blocat', plata: 'numerar', observatii: '', nume: 'Blocat', telefon: '—' })
+                      setSlotPopup(null)
+                      setShowAddForm(true)
+                    }} style={{ display: 'block', width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderTop: '1px solid #F0EAE0' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      🔒 Blochează timp
+                    </button>
+                  </div>
+                )}
 
                 {/* Booking blocks */}
                 {progAzi.map((p, idx) => {
