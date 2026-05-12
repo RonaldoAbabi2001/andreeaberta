@@ -599,6 +599,7 @@ export default function AdminDashboard() {
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
   const [slotPopup, setSlotPopup] = useState(null)
+  const [showDesktopFab, setShowDesktopFab] = useState(false)
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: ''
@@ -1702,7 +1703,10 @@ export default function AdminDashboard() {
                 style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px' }}>
                 <span style={{ fontSize: '18px' }}>📅</span> Programare nouă
               </button>
-              <button onClick={() => { alert('Blochează timp — în curând'); setShowFabMenu(false) }}
+              <button onClick={() => {
+                  setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: '', serviciu: 'Timp blocat', plata: 'numerar', observatii: '', nume: 'Blocat', telefon: '—' })
+                  setShowAddForm(true); setShowFabMenu(false)
+                }}
                 style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px' }}>
                 <span style={{ fontSize: '18px' }}>🔒</span> Blochează timp
               </button>
@@ -1731,6 +1735,36 @@ export default function AdminDashboard() {
           )
         })}
       </nav>
+
+      {/* FAB fix desktop — jos dreapta */}
+      <div className="admin-fab-desktop" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 200, flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+        {showDesktopFab && (
+          <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: '8px', minWidth: '200px', border: '1px solid #EDE4DC' }}>
+            <button onClick={() => { openAddForm(); setShowDesktopFab(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span style={{ fontSize: '18px' }}>📅</span> Programare nouă
+            </button>
+            <button onClick={() => {
+              setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: '', serviciu: 'Timp blocat', plata: 'numerar', observatii: '', nume: 'Blocat', telefon: '—' })
+              setShowAddForm(true)
+              setShowDesktopFab(false)
+            }}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C', borderRadius: '10px', borderTop: '1px solid #F0EAE0' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span style={{ fontSize: '18px' }}>🔒</span> Blochează timp
+            </button>
+          </div>
+        )}
+        <button onClick={() => setShowDesktopFab(v => !v)}
+          style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #F0DC8A, #C9A84C)', border: 'none', cursor: 'pointer', fontSize: '30px', color: '#1C1C1C', fontWeight: 'bold', boxShadow: '0 6px 24px rgba(201,168,76,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, transform: showDesktopFab ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s, box-shadow 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 10px 32px rgba(201,168,76,0.7)'}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 6px 24px rgba(201,168,76,0.55)'}>
+          +
+        </button>
+      </div>
 
       {/* Dialog confirmare suprapunere */}
       {overlapWarning && (
