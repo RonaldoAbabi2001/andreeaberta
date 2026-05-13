@@ -4,6 +4,102 @@ import { useState, useEffect } from 'react'
 const TOKEN = 'evolis2026secret'
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 
+function GaleriePanel({ serviciu, onClose }) {
+  const [photos, setPhotos] = useState([])
+  const [url, setUrl] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/admin/servicii-galerie?serviciu_id=${serviciu.id}`, { headers: { 'x-admin-token': TOKEN } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setPhotos(d); setLoading(false) })
+  }, [serviciu.id])
+
+  async function addPhoto() {
+    if (!url.trim()) return
+    setAdding(true)
+    const res = await fetch('/api/admin/servicii-galerie', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      body: JSON.stringify({ serviciu_id: serviciu.id, url: url.trim() })
+    })
+    const data = await res.json()
+    setPhotos(prev => [...prev, { id: data.id, serviciu_id: serviciu.id, url: url.trim(), titlu: '' }])
+    setUrl('')
+    setAdding(false)
+  }
+
+  async function deletePhoto(id) {
+    await fetch('/api/admin/servicii-galerie', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      body: JSON.stringify({ id })
+    })
+    setPhotos(prev => prev.filter(p => p.id !== id))
+  }
+
+  const inp = { width: '100%', border: '1.5px solid #E0D0C0', borderRadius: '10px', padding: '10px 13px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: s.text, boxSizing: 'border-box' }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 400 }} />
+      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '560px', maxWidth: '95vw', maxHeight: '85vh', background: '#F8F4F0', zIndex: 401, borderRadius: '20px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Header */}
+        <div style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, padding: '18px 22px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: '10px', opacity: 0.7, letterSpacing: '1.5px', marginBottom: '2px' }}>GALERIE EXEMPLE</div>
+            <div style={{ fontSize: '16px', fontFamily: 'Georgia, serif' }}>{serviciu.nume}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: 'white', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
+          {/* Add URL */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', color: '#AAA', display: 'block', marginBottom: '6px' }}>ADAUGĂ IMAGINE (URL)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPhoto()}
+                placeholder="https://... (link imagine publică)" style={{ ...inp, flex: 1 }} />
+              <button onClick={addPhoto} disabled={adding || !url.trim()}
+                style={{ background: adding ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 18px', cursor: adding ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                {adding ? '...' : '+ Adaugă'}
+              </button>
+            </div>
+            <p style={{ fontSize: '11px', color: '#BBB', marginTop: '5px' }}>Poți folosi link-uri de pe Google Drive, Instagram, orice URL public.</p>
+          </div>
+
+          {/* Preview URL în timp real */}
+          {url.trim() && (
+            <div style={{ marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', maxHeight: '200px' }}>
+              <img src={url.trim()} alt="preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }}
+                onError={e => { e.target.style.display = 'none' }} />
+            </div>
+          )}
+
+          {/* Grid poze existente */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#AAA' }}>Se încarcă...</div>
+          ) : photos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#CCC' }}>
+              <div style={{ fontSize: '36px', marginBottom: '10px' }}>📷</div>
+              <div style={{ fontSize: '13px' }}>Nicio imagine adăugată încă.</div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {photos.map(ph => (
+                <div key={ph.id} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
+                  <img src={ph.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <button onClick={() => deletePhoto(ph.id)}
+                    style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', color: 'white', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 const EMPTY = { nume: '', pret: '', durata: 60 }
 
 function ServiciuModal({ serviciu, onClose, onSaved }) {
@@ -85,6 +181,7 @@ export default function ServiciiTab() {
   const [showModal, setShowModal] = useState(false)
   const [editServiciu, setEditServiciu] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [galerieServiciu, setGalerieServiciu] = useState(null)
 
   async function load() {
     const res = await fetch('/api/admin/servicii', { headers: { 'x-admin-token': TOKEN } })
@@ -166,7 +263,9 @@ export default function ServiciiTab() {
               <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>min</span>
             </div>
 
-            <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <button onClick={() => setGalerieServiciu(serv)}
+                style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#4F46E5' }} title="Galerie exemple">📷</button>
               <button onClick={() => { setEditServiciu(serv); setShowModal(true) }}
                 style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>✏️</button>
               {confirmDelete === serv.id ? (
@@ -194,6 +293,10 @@ export default function ServiciiTab() {
           onClose={() => { setShowModal(false); setEditServiciu(null) }}
           onSaved={() => { setShowModal(false); setEditServiciu(null); load() }}
         />
+      )}
+
+      {galerieServiciu && (
+        <GaleriePanel serviciu={galerieServiciu} onClose={() => setGalerieServiciu(null)} />
       )}
     </div>
   )

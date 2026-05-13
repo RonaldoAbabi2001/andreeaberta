@@ -1,18 +1,23 @@
 import Link from 'next/link'
 import SpinWheel from './components/SpinWheel'
 import ClientHeaderButton from './components/ClientHeaderButton'
+import ServiciiGrid from './components/ServiciiGrid'
+import { neon } from '@neondatabase/serverless'
 
-const SERVICII = [
-  { name: 'Manichiură Clasică', pret: '70 lei', durata: '30 min' },
-  { name: 'Rubber Base cu Apex + 1 Design', pret: '145 lei', durata: '1h 20min' },
-  { name: 'Ojă Semi + Culoare', pret: '140 lei', durata: '1h' },
-  { name: 'Gel pe Unghia Naturală', pret: '150 lei', durata: '1h' },
-  { name: 'Construcție Gel/Polygel', pret: 'de la 165 lei', durata: '1h 30min' },
-  { name: 'Întreținere Gel/Polygel', pret: 'de la 145 lei', durata: '1h 30min' },
-  { name: 'Construcție SLIM', pret: '210 lei', durata: '1h 40min' },
-]
+async function getServiciiSiGalerie() {
+  try {
+    const sql = neon(process.env.DATABASE_URL)
+    const servicii = await sql`SELECT * FROM servicii WHERE activ = true AND salon_id = 'evolis' ORDER BY ordine ASC, creat ASC`
+    const galerie = await sql`SELECT * FROM servicii_galerie WHERE salon_id = 'evolis' ORDER BY serviciu_id, ordine ASC`
+    return { servicii, galerie }
+  } catch {
+    return { servicii: [], galerie: [] }
+  }
+}
 
-export default function Home() {
+export default async function Home() {
+  const { servicii, galerie } = await getServiciiSiGalerie()
+
   return (
     <main style={{ background: '#fff', minHeight: '100vh' }}>
 
@@ -68,25 +73,15 @@ export default function Home() {
       </section>
 
       {/* Servicii */}
-      <section style={{ padding: '80px 40px', maxWidth: '1000px', margin: '0 auto' }}>
+      <section style={{ padding: '80px 40px', maxWidth: '1100px', margin: '0 auto' }}>
         <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>
           ✦ Ce vă oferim ✦
         </p>
         <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>
-          Servicii & Tarife
+          Servicii
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-          {SERVICII.map((s) => (
-            <div key={s.name} className="card-3d" style={{ padding: '28px', borderTop: '3px solid #9B1B30' }}>
-              <h4 style={{ fontSize: '16px', fontFamily: 'Georgia, serif', marginBottom: '12px', color: '#1C1C1C' }}>{s.name}</h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#9B1B30', fontWeight: 'bold', fontSize: '18px' }}>{s.pret}</span>
-                <span style={{ color: '#999', fontSize: '13px', background: '#F7EFE5', padding: '4px 12px', borderRadius: '20px' }}>{s.durata}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ textAlign: 'center', marginTop: '40px' }}>
+        <ServiciiGrid servicii={servicii} galerie={galerie} />
+        <div style={{ textAlign: 'center', marginTop: '50px' }}>
           <Link href="/programare" className="btn-primary">
             REZERVAȚI O ȘEDINȚĂ
           </Link>
