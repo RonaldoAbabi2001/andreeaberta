@@ -1,7 +1,138 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const TOKEN = 'evolis2026secret'
+
+// Code128B minimal encoder — pure JS, no dependencies
+const C128B_PATTERNS = [
+  [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],
+  [1,3,1,2,2,2],[1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],
+  [2,2,1,3,1,2],[2,3,1,2,1,2],[1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],
+  [1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],[2,2,3,2,1,1],[2,2,1,1,3,2],
+  [2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],[3,1,1,2,2,2],
+  [3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],
+  [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3],
+  [1,3,1,3,2,1],[1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3],
+  [2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1],
+  [1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],[3,1,3,1,2,1],[2,1,1,3,3,1],
+  [2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],[3,1,1,1,2,3],
+  [3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1],
+  [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2],
+  [1,2,1,1,2,4],[1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4],
+  [1,1,2,4,1,2],[1,2,2,1,1,4],[1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1],
+  [2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],[2,4,1,1,1,2],[1,3,4,1,1,1],
+  [1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],[1,2,4,1,1,2],
+  [1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1],
+  [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],
+  [1,1,4,1,1,3],[1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],
+  [1,1,4,1,3,1],[3,1,1,1,4,1],[4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],
+  [2,1,1,2,3,2],
+]
+const START_B = 104, STOP = 106
+const STOP_BARS = [2,3,3,1,1,1,2]
+
+function generateCode128B(text) {
+  const chars = []
+  let checksum = START_B
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i) - 32
+    chars.push(code)
+    checksum += code * (i + 1)
+  }
+  const check = checksum % 103
+  const all = [START_B, ...chars, check]
+  const widths = []
+  for (const c of all) widths.push(...C128B_PATTERNS[c])
+  widths.push(...STOP_BARS)
+  return widths
+}
+
+function BarcodeSVG({ code, label, width = 260, height = 80 }) {
+  const widths = generateCode128B(code)
+  const total = widths.reduce((a, b) => a + b, 0)
+  const scale = (width - 20) / total
+  const barH = height - 20
+  let x = 10
+  const bars = widths.map((w, i) => {
+    const barW = w * scale
+    const el = i % 2 === 0
+      ? <rect key={i} x={x} y={0} width={barW} height={barH} fill="black" />
+      : null
+    x += barW
+    return el
+  })
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {bars}
+      <text x={width / 2} y={height - 2} textAnchor="middle" fontSize="9" fontFamily="Courier New, monospace" letterSpacing="2">{label || code}</text>
+    </svg>
+  )
+}
+
+function BarcodeCard({ produs }) {
+  const ref = useRef(null)
+
+  function downloadPNG() {
+    const svg = ref.current?.querySelector('svg')
+    if (!svg) return
+    const xml = new XMLSerializer().serializeToString(svg)
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = svg.width.baseVal.value * 2
+      canvas.height = svg.height.baseVal.value * 2
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(2, 2)
+      ctx.drawImage(img, 0, 0)
+      const a = document.createElement('a')
+      a.download = `barcode-${produs.barcode}.png`
+      a.href = canvas.toDataURL('image/png')
+      a.click()
+    }
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)))
+  }
+
+  function printBarcode() {
+    const svg = ref.current?.querySelector('svg')
+    if (!svg) return
+    const xml = new XMLSerializer().serializeToString(svg)
+    const win = window.open('', '_blank')
+    win.document.write(`
+      <html><head><title>Barcode ${produs.barcode}</title>
+      <style>body{margin:20px;font-family:Georgia,serif;text-align:center}h3{font-weight:normal;font-size:14px;color:#555}</style>
+      </head><body>
+      <h3>${produs.marca ? produs.marca + ' — ' : ''}${produs.nume}</h3>
+      ${xml}
+      <script>window.onload=()=>{window.print();window.close()}<\/script>
+      </body></html>`)
+    win.document.close()
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+      <div style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '14px' }}>COD DE BARE</div>
+      <div ref={ref} style={{ background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', display: 'inline-block', marginBottom: '14px' }}>
+        <BarcodeSVG code={produs.barcode} width={260} height={70} />
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <button onClick={() => navigator.clipboard.writeText(produs.barcode)}
+          style={{ background: s.nude, border: `1.5px solid ${s.gold}`, borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', color: s.ruby, fontFamily: 'Georgia, serif' }}>
+          📋 Copiază cod
+        </button>
+        <button onClick={downloadPNG}
+          style={{ background: s.nude, border: `1.5px solid ${s.gold}`, borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', color: s.ruby, fontFamily: 'Georgia, serif' }}>
+          ⬇️ Descarcă PNG
+        </button>
+        <button onClick={printBarcode}
+          style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, border: 'none', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontSize: '12px', color: 'white', fontFamily: 'Georgia, serif' }}>
+          🖨️ Printează
+        </button>
+      </div>
+    </div>
+  )
+}
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 
 const CATEGORII = [
@@ -268,18 +399,7 @@ function FisaTehnica({ produs, onBack, onEdit, onDelete, onStocChange }) {
       )}
 
       {/* Barcode */}
-      {produs.barcode && (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '6px' }}>COD PRODUS</div>
-            <div style={{ fontFamily: 'Courier New, monospace', fontSize: '20px', letterSpacing: '3px', color: s.text }}>{produs.barcode}</div>
-          </div>
-          <button onClick={() => navigator.clipboard.writeText(produs.barcode)}
-            style={{ background: s.nude, border: `1.5px solid ${s.gold}`, borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>
-            📋 Copiază cod
-          </button>
-        </div>
-      )}
+      {produs.barcode && <BarcodeCard produs={produs} />}
     </div>
   )
 }
