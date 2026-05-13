@@ -838,6 +838,7 @@ export default function AdminDashboard() {
           {[
             { id: 'calendar', icon: '📅', label: 'Calendar' },
             { id: 'clienti', icon: '👤', label: 'Clienți' },
+            { id: 'produse', icon: '🧴', label: 'Produse & Stoc' },
             { id: 'analitica', icon: '📈', label: 'Analitica' },
             { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
             { id: 'import', icon: '📥', label: 'Import CSV' },
@@ -888,7 +889,6 @@ export default function AdminDashboard() {
           )}
           {[
             { id: 'servicii', icon: '💅', label: 'Servicii' },
-            { id: 'produse', icon: '🧴', label: 'Produse & Stoc' },
           ].map(item => {
             const active = tab === item.id
             return (
