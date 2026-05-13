@@ -591,7 +591,10 @@ function SyncSheetsButton({ token, onDone }) {
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [tab, setTab] = useState('calendar')
+  const [tab, setTab] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('adminTab') || 'calendar'
+    return 'calendar'
+  })
   const [programari, setProgramari] = useState([])
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
@@ -838,7 +841,7 @@ export default function AdminDashboard() {
           ].map(item => {
             const active = tab === item.id
             return (
-              <button key={item.id} onClick={() => setTab(item.id)} title={sidebarCollapsed ? item.label : ''}
+              <button key={item.id} onClick={() => { setTab(item.id); localStorage.setItem('adminTab', item.id) }} title={sidebarCollapsed ? item.label : ''}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
                   width: '100%', textAlign: 'left',
@@ -1929,7 +1932,7 @@ export default function AdminDashboard() {
         ].map(item => {
           const active = tab === item.id
           return (
-            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false) }}
+            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false); localStorage.setItem('adminTab', item.id) }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
               <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
@@ -1970,7 +1973,7 @@ export default function AdminDashboard() {
         ].map(item => {
           const active = tab === item.id
           return (
-            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false) }}
+            <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false); localStorage.setItem('adminTab', item.id) }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
               <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
               <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
@@ -2036,8 +2039,8 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* FAB fix desktop — jos dreapta */}
-      <div className="admin-fab-desktop" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 200, flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+      {/* FAB fix desktop — jos dreapta, doar pe calendar */}
+      <div className="admin-fab-desktop" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 200, flexDirection: 'column', alignItems: 'flex-end', gap: '8px', display: tab === 'calendar' ? 'flex' : 'none' }}>
         {showDesktopFab && (
           <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: '8px', minWidth: '200px', border: '1px solid #EDE4DC' }}>
             <button onClick={() => { openAddForm(); setShowDesktopFab(false) }}
