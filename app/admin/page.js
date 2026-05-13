@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ProdusTab from '../components/ProdusTab'
+import ServiciiTab from '../components/ServiciiTab'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -189,7 +190,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
 
   async function addNewProg(e, forceOverlap = false) {
     if (e && e.preventDefault) e.preventDefault()
-    const serv = SERVICII.find(s => s.name === newProg.serviciu)
+    const serv = serviciiDB.find(s => s.nume === newProg.serviciu)
     const durataNoua = serv?.durata || 0
 
     if (!forceOverlap && newProg.ora && durataNoua) {
@@ -336,7 +337,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
                   <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })}
                     style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }}>
                     <option value="">Alege serviciul</option>
-                    {SERVICII.map(sv => <option key={sv.name} value={sv.name}>{sv.name} — {sv.pret} lei ({sv.durata} min)</option>)}
+                    {serviciiDB.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
                   </select>
                 </div>
 
@@ -624,6 +625,7 @@ export default function AdminDashboard() {
   const [showDesktopFab, setShowDesktopFab] = useState(false)
   const [acSuggestions, setAcSuggestions] = useState([])
   const [acField, setAcField] = useState(null)
+  const [serviciiDB, setServiciiDB] = useState([])
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: '', tip_vizita: 'client'
@@ -640,6 +642,8 @@ export default function AdminDashboard() {
     if (!token) return
     fetchProgramari()
     fetchClienti()
+    fetch('/api/admin/servicii', { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setServiciiDB(d) })
   }, [token])
 
   useEffect(() => {
@@ -686,7 +690,7 @@ export default function AdminDashboard() {
 
   async function addProgramare(e, forceOverlap = false) {
     if (e && e.preventDefault) e.preventDefault()
-    const serv = SERVICII.find(s => s.name === newProg.serviciu)
+    const serv = serviciiDB.find(s => s.nume === newProg.serviciu)
     const durataNoua = serv?.durata || 0
 
     if (!forceOverlap && newProg.ora && durataNoua) {
@@ -835,6 +839,7 @@ export default function AdminDashboard() {
             { id: 'calendar', icon: '📅', label: 'Calendar' },
             { id: 'clienti', icon: '👤', label: 'Clienți' },
             { id: 'produse', icon: '🧴', label: 'Produse' },
+            { id: 'servicii', icon: '💅', label: 'Servicii' },
             { id: 'analitica', icon: '📈', label: 'Analitica' },
             { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
             { id: 'import', icon: '📥', label: 'Import CSV' },
@@ -1768,6 +1773,7 @@ export default function AdminDashboard() {
 
         {/* PRODUSE TAB */}
         {tab === 'produse' && <ProdusTab />}
+        {tab === 'servicii' && <ServiciiTab />}
 
       </div>
 
@@ -1873,7 +1879,7 @@ export default function AdminDashboard() {
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Serviciu *</label>
                 <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })} className="input-field">
                   <option value="">Alege serviciul</option>
-                  {SERVICII.map(sv => <option key={sv.name} value={sv.name}>{sv.name} — {sv.pret} lei ({sv.durata} min)</option>)}
+                  {serviciiDB.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
                 </select>
               </div>
 
@@ -1969,7 +1975,7 @@ export default function AdminDashboard() {
         {/* Ultimele 2 tab-uri */}
         {[
           { id: 'produse', icon: '🧴', label: 'Produse' },
-          { id: 'analitica', icon: '📈', label: 'Analitica' },
+          { id: 'servicii', icon: '💅', label: 'Servicii' },
         ].map(item => {
           const active = tab === item.id
           return (
