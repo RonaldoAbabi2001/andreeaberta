@@ -490,11 +490,6 @@ export default function ProdusTab() {
           <h2 style={{ fontSize: '26px', fontWeight: 'normal', margin: 0, color: s.text }}>Stoc & Produse</h2>
           <p style={{ fontSize: '13px', color: '#999', margin: '4px 0 0' }}>Inventar salon EVOLIS</p>
         </div>
-        <button onClick={() => { setEditProdus(null); setShowModal(true) }}
-          className="admin-add-desktop"
-          style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '10px 22px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 16px rgba(155,27,48,0.3)' }}>
-          + Adaugă produs
-        </button>
       </div>
 
       {/* Stats */}
@@ -529,15 +524,19 @@ export default function ProdusTab() {
       </div>
 
       {/* Grid produse */}
-      {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🧴</div>
-          <div style={{ fontSize: '16px', marginBottom: '6px' }}>Niciun produs</div>
-          <div style={{ fontSize: '13px' }}>{produse.length === 0 ? 'Adaugă primul produs în stoc.' : 'Niciun produs pentru filtrul selectat.'}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+
+        {/* Caseta Adaugă — mereu prima */}
+        <div onClick={() => { setEditProdus(null); setShowModal(true) }}
+          style={{ borderRadius: '18px', border: `2px dashed ${s.gold}`, background: 'linear-gradient(135deg, #FFFDF5, #FFF8E7)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '180px', gap: '10px', transition: 'all 0.18s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${s.nude}, #F5EDD0)`; e.currentTarget.style.borderColor = s.ruby }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #FFFDF5, #FFF8E7)'; e.currentTarget.style.borderColor = s.gold }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.gold}, #F0DC8A)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', color: '#1C1C1C', boxShadow: '0 4px 14px rgba(201,168,76,0.4)', fontWeight: 'bold' }}>+</div>
+          <div style={{ fontSize: '14px', color: s.ruby, fontWeight: 'bold', letterSpacing: '0.5px' }}>Adaugă produs</div>
+          <div style={{ fontSize: '11px', color: '#AAA' }}>Scanează sau completează manual</div>
         </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
-          {filtered.map(p => {
+
+        {filtered.map(p => {
             const cat = CAT_MAP[p.categorie] || { color: '#6B7280', bg: '#F3F4F6' }
             const stocColor = (p.stoc_bucati || 0) === 0 ? '#EF4444' : (p.stoc_bucati || 0) === 1 ? '#F59E0B' : '#10B981'
             return (
@@ -569,8 +568,7 @@ export default function ProdusTab() {
               </div>
             )
           })}
-        </div>
-      )}
+      </div>
 
       {/* Modal adaugare */}
       {showModal && (
