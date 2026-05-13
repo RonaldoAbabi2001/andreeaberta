@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ProdusTab from '../components/ProdusTab'
 import ServiciiTab from '../components/ServiciiTab'
+import MeniuSalonTab from '../components/MeniuSalonTab'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -839,6 +840,7 @@ export default function AdminDashboard() {
             { id: 'calendar', icon: '📅', label: 'Calendar' },
             { id: 'clienti', icon: '👤', label: 'Clienți' },
             { id: 'produse', icon: '🧴', label: 'Produse & Stoc' },
+            { id: 'meniu', icon: '✨', label: 'Meniu Salon' },
             { id: 'analitica', icon: '📈', label: 'Analitica' },
             { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
             { id: 'import', icon: '📥', label: 'Import CSV' },
@@ -875,44 +877,6 @@ export default function AdminDashboard() {
                   <span style={{ fontSize: sidebarCollapsed ? '18px' : '16px' }}>{item.icon}</span>
                 </div>
                 {!sidebarCollapsed && <span style={{ fontWeight: active ? '600' : '400' }}>{item.label}</span>}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Meniu Salon — casetă deasupra retragere */}
-        <div style={{ margin: sidebarCollapsed ? '0 6px 10px' : '0 10px 10px', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-          {!sidebarCollapsed && (
-            <div style={{ padding: '8px 14px 6px', fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.35)', fontWeight: 'bold', textTransform: 'uppercase' }}>
-              Meniu Salon
-            </div>
-          )}
-          {[
-            { id: 'servicii', icon: '💅', label: 'Servicii' },
-          ].map(item => {
-            const active = tab === item.id
-            return (
-              <button key={item.id} onClick={() => { setTab(item.id); localStorage.setItem('adminTab', item.id) }} title={sidebarCollapsed ? item.label : ''}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  width: '100%', textAlign: 'left',
-                  padding: sidebarCollapsed ? '11px 0' : '10px 14px',
-                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                  background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-                  border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.6)',
-                  fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap',
-                  transition: 'background 0.18s, color 0.18s',
-                }}>
-                <div style={{
-                  width: '26px', height: '26px', borderRadius: '8px',
-                  background: active ? 'rgba(201,168,76,0.25)' : 'transparent',
-                  border: active ? '1px solid rgba(201,168,76,0.4)' : '1px solid transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  transition: 'all 0.18s',
-                }}>
-                  <span style={{ fontSize: '14px' }}>{item.icon}</span>
-                </div>
-                {!sidebarCollapsed && <span style={{ fontWeight: active ? '600' : '400', fontSize: '13px' }}>{item.label}</span>}
               </button>
             )
           })}
@@ -1806,7 +1770,7 @@ export default function AdminDashboard() {
 
         {/* PRODUSE TAB */}
         {tab === 'produse' && <ProdusTab />}
-        {tab === 'servicii' && <ServiciiTab />}
+        {tab === 'meniu' && <MeniuSalonTab />}
 
       </div>
 
