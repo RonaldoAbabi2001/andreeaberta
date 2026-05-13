@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import ProdusTab from '../components/ProdusTab'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -830,6 +831,7 @@ export default function AdminDashboard() {
           {[
             { id: 'calendar', icon: '📅', label: 'Calendar' },
             { id: 'clienti', icon: '👤', label: 'Clienți' },
+            { id: 'produse', icon: '🧴', label: 'Produse' },
             { id: 'analitica', icon: '📈', label: 'Analitica' },
             { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
             { id: 'import', icon: '📥', label: 'Import CSV' },
@@ -1907,6 +1909,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
+        {/* PRODUSE TAB */}
+        {tab === 'produse' && <ProdusTab />}
+
       {/* Bottom nav — doar mobil */}
       <nav className="admin-bottom-nav" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
@@ -1959,8 +1964,8 @@ export default function AdminDashboard() {
 
         {/* Ultimele 2 tab-uri */}
         {[
+          { id: 'produse', icon: '🧴', label: 'Produse' },
           { id: 'analitica', icon: '📈', label: 'Analitica' },
-          { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
         ].map(item => {
           const active = tab === item.id
           return (
