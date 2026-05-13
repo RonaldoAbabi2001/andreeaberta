@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import ProdusTab from '../components/ProdusTab'
 import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
+import MaterialeUtilizate from '../components/MaterialeUtilizate'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -135,7 +136,7 @@ function DatePickerPopup({ value, onChange, onClose }) {
   )
 }
 
-function ClientDrawer({ client, programari, token, onClose, onSaved }) {
+function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB = [], serviciiDBProp = [] }) {
   const [form, setForm] = useState({ ...client })
   const [saving, setSaving] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
@@ -145,6 +146,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
   const [newProg, setNewProg] = useState({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
   const [showNewDatePicker, setShowNewDatePicker] = useState(false)
   const [drawerOverlapWarning, setDrawerOverlapWarning] = useState(null)
+  const [materialeNouProg, setMaterialeNouProg] = useState([])
   const newDateRef = useRef(null)
 
   const clientProg = programari
@@ -191,7 +193,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
 
   async function addNewProg(e, forceOverlap = false) {
     if (e && e.preventDefault) e.preventDefault()
-    const serv = serviciiDB.find(s => s.nume === newProg.serviciu)
+    const serv = serviciiDBProp.find(s => s.nume === newProg.serviciu)
     const durataNoua = serv?.durata || 0
 
     if (!forceOverlap && newProg.ora && durataNoua) {
@@ -224,6 +226,13 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
         status: 'confirmed'
       })
     })
+    for (const mat of materialeNouProg) {
+      await fetch('/api/admin/materiale', {
+        method: 'POST', headers: authH,
+        body: JSON.stringify({ programare_id: id, produs_id: mat.produs_id || null, produs_nume: mat.produs_nume, marca: mat.marca || '', cantitate: mat.cantitate || 1 })
+      })
+    }
+    setMaterialeNouProg([])
     setShowNewProg(false)
     setNewProg({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
     onSaved()
@@ -338,7 +347,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
                   <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })}
                     style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }}>
                     <option value="">Alege serviciul</option>
-                    {serviciiDB.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
+                    {serviciiDBProp.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
                   </select>
                 </div>
 
@@ -350,6 +359,11 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
                     <option value="numerar">Numerar</option>
                     <option value="transfer">Transfer bancar</option>
                   </select>
+                </div>
+
+                {/* Materiale utilizate */}
+                <div style={{ borderTop: '1px solid #E8DDD0', paddingTop: '12px', marginBottom: '14px' }}>
+                  <MaterialeUtilizate programareId={null} produse={produseDB} onChange={setMaterialeNouProg} />
                 </div>
 
                 <button type="submit" style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '20px', padding: '10px 24px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%' }}>
@@ -401,6 +415,11 @@ function ClientDrawer({ client, programari, token, onClose, onSaved }) {
                         {p.observatii && <p style={{ fontSize: '12px', color: '#999', marginTop: '3px', fontStyle: 'italic' }}>{p.observatii}</p>}
                       </div>
                       <span style={{ fontSize: '11px', background: (SC[p.status] || '#ccc') + '22', color: SC[p.status] || '#ccc', padding: '3px 10px', borderRadius: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{p.status}</span>
+                    </div>
+
+                    {/* Materiale utilizate */}
+                    <div style={{ borderTop: '1px solid #F0EAE0', marginTop: '10px', paddingTop: '10px' }}>
+                      <MaterialeUtilizate programareId={p.id} produse={produseDB} />
                     </div>
 
                     <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
@@ -627,6 +646,8 @@ export default function AdminDashboard() {
   const [acSuggestions, setAcSuggestions] = useState([])
   const [acField, setAcField] = useState(null)
   const [serviciiDB, setServiciiDB] = useState([])
+  const [produseDB, setProduseDB] = useState([])
+  const [materialeNou, setMaterialeNou] = useState([])
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: '', tip_vizita: 'client'
@@ -645,6 +666,8 @@ export default function AdminDashboard() {
     fetchClienti()
     fetch('/api/admin/servicii', { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setServiciiDB(d) })
+    fetch('/api/admin/produse', { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
   }, [token])
 
   useEffect(() => {
@@ -714,11 +737,19 @@ export default function AdminDashboard() {
       }
     }
 
-    await fetch('/api/admin/programari', {
+    const progRes = await fetch('/api/admin/programari', {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ ...newProg, pret: serv?.pret || 0, durata: serv?.durata || 0 })
     })
+    const progData = await progRes.json()
+    for (const mat of materialeNou) {
+      await fetch('/api/admin/materiale', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ programare_id: progData.id, produs_id: mat.produs_id || null, produs_nume: mat.produs_nume, marca: mat.marca || '', cantitate: mat.cantitate || 1 })
+      })
+    }
+    setMaterialeNou([])
     // Creare/actualizare client — dacă e modelă, setează tip_client
     await fetch('/api/admin/clienti', {
       method: 'POST',
@@ -1450,6 +1481,8 @@ export default function AdminDashboard() {
             token={token}
             onClose={() => setSelectedClient(null)}
             onSaved={async () => { await fetchProgramari(); await fetchClienti() }}
+            produseDB={produseDB}
+            serviciiDBProp={serviciiDB}
           />
         )}
 
@@ -1904,9 +1937,14 @@ export default function AdminDashboard() {
               </div>
 
               {/* Observații */}
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Observații</label>
                 <textarea rows={2} value={newProg.observatii} onChange={e => setNewProg({ ...newProg, observatii: e.target.value })} className="input-field" />
+              </div>
+
+              {/* Materiale utilizate */}
+              <div style={{ marginBottom: '24px', borderTop: '1px solid #F0EAE0', paddingTop: '16px' }}>
+                <MaterialeUtilizate programareId={null} produse={produseDB} onChange={setMaterialeNou} />
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
