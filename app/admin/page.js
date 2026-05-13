@@ -1762,6 +1762,10 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
+        {/* PRODUSE TAB */}
+        {tab === 'produse' && <ProdusTab />}
+
       </div>
 
       {/* Modal adaugă programare */}
@@ -1908,9 +1912,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
-        {/* PRODUSE TAB */}
-        {tab === 'produse' && <ProdusTab />}
 
       {/* Bottom nav — doar mobil */}
       <nav className="admin-bottom-nav" style={{
