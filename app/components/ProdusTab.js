@@ -356,7 +356,7 @@ export default function ProdusTab() {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
           <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0, color: s.text }}>Stoc & Produse</h2>
           <p style={{ fontSize: '12px', color: '#999', margin: '3px 0 0' }}>Actualizat în timp real · Inventar EVOLIS</p>
         </div>
