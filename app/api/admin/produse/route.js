@@ -23,11 +23,13 @@ async function getDb() {
       inci TEXT,
       observatii TEXT,
       stoc_bucati INTEGER DEFAULT 1,
+      stoc_minim INTEGER DEFAULT 3,
       barcode TEXT UNIQUE,
       activ BOOLEAN DEFAULT true,
       creat TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE produse ADD COLUMN IF NOT EXISTS stoc_minim INTEGER DEFAULT 3`
   return sql
 }
 
@@ -45,10 +47,10 @@ export async function POST(request) {
   const id = Date.now()
   const barcode = '485' + String(id).slice(-10)
   await sql`
-    INSERT INTO produse (id, salon_id, marca, nume, categorie, volum_ml, pret_achizitie, moneda, furnizor_link, inci, observatii, stoc_bucati, barcode)
+    INSERT INTO produse (id, salon_id, marca, nume, categorie, volum_ml, pret_achizitie, moneda, furnizor_link, inci, observatii, stoc_bucati, stoc_minim, barcode)
     VALUES (${id}, 'evolis', ${body.marca || ''}, ${body.nume}, ${body.categorie || ''}, ${body.volum_ml || null},
             ${body.pret_achizitie || null}, 'RON', ${body.furnizor_link || ''},
-            ${body.inci || ''}, ${body.observatii || ''}, ${body.stoc_bucati || 1}, ${barcode})
+            ${body.inci || ''}, ${body.observatii || ''}, ${body.stoc_bucati || 1}, ${body.stoc_minim || 3}, ${barcode})
   `
   return NextResponse.json({ success: true, id, barcode })
 }
@@ -73,7 +75,8 @@ export async function PATCH(request) {
       furnizor_link = ${body.furnizor_link || ''},
       inci = ${body.inci || ''},
       observatii = ${body.observatii || ''},
-      stoc_bucati = ${body.stoc_bucati || 1}
+      stoc_bucati = ${body.stoc_bucati || 1},
+      stoc_minim = ${body.stoc_minim || 3}
     WHERE id = ${body.id}
   `
   return NextResponse.json({ success: true })
