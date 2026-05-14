@@ -12,8 +12,19 @@ const SERVICII = [
   { name: 'Manichiură Clasică', pret: 70, durata: 30 },
   { name: 'Rubber Base cu Apex + 1 Design', pret: 145, durata: 80 },
   { name: 'Ojă Semi + Culoare', pret: 140, durata: 60 },
-  { name: 'Construcție Gel/Polygel', pret: 165, durata: 90 },
+  { name: 'Gel pe Unghia Naturală (fără design)', pret: 150, durata: 60 },
+  { name: 'Construcție Gel/Polygel 1-2', pret: 165, durata: 90 },
+  { name: 'Construcție Gel/Polygel 3-4', pret: 175, durata: 90 },
+  { name: 'Construcție Gel/Polygel 4+', pret: 185, durata: 90 },
+  { name: 'Întreținere Gel/Polygel 1-2', pret: 145, durata: 90 },
+  { name: 'Întreținere Gel/Polygel 3-4', pret: 155, durata: 90 },
+  { name: 'Întreținere Gel/Polygel 4+', pret: 165, durata: 90 },
+  { name: 'Întreținere din altă parte', pret: 20, durata: 10 },
   { name: 'Construcție SLIM', pret: 210, durata: 100 },
+  { name: 'Îndepărtare material tehnic', pret: 25, durata: 15 },
+  { name: 'Design per unghie', pret: 5, durata: 5 },
+  { name: 'French / Babyboomer / Culoare', pret: 15, durata: 15 },
+  { name: 'Taxă întreținere după 4 săptămâni', pret: 20, durata: 5 },
 ]
 
 function generateSlots(durata) {
