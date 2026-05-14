@@ -5,6 +5,7 @@ import ProdusTab from '../components/ProdusTab'
 import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
 import MaterialeUtilizate from '../components/MaterialeUtilizate'
+import ExtraServicii from '../components/ExtraServicii'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -147,6 +148,8 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   const [showNewDatePicker, setShowNewDatePicker] = useState(false)
   const [drawerOverlapWarning, setDrawerOverlapWarning] = useState(null)
   const [materialeNouProg, setMaterialeNouProg] = useState([])
+  const [extraServiciiProg, setExtraServiciiProg] = useState([])
+  const [pretManualProg, setPretManualProg] = useState('')
   const newDateRef = useRef(null)
 
   const clientProg = programari
@@ -217,12 +220,16 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     }
 
     const id = Date.now()
+    const pretExtrasD = extraServiciiProg.reduce((sum, e) => sum + Number(e.pret || 0), 0)
+    const pretFinalD = pretManualProg !== '' ? Number(pretManualProg) : (Number(serv?.pret || 0) + pretExtrasD)
+    const durataExtrasD = extraServiciiProg.reduce((sum, e) => sum + Number(e.durata || 0), 0)
     await fetch('/api/admin/programari', {
       method: 'POST', headers: authH,
       body: JSON.stringify({
         ...newProg, id,
         nume: client.nume, telefon: client.telefon,
-        pret: serv?.pret || 0, durata: serv?.durata || 0,
+        pret: pretFinalD, durata: (serv?.durata || 0) + durataExtrasD,
+        extra_servicii: extraServiciiProg,
         status: 'confirmed'
       })
     })
@@ -233,6 +240,8 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
       })
     }
     setMaterialeNouProg([])
+    setExtraServiciiProg([])
+    setPretManualProg('')
     setShowNewProg(false)
     setNewProg({ serviciu: '', data: formatDateRO(new Date()), ora: '', plata: 'numerar', observatii: '' })
     onSaved()
@@ -351,6 +360,19 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                   </select>
                 </div>
 
+                {/* Preț + Extra */}
+                <div style={{ borderTop: '1px solid #E8DDD0', paddingTop: '12px', marginBottom: '10px' }}>
+                  <ExtraServicii
+                    servicii={serviciiDBProp}
+                    mainServiciu={newProg.serviciu}
+                    extras={extraServiciiProg}
+                    onExtrasChange={setExtraServiciiProg}
+                    pretBase={Number(serviciiDBProp.find(s => s.nume === newProg.serviciu)?.pret || 0)}
+                    pretManual={pretManualProg}
+                    onPretManualChange={setPretManualProg}
+                  />
+                </div>
+
                 {/* Plată */}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Plată</label>
@@ -393,6 +415,16 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                           style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', boxSizing: 'border-box' }} />
                       </div>
                     ))}
+                    {/* Servicii extra la editare */}
+                    <div style={{ borderTop: '1px solid #F0EAE0', paddingTop: '10px', marginBottom: '10px' }}>
+                      <ExtraServicii
+                        servicii={serviciiDBProp}
+                        mainServiciu={editProg.serviciu}
+                        extras={(() => { try { return JSON.parse(editProg.extra_servicii || '[]') } catch { return [] } })()}
+                        onExtrasChange={extras => setEditProg({ ...editProg, extra_servicii: JSON.stringify(extras) })}
+                        showPret={false}
+                      />
+                    </div>
                     <div style={{ marginBottom: '10px' }}>
                       <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', color: '#888', display: 'block', marginBottom: '3px' }}>Status</label>
                       <select value={editProg.status} onChange={e => setEditProg({ ...editProg, status: e.target.value })}
@@ -401,7 +433,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                       </select>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => saveProg(editProg)} style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '20px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Salvează</button>
+                      <button onClick={() => saveProg({ ...editProg, extra_servicii: editProg.extra_servicii || '[]' })} style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '20px', padding: '8px 18px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Salvează</button>
                       <button onClick={() => setEditProg(null)} style={{ background: '#EEE', border: 'none', borderRadius: '20px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px' }}>Anulează</button>
                     </div>
                   </div>
@@ -411,6 +443,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '3px' }}>{p.serviciu}</p>
+                        {(() => { try { const ex = JSON.parse(p.extra_servicii || '[]'); return ex.length > 0 ? <p style={{ fontSize: '12px', color: '#888', margin: '2px 0' }}>+ {ex.map(e => e.nume).join(', ')}</p> : null } catch { return null } })()}
                         <p style={{ fontSize: '13px', color: '#666' }}>{p.data} · {p.ora} · {p.pret} lei</p>
                         {p.observatii && <p style={{ fontSize: '12px', color: '#999', marginTop: '3px', fontStyle: 'italic' }}>{p.observatii}</p>}
                       </div>
@@ -648,6 +681,8 @@ export default function AdminDashboard() {
   const [serviciiDB, setServiciiDB] = useState([])
   const [produseDB, setProduseDB] = useState([])
   const [materialeNou, setMaterialeNou] = useState([])
+  const [extraServiciiNou, setExtraServiciiNou] = useState([])
+  const [pretManualNou, setPretManualNou] = useState('')
 
   const [newProg, setNewProg] = useState({
     nume: '', telefon: '', serviciu: '', data: '', ora: '', plata: 'numerar', observatii: '', tip_vizita: 'client'
@@ -737,10 +772,13 @@ export default function AdminDashboard() {
       }
     }
 
+    const pretExtras = extraServiciiNou.reduce((sum, e) => sum + Number(e.pret || 0), 0)
+    const pretFinal = pretManualNou !== '' ? Number(pretManualNou) : (Number(serv?.pret || 0) + pretExtras)
+    const durataExtras = extraServiciiNou.reduce((sum, e) => sum + Number(e.durata || 0), 0)
     const progRes = await fetch('/api/admin/programari', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ ...newProg, pret: serv?.pret || 0, durata: serv?.durata || 0 })
+      body: JSON.stringify({ ...newProg, pret: pretFinal, durata: (serv?.durata || 0) + durataExtras, extra_servicii: extraServiciiNou })
     })
     const progData = await progRes.json()
     for (const mat of materialeNou) {
@@ -750,6 +788,8 @@ export default function AdminDashboard() {
       })
     }
     setMaterialeNou([])
+    setExtraServiciiNou([])
+    setPretManualNou('')
     // Creare/actualizare client — dacă e modelă, setează tip_client
     await fetch('/api/admin/clienti', {
       method: 'POST',
@@ -1907,10 +1947,23 @@ export default function AdminDashboard() {
               {/* Serviciu */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Serviciu *</label>
-                <select required value={newProg.serviciu} onChange={e => setNewProg({ ...newProg, serviciu: e.target.value })} className="input-field">
+                <select required value={newProg.serviciu} onChange={e => { setNewProg({ ...newProg, serviciu: e.target.value }); setPretManualNou('') }} className="input-field">
                   <option value="">Alege serviciul</option>
                   {serviciiDB.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
                 </select>
+              </div>
+
+              {/* Preț + Servicii extra */}
+              <div style={{ marginBottom: '14px', borderTop: '1px solid #F0EAE0', paddingTop: '14px' }}>
+                <ExtraServicii
+                  servicii={serviciiDB}
+                  mainServiciu={newProg.serviciu}
+                  extras={extraServiciiNou}
+                  onExtrasChange={setExtraServiciiNou}
+                  pretBase={Number(serviciiDB.find(s => s.nume === newProg.serviciu)?.pret || 0)}
+                  pretManual={pretManualNou}
+                  onPretManualChange={setPretManualNou}
+                />
               </div>
 
               {/* Tip vizită */}
