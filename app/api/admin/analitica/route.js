@@ -21,9 +21,10 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)
-  const [programari, clienti] = await Promise.all([
+  const [programari, clienti, materiale] = await Promise.all([
     sql`SELECT * FROM programari`,
     sql`SELECT * FROM clienti`,
+    sql`SELECT produs_nume, marca FROM programare_materiale`.catch(() => []),
   ])
 
   const now = new Date()
@@ -62,18 +63,29 @@ export async function GET(request) {
     venitPeLuni.push({ luna: LUNI[m].slice(0,3) + ' ' + y, venit, programari: prog.length })
   }
 
-  // Top servicii
+  // Top servicii (principal + extra)
   const serviciiMap = {}
   active.forEach(p => {
-    if (!p.serviciu) return
-    if (!serviciiMap[p.serviciu]) serviciiMap[p.serviciu] = { count: 0, venit: 0 }
-    serviciiMap[p.serviciu].count++
-    if (p.status === 'confirmed') serviciiMap[p.serviciu].venit += Number(p.pret) || 0
+    if (p.serviciu) {
+      if (!serviciiMap[p.serviciu]) serviciiMap[p.serviciu] = { count: 0, venit: 0 }
+      serviciiMap[p.serviciu].count++
+      if (p.status === 'confirmed') serviciiMap[p.serviciu].venit += Number(p.pret) || 0
+    }
+    try {
+      const extras = JSON.parse(p.extra_servicii || '[]')
+      extras.forEach(e => {
+        const name = e.nume || e.name
+        if (!name) return
+        if (!serviciiMap[name]) serviciiMap[name] = { count: 0, venit: 0 }
+        serviciiMap[name].count++
+        if (p.status === 'confirmed') serviciiMap[name].venit += Number(e.pret) || 0
+      })
+    } catch (_) {}
   })
   const serviciiTop = Object.entries(serviciiMap)
     .map(([name, v]) => ({ name, ...v }))
     .sort((a,b) => b.count - a.count)
-    .slice(0, 7)
+    .slice(0, 8)
 
   // Ore de vârf (0-23)
   const oreVarf = {}
@@ -111,25 +123,38 @@ export async function GET(request) {
     ? Math.round(confirmed.reduce((s,p) => s + (Number(p.pret)||0), 0) / confirmed.length)
     : 0
 
-  // Sursa clienti
+  // Sursa clienti (TikTok, Instagram, Facebook, Recomandare)
   const sursaMap = {}
   clienti.forEach(c => {
-    const sursa = (c.sursa || '').trim().toUpperCase() || 'NECUNOSCUT'
+    const raw = (c.sursa || '').trim()
+    const sursa = raw && raw !== 'manual' ? raw : 'Necunoscut'
     sursaMap[sursa] = (sursaMap[sursa] || 0) + 1
   })
   const sursaClienti = Object.entries(sursaMap)
     .sort((a, b) => b[1] - a[1])
     .map(([sursa, count]) => ({ sursa, count }))
 
-  // Oras clienti
-  const orasMap = {}
+  // Provenienta clienti (Piatra Neamț, Alt oraș, București, Altă țară)
+  const provenientaMap = {}
   clienti.forEach(c => {
-    const oras = (c.oras || '').trim().toUpperCase() || 'NECUNOSCUT'
-    orasMap[oras] = (orasMap[oras] || 0) + 1
+    const prov = (c.provenienta || '').trim() || 'Necunoscut'
+    provenientaMap[prov] = (provenientaMap[prov] || 0) + 1
   })
-  const orasClienti = Object.entries(orasMap)
+  const provenientaClienti = Object.entries(provenientaMap)
     .sort((a, b) => b[1] - a[1])
-    .map(([oras, count]) => ({ oras, count }))
+    .map(([provenienta, count]) => ({ provenienta, count }))
+
+  // Top produse utilizate
+  const produseMap = {}
+  materiale.forEach(m => {
+    const key = [m.marca, m.produs_nume].filter(Boolean).join(' — ')
+    if (!key) return
+    produseMap[key] = (produseMap[key] || 0) + 1
+  })
+  const produseTop = Object.entries(produseMap)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
 
   // Tip client
   const tipMap = {}
@@ -155,7 +180,8 @@ export async function GET(request) {
     oreVarf,
     zileVarf,
     sursaClienti,
-    orasClienti,
+    provenientaClienti,
+    produseTop,
     tipClienti,
   })
 }

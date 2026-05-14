@@ -18,6 +18,7 @@ async function getDb() {
     )
   `
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS parola TEXT`
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS provenienta TEXT`
   return sql
 }
 
@@ -39,7 +40,9 @@ export async function PATCH(request) {
       telefon = ${body.telefon || ''},
       email = ${body.email || ''},
       data_nastere = ${body.data_nastere || ''},
-      observatii = ${body.observatii || ''}
+      observatii = ${body.observatii || ''},
+      sursa = ${body.sursa || ''},
+      provenienta = ${body.provenienta || ''}
     WHERE id = ${body.id}
   `
   return NextResponse.json({ success: true })

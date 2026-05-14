@@ -15,6 +15,8 @@ export async function GET(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sql = await getDb()
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS extra_servicii TEXT DEFAULT '[]'`
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS before_foto TEXT`
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS after_foto TEXT`
   const rows = await sql`SELECT * FROM programari ORDER BY data ASC, ora ASC`
   return NextResponse.json(rows)
 }
@@ -40,7 +42,9 @@ export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
-  if (body.status !== undefined && Object.keys(body).length === 2) {
+  if (body._fotosOnly) {
+    await sql`UPDATE programari SET before_foto = ${body.before_foto || ''}, after_foto = ${body.after_foto || ''} WHERE id = ${body.id}`
+  } else if (body.status !== undefined && Object.keys(body).length === 2) {
     await sql`UPDATE programari SET status = ${body.status} WHERE id = ${body.id}`
   } else {
     const extraJson = JSON.stringify(body.extra_servicii || [])

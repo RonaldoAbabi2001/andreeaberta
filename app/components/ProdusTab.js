@@ -301,6 +301,7 @@ export default function ProdusTab() {
   const [produse, setProduse] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('toate')
+  const [filterStoc, setFilterStoc] = useState('toate')
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editProdus, setEditProdus] = useState(null)
@@ -330,10 +331,13 @@ export default function ProdusTab() {
     setSelectedProdus(prev => prev?.id === id ? { ...prev, stoc_bucati } : prev)
   }
 
-  const filtered = produse.filter(p =>
-    (filter === 'toate' || p.categorie === filter) &&
-    (!search || p.nume?.toLowerCase().includes(search.toLowerCase()) || p.marca?.toLowerCase().includes(search.toLowerCase()))
-  )
+  const filtered = produse.filter(p => {
+    if (filter !== 'toate' && p.categorie !== filter) return false
+    if (filterStoc === 'in_stoc' && (p.stoc_bucati || 0) === 0) return false
+    if (filterStoc === 'epuizat' && (p.stoc_bucati || 0) > 0) return false
+    if (search && !p.nume?.toLowerCase().includes(search.toLowerCase()) && !p.marca?.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
 
   const nOk = produse.filter(p => (p.stoc_bucati || 0) > (p.stoc_minim || 3)).length
   const nScazut = produse.filter(p => { const s = p.stoc_bucati || 0; return s > 0 && s <= (p.stoc_minim || 3) }).length
@@ -386,16 +390,31 @@ export default function ProdusTab() {
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
 
         {/* Search + Filtre */}
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F0EAE0', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Caută produs sau marcă..."
-            style={{ flex: '1', minWidth: '160px', padding: '7px 12px', border: '1px solid #E0D0C0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Georgia, serif', background: '#FAFAFA' }} />
-          {[{ id: 'toate', label: 'Toate' }, ...CATEGORII.filter(c => produse.some(p => p.categorie === c.id))].map(cat => (
-            <button key={cat.id} onClick={() => setFilter(cat.id)} style={{
-              padding: '5px 13px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: 'none',
-              background: filter === cat.id ? (cat.id === 'toate' ? s.ruby : CAT_MAP[cat.id]?.color || s.ruby) : '#F3EDE5',
-              color: filter === cat.id ? 'white' : '#666',
-            }}>{cat.label}{cat.id !== 'toate' && ` (${produse.filter(p => p.categorie === cat.id).length})`}</button>
-          ))}
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F0EAE0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Caută produs sau marcă..."
+              style={{ flex: '1', minWidth: '160px', padding: '7px 12px', border: '1px solid #E0D0C0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Georgia, serif', background: '#FAFAFA' }} />
+            {[
+              { id: 'toate', label: 'Toate', color: '#6B7280' },
+              { id: 'in_stoc', label: '✓ În stoc', color: '#1D9E75' },
+              { id: 'epuizat', label: '✕ Epuizat', color: '#E24B4A' },
+            ].map(f => (
+              <button key={f.id} onClick={() => setFilterStoc(f.id)} style={{
+                padding: '5px 13px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: 'none',
+                background: filterStoc === f.id ? f.color : '#F3EDE5',
+                color: filterStoc === f.id ? 'white' : '#666',
+              }}>{f.label}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {[{ id: 'toate', label: 'Toate' }, ...CATEGORII.filter(c => produse.some(p => p.categorie === c.id))].map(cat => (
+              <button key={cat.id} onClick={() => setFilter(cat.id)} style={{
+                padding: '4px 11px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', border: 'none',
+                background: filter === cat.id ? (cat.id === 'toate' ? s.ruby : CAT_MAP[cat.id]?.color || s.ruby) : '#F3EDE5',
+                color: filter === cat.id ? 'white' : '#666',
+              }}>{cat.label}{cat.id !== 'toate' && ` (${produse.filter(p => p.categorie === cat.id).length})`}</button>
+            ))}
+          </div>
         </div>
 
         {/* Header tabel */}

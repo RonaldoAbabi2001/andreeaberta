@@ -150,7 +150,18 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   const [materialeNouProg, setMaterialeNouProg] = useState([])
   const [extraServiciiProg, setExtraServiciiProg] = useState([])
   const [pretManualProg, setPretManualProg] = useState('')
+  const [detailProg, setDetailProg] = useState(null)
+  const [detailMateriale, setDetailMateriale] = useState([])
+  const [detailFotos, setDetailFotos] = useState({ before: '', after: '' })
+  const [savingFotos, setSavingFotos] = useState(false)
   const newDateRef = useRef(null)
+
+  useEffect(() => {
+    if (!detailProg) return
+    setDetailFotos({ before: detailProg.before_foto || '', after: detailProg.after_foto || '' })
+    fetch(`/api/admin/materiale?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => setDetailMateriale(Array.isArray(d) ? d : [])).catch(() => setDetailMateriale([]))
+  }, [detailProg?.id])
 
   const clientProg = programari
     .filter(p => p.telefon === client.telefon)
@@ -169,6 +180,14 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 2000)
     onSaved()
+  }
+
+  async function saveFotos() {
+    if (!detailProg) return
+    setSavingFotos(true)
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _fotosOnly: true, before_foto: detailFotos.before, after_foto: detailFotos.after }) })
+    setDetailProg(p => ({ ...p, before_foto: detailFotos.before, after_foto: detailFotos.after }))
+    setSavingFotos(false)
   }
 
   async function deleteClient() {
@@ -302,6 +321,31 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
               <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>Observații</label>
               <textarea rows={3} value={form.observatii || ''} onChange={e => setForm({ ...form, observatii: e.target.value })}
                 style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>De unde vine</label>
+                <select value={form.provenienta || ''} onChange={e => setForm({ ...form, provenienta: e.target.value })}
+                  style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', background: 'white', boxSizing: 'border-box' }}>
+                  <option value="">— selectează —</option>
+                  <option value="Piatra Neamț">Piatra Neamț</option>
+                  <option value="Alt oraș">Alt oraș</option>
+                  <option value="București">București</option>
+                  <option value="Altă țară">Altă țară</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>Cum ne-a găsit</label>
+                <select value={form.sursa || ''} onChange={e => setForm({ ...form, sursa: e.target.value })}
+                  style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', background: 'white', boxSizing: 'border-box' }}>
+                  <option value="">— selectează —</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="Recomandare">Recomandare</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -438,42 +482,19 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                     </div>
                   </div>
                 ) : (
-                  /* ── View programare ── */
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '3px' }}>{p.serviciu}</p>
-                        {(() => { try { const ex = JSON.parse(p.extra_servicii || '[]'); return ex.length > 0 ? <p style={{ fontSize: '12px', color: '#888', margin: '2px 0' }}>+ {ex.map(e => e.nume).join(', ')}</p> : null } catch { return null } })()}
-                        <p style={{ fontSize: '13px', color: '#666' }}>{p.data} · {p.ora} · {p.pret} lei</p>
-                        {p.observatii && <p style={{ fontSize: '12px', color: '#999', marginTop: '3px', fontStyle: 'italic' }}>{p.observatii}</p>}
+                  /* ── View compact ── */
+                  <div onClick={() => setDetailProg(p)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1C1C1C' }}>{p.serviciu}</div>
+                        {(() => { try { const ex = JSON.parse(p.extra_servicii || '[]'); return ex.length > 0 ? <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>+ {ex.map(e => e.nume).join(' · ')}</div> : null } catch { return null } })()}
+                        <div style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>{p.data} · {p.ora} · <span style={{ fontWeight: 'bold', color: '#1C1C1C' }}>{p.pret} lei</span></div>
                       </div>
-                      <span style={{ fontSize: '11px', background: (SC[p.status] || '#ccc') + '22', color: SC[p.status] || '#ccc', padding: '3px 10px', borderRadius: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{p.status}</span>
-                    </div>
-
-                    {/* Materiale utilizate */}
-                    <div style={{ borderTop: '1px solid #F0EAE0', marginTop: '10px', paddingTop: '10px' }}>
-                      <MaterialeUtilizate programareId={p.id} produse={produseDB} />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-                      {['confirmed', 'pending', 'cancelled', 'noshow'].map(st => (
-                        <button key={st} onClick={() => updateProgStatus(p.id, st)}
-                          style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: p.status === st ? SC[st] : '#F0EAE0', color: p.status === st ? 'white' : '#555', fontWeight: p.status === st ? 'bold' : 'normal' }}>
-                          {st === 'confirmed' ? '✓ confirmată' : st === 'pending' ? '⏳ așteptare' : st === 'cancelled' ? '✗ anulată' : '— neprezentare'}
-                        </button>
-                      ))}
-                      <button onClick={() => setEditProg({ ...p })}
-                        style={{ padding: '4px 10px', borderRadius: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', fontSize: '11px', background: 'white', color: '#555', marginLeft: 'auto' }}>
-                        ✏️ Editează
-                      </button>
-                      {confirmDelete === p.id ? (
-                        <>
-                          <button onClick={() => deleteProg(p.id)} style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Confirm șterge</button>
-                          <button onClick={() => setConfirmDelete(null)} style={{ padding: '4px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EEE', color: '#555' }}>Nu</button>
-                        </>
-                      ) : (
-                        <button onClick={() => setConfirmDelete(p.id)} style={{ padding: '4px 10px', borderRadius: '20px', border: '1px solid #EF444444', cursor: 'pointer', fontSize: '11px', background: 'white', color: '#EF4444' }}>🗑 Șterge</button>
-                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                        <span style={{ fontSize: '11px', background: (SC[p.status] || '#ccc') + '22', color: SC[p.status] || '#ccc', padding: '3px 10px', borderRadius: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{p.status}</span>
+                        <button type="button" onClick={e => { e.stopPropagation(); setEditProg({ ...p }) }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#BBB', padding: 0 }}>✏️ editează</button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -498,6 +519,149 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
           </div>
         </div>
       </div>
+
+      {/* ── MODAL DETALII PROGRAMARE ── */}
+      {detailProg && (() => {
+        const p = detailProg
+        const extras = (() => { try { return JSON.parse(p.extra_servicii || '[]') } catch { return [] } })()
+        const STATUS_LABEL = { confirmed: '✓ confirmată', pending: '⏳ așteptare', cancelled: '✗ anulată', noshow: '— neprezentare' }
+        return (
+          <>
+            <div onClick={() => setDetailProg(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300 }} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '580px', maxWidth: '95vw', maxHeight: '88vh', background: '#F8F4F0', zIndex: 301, borderRadius: '24px', boxShadow: '0 24px 80px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+              {/* Header */}
+              <div style={{ background: `linear-gradient(135deg, ${s.ruby} 0%, #6A1020 100%)`, color: 'white', padding: '22px 26px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '11px', opacity: 0.7, letterSpacing: '2px', marginBottom: '4px' }}>DETALII PROGRAMARE</div>
+                    <div style={{ fontSize: '20px', fontFamily: 'Georgia, serif' }}>{p.serviciu}</div>
+                    {extras.length > 0 && <div style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>+ {extras.map(e => e.nume).join(' · ')}</div>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>{p.status}</span>
+                    <button onClick={() => setDetailProg(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: '50%', width: '32px', height: '32px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 26px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* Info grid */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                    {[
+                      { label: 'DATA', val: p.data },
+                      { label: 'ORA', val: p.ora || '—' },
+                      { label: 'DURATĂ', val: p.durata ? `${p.durata} min` : '—' },
+                      { label: 'PREȚ', val: `${p.pret || 0} lei` },
+                      { label: 'PLATĂ', val: p.plata || '—' },
+                      { label: 'CLIENT', val: client.nume },
+                    ].map(({ label, val }) => (
+                      <div key={label}>
+                        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '3px' }}>{label}</div>
+                        <div style={{ fontSize: '14px', color: '#1C1C1C', fontWeight: '500' }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {p.observatii && (
+                    <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F0EAE0' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>OBSERVAȚII</div>
+                      <div style={{ fontSize: '13px', color: '#555', fontStyle: 'italic' }}>{p.observatii}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Servicii extra */}
+                {extras.length > 0 && (
+                  <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '10px' }}>SERVICII EXTRA</div>
+                    {extras.map((e, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < extras.length - 1 ? '1px solid #F7F2EC' : 'none' }}>
+                        <span style={{ fontSize: '13px', color: '#1C1C1C' }}>{e.nume}</span>
+                        <span style={{ fontSize: '13px', color: s.ruby, fontWeight: 'bold' }}>+{e.pret} lei</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Materiale utilizate */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '10px' }}>MATERIALE UTILIZATE</div>
+                  {detailMateriale.length === 0 ? (
+                    <div style={{ fontSize: '13px', color: '#CCC' }}>Niciun material înregistrat.</div>
+                  ) : detailMateriale.map((m, i) => (
+                    <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i % 2 === 0 ? '#FAFAF8' : 'white', borderRadius: '8px' }}>
+                      <div>
+                        <span style={{ fontSize: '13px', color: '#1C1C1C' }}>{m.produs_nume}</span>
+                        {m.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '8px' }}>{m.marca}</span>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#888', fontWeight: 'bold', background: '#F0EAE0', padding: '2px 10px', borderRadius: '12px' }}>× {m.cantitate || 1}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Before / After */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>BEFORE / AFTER</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    {[{ key: 'before', label: 'BEFORE' }, { key: 'after', label: 'AFTER' }].map(({ key, label }) => (
+                      <div key={key}>
+                        <div style={{ fontSize: '10px', fontWeight: 'bold', color: key === 'before' ? '#888' : s.ruby, letterSpacing: '1px', marginBottom: '6px' }}>{label}</div>
+                        {detailFotos[key] ? (
+                          <div style={{ position: 'relative', marginBottom: '6px' }}>
+                            <img src={detailFotos[key]} alt={label} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px', display: 'block' }}
+                              onError={e => { e.target.style.display = 'none' }} />
+                          </div>
+                        ) : (
+                          <div style={{ width: '100%', aspectRatio: '1', background: '#F7F2EC', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '28px', opacity: 0.3 }}>📷</span>
+                          </div>
+                        )}
+                        <input
+                          value={detailFotos[key]}
+                          onChange={e => setDetailFotos(f => ({ ...f, [key]: e.target.value }))}
+                          placeholder="URL fotografie..."
+                          style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '7px 10px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={saveFotos} disabled={savingFotos}
+                    style={{ marginTop: '12px', background: savingFotos ? '#CCC' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '9px 20px', cursor: savingFotos ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%' }}>
+                    {savingFotos ? 'Se salvează...' : 'Salvează fotografiile'}
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Footer acțiuni */}
+              <div style={{ padding: '14px 26px', background: 'white', borderTop: '1px solid #F0EAE0', display: 'flex', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
+                {['confirmed', 'pending', 'cancelled', 'noshow'].map(st => (
+                  <button key={st} onClick={() => { updateProgStatus(p.id, st); setDetailProg(prev => ({ ...prev, status: st })) }}
+                    style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: p.status === st ? SC[st] : '#F0EAE0', color: p.status === st ? 'white' : '#555', fontWeight: p.status === st ? 'bold' : 'normal' }}>
+                    {STATUS_LABEL[st]}
+                  </button>
+                ))}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+                  <button onClick={() => { setDetailProg(null); setEditProg({ ...p }) }}
+                    style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', fontSize: '12px', background: 'white', color: '#555' }}>✏️ Editează</button>
+                  {confirmDelete === p.id ? (
+                    <>
+                      <button onClick={() => { deleteProg(p.id); setDetailProg(null) }} style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Confirm</button>
+                      <button onClick={() => setConfirmDelete(null)} style={{ padding: '6px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EEE', color: '#555' }}>Nu</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(p.id)} style={{ padding: '6px 12px', borderRadius: '20px', border: '1px solid #EF4444', cursor: 'pointer', fontSize: '12px', background: 'white', color: '#EF4444' }}>🗑</button>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </>
+        )
+      })()}
 
       {/* Dialog confirmare suprapunere în drawer */}
       {drawerOverlapWarning && (
@@ -1724,12 +1888,13 @@ export default function AdminDashboard() {
 
                       {/* Sursa clienti */}
                       <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', gridColumn: 'span 2' }}>
-                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>De unde vin clientele</p>
-                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Sursa de achiziție</p>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Cum ne-au găsit</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Sursa de achiziție — din fișa clientului</p>
                         {(() => {
                           const data = analitica.sursaClienti
                           const maxCount = Math.max(...data.map(d => d.count), 1)
-                          const colors = { 'TIKTOK': '#010101', 'INSTAGRAM': '#E1306C', 'RECOMANDARE': '#10B981', 'GOOGLE MAPS': '#4285F4', 'MERO': '#9B1B30', 'FACEBOOK': '#1877F2', 'NECUNOSCUT': '#D1D5DB' }
+                          const colors = { 'TikTok': '#010101', 'Instagram': '#E1306C', 'Recomandare': '#10B981', 'Facebook': '#1877F2', 'Necunoscut': '#D1D5DB' }
+                          if (!data.filter(d => d.sursa !== 'Necunoscut').length) return <p style={{ color: '#AAA', fontSize: '13px' }}>Nu există date de sursă încă.</p>
                           return data.map((d, i) => (
                             <div key={i} style={{ marginBottom: '14px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
@@ -1768,22 +1933,23 @@ export default function AdminDashboard() {
 
                       {/* Oras clienti */}
                       <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', gridColumn: 'span 3' }}>
-                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Distribuție geografică</p>
-                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>De unde vin clientele — oraș / zonă</p>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>De unde vin clientele</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Proveniența geografică — din fișa clientului</p>
                         {(() => {
-                          const data = analitica.orasClienti
+                          const data = analitica.provenientaClienti || []
                           const total = data.reduce((s, d) => s + d.count, 0) || 1
                           const maxCount = Math.max(...data.map(d => d.count), 1)
-                          const orasColors = { 'PIATRA NEAMT': '#9B1B30', 'BUCURESTI': '#3B82F6', 'ALT ORAS': '#C9A84C', 'ALTA TARA': '#10B981', 'NECUNOSCUT': '#D1D5DB' }
+                          const colors = { 'Piatra Neamț': '#9B1B30', 'București': '#3B82F6', 'Alt oraș': '#C9A84C', 'Altă țară': '#10B981', 'Necunoscut': '#D1D5DB' }
+                          if (!data.length) return <p style={{ color: '#AAA', fontSize: '13px' }}>Nu există date de proveniență încă.</p>
                           return (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
                               {data.map((d, i) => {
                                 const pct = Math.round(d.count / total * 100)
-                                const color = orasColors[d.oras] || '#8B5CF6'
+                                const color = colors[d.provenienta] || '#8B5CF6'
                                 return (
-                                  <div key={i} style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', border: `1px solid ${color}22` }}>
+                                  <div key={i} style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', border: `1px solid ${color}33` }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1C1C1C' }}>{d.oras}</span>
+                                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1C1C1C' }}>{d.provenienta}</span>
                                       <span style={{ fontSize: '22px', fontWeight: 'bold', color }}>{pct}%</span>
                                     </div>
                                     <div style={{ height: '6px', background: '#EEEEEE', borderRadius: '3px', overflow: 'hidden', marginBottom: '6px' }}>
@@ -1793,6 +1959,35 @@ export default function AdminDashboard() {
                                   </div>
                                 )
                               })}
+                            </div>
+                          )
+                        })()}
+                      </div>
+
+                      {/* PRODUSE TOP */}
+                      <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', gridColumn: 'span 3' }}>
+                        <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Produse cel mai des utilizate</p>
+                        <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Din secțiunea „Materiale utilizate" la programări</p>
+                        {(() => {
+                          const data = analitica.produseTop || []
+                          const maxCount = Math.max(...data.map(d => d.count), 1)
+                          if (!data.length) return <p style={{ color: '#AAA', fontSize: '13px' }}>Nu s-au înregistrat materiale utilizate încă.</p>
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              {data.map((d, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#CCC', width: '20px', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                      <span style={{ fontSize: '13px', color: '#1C1C1C', fontWeight: i === 0 ? 'bold' : 'normal' }}>{d.name}</span>
+                                      <span style={{ fontSize: '12px', color: '#888' }}>{d.count}×</span>
+                                    </div>
+                                    <div style={{ height: '5px', background: '#F0EAE0', borderRadius: '3px', overflow: 'hidden' }}>
+                                      <div style={{ height: '100%', width: `${(d.count / maxCount) * 100}%`, background: `linear-gradient(90deg, #9B1B30, #C9A84C)`, borderRadius: '3px' }} />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )
                         })()}
