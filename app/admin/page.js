@@ -153,12 +153,15 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   const [detailProg, setDetailProg] = useState(null)
   const [detailMateriale, setDetailMateriale] = useState([])
   const [detailFotos, setDetailFotos] = useState({ before: '', after: '' })
+  const [detailOre, setDetailOre] = useState({ start: '', sfarsit: '' })
   const [savingFotos, setSavingFotos] = useState(false)
+  const [savingOre, setSavingOre] = useState(false)
   const newDateRef = useRef(null)
 
   useEffect(() => {
     if (!detailProg) return
     setDetailFotos({ before: detailProg.before_foto || '', after: detailProg.after_foto || '' })
+    setDetailOre({ start: detailProg.ora || '', sfarsit: detailProg.ora_sfarsit || '' })
     fetch(`/api/admin/materiale?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => setDetailMateriale(Array.isArray(d) ? d : [])).catch(() => setDetailMateriale([]))
   }, [detailProg?.id])
@@ -188,6 +191,25 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _fotosOnly: true, before_foto: detailFotos.before, after_foto: detailFotos.after }) })
     setDetailProg(p => ({ ...p, before_foto: detailFotos.before, after_foto: detailFotos.after }))
     setSavingFotos(false)
+  }
+
+  async function savePlata(plata) {
+    if (!detailProg) return
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _plataOnly: true, plata }) })
+    setDetailProg(p => ({ ...p, plata }))
+  }
+
+  async function saveOre() {
+    if (!detailProg) return
+    setSavingOre(true)
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _oreOnly: true, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }) })
+    setDetailProg(p => ({ ...p, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }))
+    setSavingOre(false)
+  }
+
+  async function updateMaterial(id, cantitate_inainte, cantitate_dupa) {
+    await fetch('/api/admin/materiale', { method: 'PATCH', headers: authH, body: JSON.stringify({ id, cantitate_inainte, cantitate_dupa }) })
+    setDetailMateriale(prev => prev.map(m => m.id === id ? { ...m, cantitate_inainte, cantitate_dupa } : m))
   }
 
   async function deleteClient() {
@@ -548,29 +570,73 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
               {/* Body */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 26px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                {/* Info grid */}
+                {/* Info: data + plata */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-                    {[
-                      { label: 'DATA', val: p.data },
-                      { label: 'ORA', val: p.ora || '—' },
-                      { label: 'DURATĂ', val: p.durata ? `${p.durata} min` : '—' },
-                      { label: 'PREȚ', val: `${p.pret || 0} lei` },
-                      { label: 'PLATĂ', val: p.plata || '—' },
-                      { label: 'CLIENT', val: client.nume },
-                    ].map(({ label, val }) => (
-                      <div key={label}>
-                        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '3px' }}>{label}</div>
-                        <div style={{ fontSize: '14px', color: '#1C1C1C', fontWeight: '500' }}>{val}</div>
-                      </div>
-                    ))}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '3px' }}>DATA</div>
+                      <div style={{ fontSize: '15px', color: '#1C1C1C', fontWeight: '500' }}>{p.data}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>PREȚ TOTAL</div>
+                      <div style={{ fontSize: '15px', color: '#1C1C1C', fontWeight: 'bold' }}>{p.pret || 0} lei</div>
+                    </div>
                   </div>
+
+                  {/* Plată toggle */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '8px' }}>METODĂ PLATĂ</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['numerar', 'card'].map(met => (
+                        <button key={met} onClick={() => savePlata(met)}
+                          style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', fontFamily: 'Georgia, serif',
+                            background: (detailProg.plata || 'numerar') === met ? (met === 'numerar' ? '#1C1C1C' : '#1D9E75') : '#F3EDE5',
+                            color: (detailProg.plata || 'numerar') === met ? 'white' : '#888' }}>
+                          {met === 'numerar' ? '💵 Numerar' : '💳 Card'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {p.observatii && (
-                    <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F0EAE0' }}>
+                    <div style={{ paddingTop: '12px', borderTop: '1px solid #F0EAE0' }}>
                       <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>OBSERVAȚII</div>
                       <div style={{ fontSize: '13px', color: '#555', fontStyle: 'italic' }}>{p.observatii}</div>
                     </div>
                   )}
+                </div>
+
+                {/* Ore: start + sfarsit */}
+                <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>ORE PROGRAMARE</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', alignItems: 'end' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>ÎNCEPUT</div>
+                      <input type="time" value={detailOre.start} onChange={e => setDetailOre(o => ({ ...o, start: e.target.value }))}
+                        style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', fontWeight: 'bold' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>SFÂRȘIT</div>
+                      <input type="time" value={detailOre.sfarsit} onChange={e => setDetailOre(o => ({ ...o, sfarsit: e.target.value }))}
+                        style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '15px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', fontWeight: 'bold' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>DURATĂ</div>
+                      <div style={{ padding: '9px 12px', background: '#F7F2EC', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', color: s.ruby, textAlign: 'center' }}>
+                        {(() => {
+                          const [h1, m1] = (detailOre.start || '').split(':').map(Number)
+                          const [h2, m2] = (detailOre.sfarsit || '').split(':').map(Number)
+                          if (isNaN(h1) || isNaN(h2)) return p.durata ? `${p.durata} min` : '—'
+                          const diff = (h2 * 60 + m2) - (h1 * 60 + m1)
+                          return diff > 0 ? `${diff} min` : '—'
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={saveOre} disabled={savingOre}
+                    style={{ marginTop: '12px', width: '100%', background: savingOre ? '#CCC' : '#1C1C1C', color: 'white', border: 'none', borderRadius: '10px', padding: '9px', cursor: savingOre ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    {savingOre ? 'Se salvează...' : 'Salvează orele'}
+                  </button>
                 </div>
 
                 {/* Servicii extra */}
@@ -586,45 +652,71 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                   </div>
                 )}
 
-                {/* Materiale utilizate */}
+                {/* Materiale utilizate cu cantități before/after */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '10px' }}>MATERIALE UTILIZATE</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>MATERIALE UTILIZATE</div>
                   {detailMateriale.length === 0 ? (
                     <div style={{ fontSize: '13px', color: '#CCC' }}>Niciun material înregistrat.</div>
-                  ) : detailMateriale.map((m, i) => (
-                    <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: i % 2 === 0 ? '#FAFAF8' : 'white', borderRadius: '8px' }}>
-                      <div>
-                        <span style={{ fontSize: '13px', color: '#1C1C1C' }}>{m.produs_nume}</span>
-                        {m.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '8px' }}>{m.marca}</span>}
+                  ) : detailMateriale.map((m, i) => {
+                    const inainte = m.cantitate_inainte != null ? Number(m.cantitate_inainte) : ''
+                    const dupa = m.cantitate_dupa != null ? Number(m.cantitate_dupa) : ''
+                    const consumat = (inainte !== '' && dupa !== '') ? Math.max(0, inainte - dupa).toFixed(2) : null
+                    return (
+                      <div key={m.id} style={{ marginBottom: i < detailMateriale.length - 1 ? '14px' : 0, paddingBottom: i < detailMateriale.length - 1 ? '14px' : 0, borderBottom: i < detailMateriale.length - 1 ? '1px solid #F7F2EC' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1C1C1C' }}>{m.produs_nume}</span>
+                            {m.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '8px' }}>{m.marca}</span>}
+                          </div>
+                          {consumat !== null && (
+                            <span style={{ fontSize: '12px', color: s.ruby, fontWeight: 'bold', background: '#FDF2F4', padding: '2px 10px', borderRadius: '12px' }}>−{consumat} g</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>ÎNAINTE (g)</div>
+                            <input type="number" min="0" step="0.01" placeholder="ex: 12.5"
+                              defaultValue={inainte}
+                              onBlur={e => updateMaterial(m.id, Number(e.target.value) || null, m.cantitate_dupa)}
+                              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>DUPĂ (g)</div>
+                            <input type="number" min="0" step="0.01" placeholder="ex: 10.2"
+                              defaultValue={dupa}
+                              onBlur={e => updateMaterial(m.id, m.cantitate_inainte, Number(e.target.value) || null)}
+                              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>CONSUMAT</div>
+                            <div style={{ padding: '7px', background: consumat !== null ? '#FDF2F4' : '#F7F2EC', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', color: consumat !== null ? s.ruby : '#CCC' }}>
+                              {consumat !== null ? `${consumat} g` : '—'}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <span style={{ fontSize: '12px', color: '#888', fontWeight: 'bold', background: '#F0EAE0', padding: '2px 10px', borderRadius: '12px' }}>× {m.cantitate || 1}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
-                {/* Before / After */}
+                {/* Before / After foto */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>BEFORE / AFTER</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>FOTO BEFORE / AFTER</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                     {[{ key: 'before', label: 'BEFORE' }, { key: 'after', label: 'AFTER' }].map(({ key, label }) => (
                       <div key={key}>
                         <div style={{ fontSize: '10px', fontWeight: 'bold', color: key === 'before' ? '#888' : s.ruby, letterSpacing: '1px', marginBottom: '6px' }}>{label}</div>
                         {detailFotos[key] ? (
-                          <div style={{ position: 'relative', marginBottom: '6px' }}>
-                            <img src={detailFotos[key]} alt={label} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px', display: 'block' }}
-                              onError={e => { e.target.style.display = 'none' }} />
-                          </div>
+                          <img src={detailFotos[key]} alt={label} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px', display: 'block', marginBottom: '6px' }}
+                            onError={e => { e.target.style.display = 'none' }} />
                         ) : (
                           <div style={{ width: '100%', aspectRatio: '1', background: '#F7F2EC', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
                             <span style={{ fontSize: '28px', opacity: 0.3 }}>📷</span>
                           </div>
                         )}
-                        <input
-                          value={detailFotos[key]}
-                          onChange={e => setDetailFotos(f => ({ ...f, [key]: e.target.value }))}
+                        <input value={detailFotos[key]} onChange={e => setDetailFotos(f => ({ ...f, [key]: e.target.value }))}
                           placeholder="URL fotografie..."
-                          style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '7px 10px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif' }}
-                        />
+                          style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '7px 10px', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif' }} />
                       </div>
                     ))}
                   </div>

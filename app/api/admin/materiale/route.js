@@ -18,7 +18,22 @@ async function getDb() {
       creat TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE programare_materiale ADD COLUMN IF NOT EXISTS cantitate_inainte NUMERIC`
+  await sql`ALTER TABLE programare_materiale ADD COLUMN IF NOT EXISTS cantitate_dupa NUMERIC`
   return sql
+}
+
+export async function PATCH(request) {
+  if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const body = await request.json()
+  const sql = await getDb()
+  await sql`
+    UPDATE programare_materiale SET
+      cantitate_inainte = ${body.cantitate_inainte ?? null},
+      cantitate_dupa = ${body.cantitate_dupa ?? null}
+    WHERE id = ${body.id}
+  `
+  return NextResponse.json({ success: true })
 }
 
 export async function GET(request) {
