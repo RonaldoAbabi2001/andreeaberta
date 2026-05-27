@@ -154,15 +154,15 @@ export default function BookingFlow() {
       if (!p.ora) return false
       const pMin = timeToMin(p.ora)
       const pDurata = Number(p.durata) || 0
-      return slotMin < pMin + pDurata && slotMin + serviciu.durata > pMin
+      return slotMin < pMin + pDurata && slotMin + durataTotal > pMin
     })
   }
 
   async function fetchOcupate(d) {
     if (!d) return
     try {
-      const dataStr = formatData(d)
-      const res = await fetch(`/api/programare/ocupate?data=${encodeURIComponent(dataStr)}`)
+      const dataISO = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const res = await fetch(`/api/programare/ocupate?data=${dataISO}`)
       const rows = await res.json()
       setOcupate(Array.isArray(rows) ? rows : [])
     } catch { setOcupate([]) }
