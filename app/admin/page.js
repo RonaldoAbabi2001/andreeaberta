@@ -6,6 +6,7 @@ import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
 import MaterialeUtilizate from '../components/MaterialeUtilizate'
 import ExtraServicii from '../components/ExtraServicii'
+import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu } from '../components/AdminIcons'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -1374,13 +1375,13 @@ export default function AdminDashboard() {
         {/* Nav items */}
         <div style={{ padding: '10px 0', flex: 1 }}>
           {[
-            { id: 'calendar', icon: '📅', label: 'Calendar' },
-            { id: 'clienti', icon: '👤', label: 'Clienți' },
-            { id: 'produse', icon: '🧴', label: 'Produse & Stoc' },
-            { id: 'meniu', icon: '✨', label: 'Meniu Salon' },
-            { id: 'analitica', icon: '📈', label: 'Analitica' },
-            { id: 'rapoarte', icon: '📊', label: 'Rapoarte' },
-            { id: 'import', icon: '📥', label: 'Import CSV' },
+            { id: 'calendar', icon: (a) => <IcoCalendar active={a} size={32} />, label: 'Calendar' },
+            { id: 'clienti', icon: (a) => <IcoClienti active={a} size={32} />, label: 'Clienți' },
+            { id: 'produse', icon: (a) => <IcoProduse active={a} size={32} />, label: 'Produse & Stoc' },
+            { id: 'meniu', icon: (a) => <IcoMeniu active={a} size={32} />, label: 'Meniu Salon' },
+            { id: 'analitica', icon: (a) => <IcoAnalitica active={a} size={32} />, label: 'Analitica' },
+            { id: 'rapoarte', icon: (a) => <IcoRapoarte active={a} size={32} />, label: 'Rapoarte' },
+            { id: 'import', icon: (a) => <IcoImport active={a} size={32} />, label: 'Import CSV' },
           ].map(item => {
             const active = tab === item.id
             return (
@@ -1401,17 +1402,8 @@ export default function AdminDashboard() {
                 {active && !sidebarCollapsed && (
                   <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '3px', borderRadius: '0 3px 3px 0', background: 'linear-gradient(180deg, #F9E4A0, #C9A84C)' }} />
                 )}
-                <div style={{
-                  width: sidebarCollapsed ? '36px' : '28px',
-                  height: sidebarCollapsed ? '36px' : '28px',
-                  borderRadius: sidebarCollapsed ? '10px' : '8px',
-                  background: active ? 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: active && sidebarCollapsed ? 'inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.2)' : 'none',
-                  transition: 'all 0.18s',
-                }}>
-                  <span style={{ fontSize: sidebarCollapsed ? '18px' : '16px' }}>{item.icon}</span>
+                <div style={{ flexShrink: 0 }}>
+                  {item.icon(active, sidebarCollapsed ? 34 : 28)}
                 </div>
                 {!sidebarCollapsed && <span style={{ fontWeight: active ? '600' : '400' }}>{item.label}</span>}
               </button>
@@ -1520,16 +1512,16 @@ export default function AdminDashboard() {
                   {showScheduleOptions && (
                     <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0', padding: '6px' }}>
                       {[
-                        { id: 'repetitiv', icon: '🔁', label: 'Orar repetitiv' },
-                        { id: 'azi',       icon: '📋', label: 'Orar azi' },
-                        { id: 'inchide',   icon: '🔒', label: 'Închide ziua', red: true },
-                        { id: 'concediu',  icon: '🏖️', label: 'Concediu / Zile libere' },
+                        { id: 'repetitiv', ico: <IcoRepetitiv active={false} size={26} />, label: 'Orar repetitiv' },
+                        { id: 'azi',       ico: <IcoAzi active={false} size={26} />, label: 'Orar azi' },
+                        { id: 'inchide',   ico: <IcoInchide active={false} size={26} />, label: 'Închide ziua', red: true },
+                        { id: 'concediu',  ico: <IcoConcediu active={false} size={26} />, label: 'Concediu / Zile libere' },
                       ].map(opt => (
                         <button key={opt.id} onClick={() => { setScheduleModal(opt.id); setShowScheduleOptions(false) }}
                           style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'transparent', border: 'none', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '13px', color: opt.red ? '#EF4444' : '#333', textAlign: 'left' }}
                           onMouseEnter={e => e.currentTarget.style.background = s.nude}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <span style={{ fontSize: '15px' }}>{opt.icon}</span> {opt.label}
+                          {opt.ico} {opt.label}
                         </button>
                       ))}
                     </div>
@@ -2520,14 +2512,14 @@ export default function AdminDashboard() {
       }}>
         {/* Primele 2 tab-uri */}
         {[
-          { id: 'calendar', icon: '📅', label: 'Calendar' },
-          { id: 'clienti', icon: '👤', label: 'Clienți' },
+          { id: 'calendar', icon: (a) => <IcoCalendar active={a} size={26} />, label: 'Calendar' },
+          { id: 'clienti', icon: (a) => <IcoClienti active={a} size={26} />, label: 'Clienți' },
         ].map(item => {
           const active = tab === item.id
           return (
             <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false); localStorage.setItem('adminTab', item.id) }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
-              <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
+              {item.icon(active)}
               <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
               {active && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C9A84C', marginTop: '1px' }} />}
             </button>
@@ -2561,14 +2553,14 @@ export default function AdminDashboard() {
 
         {/* Ultimele 2 tab-uri */}
         {[
-          { id: 'produse', icon: '🧴', label: 'Produse' },
-          { id: 'servicii', icon: '💅', label: 'Servicii' },
+          { id: 'produse', icon: (a) => <IcoProduse active={a} size={26} />, label: 'Produse' },
+          { id: 'servicii', icon: (a) => <IcoServicii active={a} size={26} />, label: 'Servicii' },
         ].map(item => {
           const active = tab === item.id
           return (
             <button key={item.id} onClick={() => { setTab(item.id); setShowFabMenu(false); localStorage.setItem('adminTab', item.id) }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 10px', color: active ? '#F9E4A0' : 'rgba(255,255,255,0.55)' }}>
-              <span style={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</span>
+              {item.icon(active)}
               <span style={{ fontSize: '9px', letterSpacing: '0.5px', fontFamily: 'Georgia, serif', fontWeight: active ? 'bold' : 'normal' }}>{item.label}</span>
               {active && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C9A84C', marginTop: '1px' }} />}
             </button>
