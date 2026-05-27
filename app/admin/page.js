@@ -1113,6 +1113,12 @@ export default function AdminDashboard() {
   }, [token])
 
   useEffect(() => {
+    if (!token) return
+    fetch('/api/admin/produse', { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
+  }, [tab])
+
+  useEffect(() => {
     if (tab !== 'analitica' || !token) return
     setAnalitica(null)
     setLoadingAnalitica(true)
