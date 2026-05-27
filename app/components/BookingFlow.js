@@ -151,12 +151,15 @@ export default function BookingFlow() {
 
   function isBlocked(slot) {
     if (!serviciu) return false
-    const slotMin = timeToMin(slot)
+    const slotStart = timeToMin(slot)
+    const slotEnd = slotStart + durataTotal
     return ocupate.some(p => {
       if (!p.ora) return false
-      const pMin = timeToMin(p.ora)
-      const pDurata = Number(p.durata) || 0
-      return slotMin < pMin + pDurata && slotMin + durataTotal > pMin
+      const pStart = timeToMin(p.ora)
+      const pEnd = p.ora_sfarsit
+        ? timeToMin(p.ora_sfarsit)
+        : pStart + (Number(p.durata) || 60)
+      return slotStart < pEnd && slotEnd > pStart
     })
   }
 
@@ -254,8 +257,16 @@ export default function BookingFlow() {
           telefonOriginal: loggedInClient?.telefon || null,
         })
       })
-      if (res.ok) setStatus('success')
-      else setStatus('error')
+      if (res.ok) {
+        setStatus('success')
+      } else if (res.status === 409) {
+        setStatus('conflict')
+        await fetchOcupate(data)
+        setOra(null)
+        setStep(4)
+      } else {
+        setStatus('error')
+      }
     } catch { setStatus('error') }
   }
 
@@ -573,6 +584,11 @@ export default function BookingFlow() {
 
           {status === 'error' && (
             <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '16px' }}>A apărut o eroare. Încercați din nou.</p>
+          )}
+          {status === 'conflict' && (
+            <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '16px', background: '#FFF0F0', padding: '12px', borderRadius: '10px', border: '1px solid #FFCDD2' }}>
+              Ora selectată a fost rezervată între timp. Vă rugăm alegeți altă oră.
+            </p>
           )}
 
           <button onClick={handleConfirm} disabled={!canSubmit} className="btn-primary"

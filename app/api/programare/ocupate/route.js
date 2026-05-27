@@ -9,8 +9,10 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL)
     const rows = await sql`
-      SELECT ora, durata FROM programari
-      WHERE data = ${data} AND status != 'cancelled'
+      SELECT ora, durata, ora_sfarsit FROM programari
+      WHERE data = ${data}
+        AND status != 'cancelled'
+        AND ora IS NOT NULL AND ora != ''
     `
     return NextResponse.json(rows)
   } catch (e) {

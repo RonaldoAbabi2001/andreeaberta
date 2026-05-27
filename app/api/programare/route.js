@@ -45,6 +45,26 @@ export async function POST(request) {
 
   try {
     const sql = await getDb()
+
+    // Verifica suprapuneri inainte de INSERT
+    if (body.ora && body.data) {
+      const existente = await sql`
+        SELECT ora, durata, ora_sfarsit FROM programari
+        WHERE data = ${body.data} AND status != 'cancelled'
+        AND ora IS NOT NULL AND ora != ''
+      `
+      const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+      const newStart = toMin(body.ora)
+      const newEnd = newStart + (Number(body.durata) || 60)
+      for (const p of existente) {
+        const pStart = toMin(p.ora)
+        const pEnd = p.ora_sfarsit ? toMin(p.ora_sfarsit) : pStart + (Number(p.durata) || 60)
+        if (newStart < pEnd && newEnd > pStart) {
+          return NextResponse.json({ error: 'Ora selectată nu mai este disponibilă. Vă rugăm alegeți altă oră.' }, { status: 409 })
+        }
+      }
+    }
+
     const id = Date.now()
 
     await sql`
