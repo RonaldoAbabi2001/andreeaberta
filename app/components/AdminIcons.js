@@ -2,7 +2,7 @@
 import {
   CalendarDays, Users, Package, Sparkles, TrendingUp,
   FileText, Upload, Scissors, RefreshCw, CalendarPlus,
-  Lock, Umbrella
+  Lock, Umbrella, Settings2
 } from 'lucide-react'
 
 // Gradiente unice per icon — look premium iOS
@@ -19,6 +19,7 @@ const GRADIENTS = {
   azi:       ['#FDB99B', '#CF6EA9'],
   inchide:   ['#374151', '#6B7280'],
   concediu:  ['#43E97B', '#38F9D7'],
+  setari:    ['#F093FB', '#F5576C'],
 }
 
 const ACTIVE = ['#9B1B30', '#C9A84C']
@@ -84,4 +85,7 @@ export function IcoInchide({ active, size = 32 }) {
 }
 export function IcoConcediu({ active, size = 32 }) {
   return <IconBox id="concediu" active={active} size={size}>{s => <Umbrella size={s} color="white" strokeWidth={1.8} />}</IconBox>
+}
+export function IcoSetari({ active, size = 32 }) {
+  return <IconBox id="setari" active={active} size={size}>{s => <Settings2 size={s} color="white" strokeWidth={1.8} />}</IconBox>
 }

@@ -6,7 +6,7 @@ import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
 import MaterialeUtilizate from '../components/MaterialeUtilizate'
 import ExtraServicii from '../components/ExtraServicii'
-import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu } from '../components/AdminIcons'
+import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu, IcoSetari } from '../components/AdminIcons'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -1092,6 +1092,10 @@ export default function AdminDashboard() {
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
   const [scheduleModal, setScheduleModal] = useState(null)
+  const [setariData, setSetariData] = useState({})
+  const [setariParola, setSetariParola] = useState('')
+  const [setariParolaVeche, setSetariParolaVeche] = useState('')
+  const [setariMsg, setSetariMsg] = useState(null)
   const [scheduleData, setScheduleData] = useState(null)
   const [scheduleWorker, setScheduleWorker] = useState(null)
   const [scheduleWeek, setScheduleWeek] = useState(null)
@@ -1174,6 +1178,15 @@ export default function AdminDashboard() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    if (tab === 'setari' && token) {
+      fetch('/api/admin/setari', { headers: { 'x-admin-token': token } })
+        .then(r => r.json())
+        .then(d => { if (d.settings) setSetariData(d.settings) })
+        .catch(() => {})
+    }
+  }, [tab])
 
   useEffect(() => {
     if (!scheduleModal || !token) return
@@ -1382,6 +1395,7 @@ export default function AdminDashboard() {
             { id: 'analitica', icon: (a) => <IcoAnalitica active={a} size={32} />, label: 'Analitica' },
             { id: 'rapoarte', icon: (a) => <IcoRapoarte active={a} size={32} />, label: 'Rapoarte' },
             { id: 'import', icon: (a) => <IcoImport active={a} size={32} />, label: 'Import CSV' },
+            { id: 'setari', icon: (a) => <IcoSetari active={a} size={32} />, label: 'Setări Admin' },
           ].map(item => {
             const active = tab === item.id
             return (
@@ -2335,6 +2349,116 @@ export default function AdminDashboard() {
         {/* PRODUSE TAB */}
         {tab === 'produse' && <ProdusTab />}
         {tab === 'meniu' && <MeniuSalonTab />}
+
+        {/* SETĂRI TAB */}
+        {tab === 'setari' && (
+          <div style={{ padding: '32px', maxWidth: '600px' }}>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', color: '#1C1C1C', margin: '0 0 6px' }}>Setări Admin</h2>
+            <p style={{ color: '#AAA', fontSize: '13px', margin: '0 0 32px' }}>Modifică datele de acces și configurațiile salonului</p>
+
+            {/* Securitate */}
+            <div style={{ background: 'white', borderRadius: '20px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <IcoSetari size={36} />
+                <div>
+                  <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: 0 }}>Parolă Admin</p>
+                  <p style={{ color: '#AAA', fontSize: '12px', margin: 0 }}>Schimbă parola de acces la panoul admin</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#888', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>PAROLĂ ACTUALĂ</label>
+                  <input
+                    type="password"
+                    value={setariParolaVeche}
+                    onChange={e => setSetariParolaVeche(e.target.value)}
+                    placeholder="Introdu parola actuală"
+                    style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#888', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>PAROLĂ NOUĂ</label>
+                  <input
+                    type="password"
+                    value={setariParola}
+                    onChange={e => setSetariParola(e.target.value)}
+                    placeholder="Introdu parola nouă"
+                    style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    setSetariMsg(null)
+                    if (!setariParolaVeche || !setariParola) { setSetariMsg({ ok: false, text: 'Completează ambele câmpuri.' }); return }
+                    if (setariParola.length < 6) { setSetariMsg({ ok: false, text: 'Parola nouă trebuie să aibă minim 6 caractere.' }); return }
+                    // Verify old password by making a test request
+                    const verif = await fetch('/api/admin/setari', { headers: { 'x-admin-token': setariParolaVeche } })
+                    if (!verif.ok) { setSetariMsg({ ok: false, text: 'Parola actuală este incorectă.' }); return }
+                    // Save new password
+                    const res = await fetch('/api/admin/setari', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'x-admin-token': setariParolaVeche },
+                      body: JSON.stringify({ cheie: 'admin_password', valoare: setariParola })
+                    })
+                    if (res.ok) {
+                      setToken(setariParola)
+                      localStorage.setItem('adminToken', setariParola)
+                      setSetariParola('')
+                      setSetariParolaVeche('')
+                      setSetariMsg({ ok: true, text: 'Parola a fost schimbată cu succes! Folosește parola nouă data viitoare.' })
+                    } else {
+                      setSetariMsg({ ok: false, text: 'Eroare la salvare.' })
+                    }
+                  }}
+                  style={{ background: 'linear-gradient(135deg, #9B1B30, #C9A84C)', color: 'white', border: 'none', borderRadius: '12px', padding: '13px 28px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.5px', alignSelf: 'flex-start' }}>
+                  SCHIMBĂ PAROLA
+                </button>
+                {setariMsg && (
+                  <div style={{ padding: '12px 16px', borderRadius: '10px', background: setariMsg.ok ? '#ECFDF5' : '#FEF2F2', color: setariMsg.ok ? '#065F46' : '#991B1B', fontSize: '13px' }}>
+                    {setariMsg.text}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Info salon */}
+            <div style={{ background: 'white', borderRadius: '20px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Info Salon</p>
+              <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Date afișate pe site și în SMS-uri</p>
+              {[
+                { cheie: 'salon_nume', label: 'Nume salon', placeholder: 'ex: Andreea Berta Nail Studio' },
+                { cheie: 'salon_telefon', label: 'Telefon', placeholder: 'ex: 0712345678' },
+                { cheie: 'salon_adresa', label: 'Adresă', placeholder: 'ex: Str. Exemplu 10, Piatra Neamț' },
+              ].map(({ cheie, label, placeholder }) => (
+                <div key={cheie} style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#888', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>{label.toUpperCase()}</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      defaultValue={setariData[cheie] || ''}
+                      placeholder={placeholder}
+                      id={`setari-${cheie}`}
+                      style={{ flex: 1, border: '1.5px solid #E5E7EB', borderRadius: '12px', padding: '11px 16px', fontSize: '14px', outline: 'none' }}
+                    />
+                    <button
+                      onClick={async () => {
+                        const val = document.getElementById(`setari-${cheie}`).value
+                        await fetch('/api/admin/setari', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                          body: JSON.stringify({ cheie, valoare: val })
+                        })
+                        setSetariData(d => ({ ...d, [cheie]: val }))
+                      }}
+                      style={{ background: '#F0EAE0', border: 'none', borderRadius: '12px', padding: '0 18px', fontSize: '13px', fontWeight: 'bold', color: '#9B1B30', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      Salvează
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
 
