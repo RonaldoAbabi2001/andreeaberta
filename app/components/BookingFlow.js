@@ -8,25 +8,6 @@ const SPECIALIST = {
   adresa: 'EVOLIS MANI B-dul Dacia n.6 PIATRA NEAMT',
 }
 
-const SERVICII = [
-  { name: 'Manichiură Clasică', pret: 70, durata: 30 },
-  { name: 'Rubber Base cu Apex + 1 Design', pret: 145, durata: 80 },
-  { name: 'Ojă Semi + Culoare', pret: 140, durata: 60 },
-  { name: 'Gel pe Unghia Naturală (fără design)', pret: 150, durata: 60 },
-  { name: 'Construcție Gel/Polygel 1-2', pret: 165, durata: 90 },
-  { name: 'Construcție Gel/Polygel 3-4', pret: 175, durata: 90 },
-  { name: 'Construcție Gel/Polygel 4+', pret: 185, durata: 90 },
-  { name: 'Întreținere Gel/Polygel 1-2', pret: 145, durata: 90 },
-  { name: 'Întreținere Gel/Polygel 3-4', pret: 155, durata: 90 },
-  { name: 'Întreținere Gel/Polygel 4+', pret: 165, durata: 90 },
-  { name: 'Întreținere din altă parte', pret: 20, durata: 10 },
-  { name: 'Construcție SLIM', pret: 210, durata: 100 },
-  { name: 'Îndepărtare material tehnic', pret: 25, durata: 15 },
-  { name: 'Design per unghie', pret: 5, durata: 5 },
-  { name: 'French / Babyboomer / Culoare', pret: 15, durata: 15 },
-  { name: 'Taxă întreținere după 4 săptămâni', pret: 20, durata: 5 },
-]
-
 function generateSlots(durata) {
   const slots = []
   const ranges = [[9*60, 12*60], [13*60, 19*60]]
@@ -75,7 +56,10 @@ const STORAGE_KEY = 'booking_flow_state'
 
 export default function BookingFlow() {
   const [step, setStep] = useState(1)
+  const [servicii, setServicii] = useState([])
+  const [extrasDB, setExtrasDB] = useState([])
   const [serviciu, setServiciu] = useState(null)
+  const [extrasSelectate, setExtrasSelectate] = useState([])
   const [data, setData] = useState(null)
   const [ora, setOra] = useState(null)
   const [plata, setPlata] = useState(null)
@@ -89,6 +73,18 @@ export default function BookingFlow() {
   const scrollRef = useRef(null)
   const dayRefs = useRef({})
 
+  useEffect(() => {
+    fetch('/api/servicii')
+      .then(r => r.json())
+      .then(d => {
+        const principale = Array.isArray(d) ? d : (d.servicii || [])
+        const extrasDB   = Array.isArray(d) ? [] : (d.extras || [])
+        setServicii(principale.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
+        setExtrasDB(extrasDB.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
+      })
+      .catch(() => {})
+  }, [])
+
   // Restore state from sessionStorage on mount
   useEffect(() => {
     try {
@@ -97,6 +93,7 @@ export default function BookingFlow() {
         const s = JSON.parse(saved)
         if (s.step) setStep(s.step)
         if (s.serviciu) setServiciu(s.serviciu)
+        if (s.extrasSelectate) setExtrasSelectate(s.extrasSelectate)
         if (s.data) setData(new Date(s.data))
         if (s.ora) setOra(s.ora)
         if (s.plata) setPlata(s.plata)
@@ -130,7 +127,7 @@ export default function BookingFlow() {
     if (status === 'success') { sessionStorage.removeItem(STORAGE_KEY); return }
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, serviciu, data: data ? data.toISOString() : null,
+        step, serviciu, extrasSelectate, data: data ? data.toISOString() : null,
         ora, plata, form, clientExistent,
       }))
     } catch {}
@@ -138,7 +135,9 @@ export default function BookingFlow() {
 
   const todayDate = new Date(); todayDate.setHours(0,0,0,0)
   const allDates = generateFutureDates(12)
-  const slots = serviciu ? generateSlots(serviciu.durata) : []
+  const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
+  const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + e.durata, 0) : 0
+  const slots = serviciu ? generateSlots(durataTotal) : []
 
   const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
 
@@ -235,8 +234,9 @@ export default function BookingFlow() {
           telefon: form.telefon,
           email: form.email,
           serviciu: serviciu.name,
-          pret: serviciu.pret,
-          durata: serviciu.durata,
+          pret: pretTotal,
+          durata: durataTotal,
+          extra_servicii: extrasSelectate.map(e => e.name),
           data: formatData(data),
           ora, plata,
           clientToken: clientToken || null,
@@ -273,7 +273,7 @@ export default function BookingFlow() {
 
       {/* Progress bar */}
       <div style={{ display: 'flex', marginBottom: '32px', gap: '4px' }}>
-        {[1,2,3,4].map(s => (
+        {[1,2,3,4,5].map(s => (
           <div key={s} style={{ flex: 1, height: '4px', borderRadius: '4px', background: s <= step ? style.ruby : '#E0D0C0', transition: 'background 0.3s' }} />
         ))}
       </div>
@@ -308,8 +308,8 @@ export default function BookingFlow() {
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 2</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți serviciul</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {SERVICII.map(s => (
-              <div key={s.name} onClick={() => { setServiciu(s); setStep(3) }}
+            {servicii.map(s => (
+              <div key={s.name} onClick={() => { setServiciu(s); setExtrasSelectate([]); setStep(3) }}
                 style={{ background: style.white, borderRadius: '14px', padding: '16px 20px', cursor: 'pointer', border: '1.5px solid #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = style.ruby; e.currentTarget.style.background = style.nude }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#EEE'; e.currentTarget.style.background = style.white }}
@@ -326,12 +326,66 @@ export default function BookingFlow() {
         </div>
       )}
 
-      {/* STEP 3 — Data & Ora */}
-      {step === 3 && (
+      {/* STEP 3 — Extras */}
+      {step === 3 && serviciu && (
         <div>
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 3</p>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '6px' }}>Design / Serviciu suplimentar</h2>
+          <p style={{ color: '#999', fontSize: '13px', marginBottom: '24px' }}>Opțional — poți alege mai multe sau niciuna.</p>
+
+          {extrasDB.length === 0 && (
+            <div style={{ background: '#F9F9F9', border: '1.5px dashed #DDD', borderRadius: '14px', padding: '24px', textAlign: 'center', marginBottom: '20px' }}>
+              <p style={{ fontSize: '13px', color: '#AAA', margin: 0 }}>Momentan nu sunt servicii extra disponibile.<br/>Poți continua direct la pasul următor.</p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            {extrasDB.map(s => {
+              const sel = extrasSelectate.some(e => e.name === s.name)
+              return (
+                <div key={s.name}
+                  onClick={() => setExtrasSelectate(sel ? extrasSelectate.filter(e => e.name !== s.name) : [...extrasSelectate, s])}
+                  style={{ background: sel ? '#FFF5F6' : style.white, borderRadius: '14px', padding: '14px 18px', cursor: 'pointer', border: `1.5px solid ${sel ? style.ruby : '#EEE'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: sel ? '0 2px 12px rgba(155,27,48,0.12)' : '0 2px 8px rgba(0,0,0,0.04)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: `2px solid ${sel ? style.ruby : '#DDD'}`, background: sel ? style.ruby : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {sel && <span style={{ color: 'white', fontSize: '12px', lineHeight: 1 }}>✓</span>}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '14px', margin: 0, color: sel ? style.ruby : style.text }}>{s.name}</p>
+                      <p style={{ color: '#AAA', fontSize: '11px', margin: 0 }}>+{s.durata} min</p>
+                    </div>
+                  </div>
+                  <p style={{ color: style.ruby, fontWeight: 'bold', fontSize: '15px', margin: 0, marginLeft: '12px', whiteSpace: 'nowrap' }}>+{s.pret} lei</p>
+                </div>
+              )
+            })}
+          </div>
+
+          {extrasSelectate.length > 0 && (
+            <div style={{ background: style.nude, borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', border: `1px solid ${style.gold}` }}>
+              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>Total suplimentar</p>
+              <p style={{ fontSize: '16px', fontWeight: 'bold', color: style.ruby, margin: 0 }}>+{extrasSelectate.reduce((s, e) => s + e.pret, 0)} lei · +{extrasSelectate.reduce((s, e) => s + e.durata, 0)} min</p>
+            </div>
+          )}
+
+          <button onClick={() => setStep(4)}
+            style={{ width: '100%', padding: '14px', borderRadius: '50px', background: 'linear-gradient(135deg, #F9E4A0 0%, #C9A84C 40%, #A8883A 65%, #F5D07A 100%)', color: '#3A2500', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '10px', boxShadow: '0 4px 20px rgba(201,168,76,0.5), 0 1px 0 rgba(255,255,255,0.6) inset, 0 -1px 0 rgba(0,0,0,0.15) inset', position: 'relative', overflow: 'hidden' }}>
+            <span style={{ position: 'absolute', top: '3px', left: '18px', width: '40px', height: '6px', background: 'rgba(255,255,255,0.45)', borderRadius: '4px', transform: 'rotate(-20deg)', pointerEvents: 'none' }} />
+            <span style={{ position: 'absolute', top: '5px', left: '60px', width: '20px', height: '4px', background: 'rgba(255,255,255,0.25)', borderRadius: '4px', transform: 'rotate(-20deg)', pointerEvents: 'none' }} />
+            {extrasSelectate.length > 0 ? `Continuați cu ${extrasSelectate.length} extra${extrasSelectate.length > 1 ? 's' : ''} →` : 'Nu doresc niciunul →'}
+          </button>
+
+          <button onClick={() => setStep(2)} style={{ marginTop: '6px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>← Înapoi</button>
+        </div>
+      )}
+
+      {/* STEP 4 — Data & Ora */}
+      {step === 4 && (
+        <div>
+          <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 4</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '8px' }}>Alegeți data și ora</h2>
-          <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '20px' }}>{serviciu.name} · {serviciu.durata} min</p>
+          <p style={{ color: style.ruby, fontSize: '14px', marginBottom: '20px' }}>{serviciu.name} · {durataTotal} min</p>
 
           {/* Month navigator */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -394,20 +448,20 @@ export default function BookingFlow() {
                 })}
               </div>
               {ora && (
-                <button onClick={() => setStep(4)} className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px' }}>
+                <button onClick={() => setStep(5)} className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px' }}>
                   CONTINUAȚI →
                 </button>
               )}
             </div>
           )}
-          <button onClick={() => setStep(2)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>← Înapoi</button>
+          <button onClick={() => setStep(3)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}>← Înapoi</button>
         </div>
       )}
 
-      {/* STEP 4 — Recap + Confirmare */}
-      {step === 4 && (
+      {/* STEP 5 — Recap + Confirmare */}
+      {step === 5 && (
         <div>
-          <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 4</p>
+          <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 5</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Verificați și confirmați</h2>
 
           {/* Recap card */}
@@ -415,9 +469,10 @@ export default function BookingFlow() {
             {[
               ['Specialist', 'Andreea Berta'],
               ['Serviciu', serviciu.name],
+              ...(extrasSelectate.length > 0 ? [['Extras', extrasSelectate.map(e => e.name).join(', ')]] : []),
               ['Data', formatData(data)],
               ['Ora', ora],
-              ['Durată', `${serviciu.durata} min`],
+              ['Durată', `${durataTotal} min`],
               ['Adresă', 'EVOLIS MANI B-dul Dacia n.6 PIATRA NEAMT'],
             ].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -427,7 +482,7 @@ export default function BookingFlow() {
             ))}
             <div style={{ borderTop: `1px solid ${style.gold}`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 'bold' }}>Total</span>
-              <span style={{ fontWeight: 'bold', color: style.ruby, fontSize: '18px' }}>{serviciu.pret} lei</span>
+              <span style={{ fontWeight: 'bold', color: style.ruby, fontSize: '18px' }}>{pretTotal} lei</span>
             </div>
           </div>
 
@@ -520,7 +575,7 @@ export default function BookingFlow() {
             {status === 'loading' ? 'Se procesează...' : 'CONFIRMAȚI PROGRAMAREA'}
           </button>
 
-          <button onClick={() => setStep(3)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px', width: '100%', textAlign: 'center' }}>
+          <button onClick={() => setStep(4)} style={{ marginTop: '16px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px', width: '100%', textAlign: 'center' }}>
             ← Înapoi
           </button>
         </div>

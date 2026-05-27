@@ -156,6 +156,12 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   const [detailOre, setDetailOre] = useState({ start: '', sfarsit: '' })
   const [savingFotos, setSavingFotos] = useState(false)
   const [savingOre, setSavingOre] = useState(false)
+  const [detailMatSearch, setDetailMatSearch] = useState('')
+  const [detailMatShowNou, setDetailMatShowNou] = useState(false)
+  const [detailMatNou, setDetailMatNou] = useState({ nume: '', marca: '', categorie: '' })
+  const [detailMatSavingNou, setDetailMatSavingNou] = useState(false)
+  const [detailEdit, setDetailEdit] = useState({ serviciu: '', pret: '', tips: '', detalii_tehnice: '', despre_client: '' })
+  const [savingDetailEdit, setSavingDetailEdit] = useState(false)
   const newDateRef = useRef(null)
 
   useEffect(() => {
@@ -164,6 +170,10 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setDetailOre({ start: detailProg.ora || '', sfarsit: detailProg.ora_sfarsit || '' })
     fetch(`/api/admin/materiale?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => setDetailMateriale(Array.isArray(d) ? d : [])).catch(() => setDetailMateriale([]))
+    setDetailMatSearch('')
+    setDetailMatShowNou(false)
+    setDetailMatNou({ nume: '', marca: '', categorie: '' })
+    setDetailEdit({ serviciu: detailProg.serviciu || '', pret: detailProg.pret ?? '', tips: detailProg.tips ?? '', detalii_tehnice: detailProg.detalii_tehnice || '', despre_client: detailProg.despre_client || '' })
   }, [detailProg?.id])
 
   const clientProg = programari
@@ -199,6 +209,17 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setDetailProg(p => ({ ...p, plata }))
   }
 
+  async function saveDetailMain() {
+    if (!detailProg) return
+    setSavingDetailEdit(true)
+    const pret = Number(detailEdit.pret) || 0
+    const tips = Number(detailEdit.tips) || 0
+    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _mainOnly: true, serviciu: detailEdit.serviciu, pret, tips, detalii_tehnice: detailEdit.detalii_tehnice, despre_client: detailEdit.despre_client }) })
+    setDetailProg(p => ({ ...p, serviciu: detailEdit.serviciu, pret, tips, detalii_tehnice: detailEdit.detalii_tehnice, despre_client: detailEdit.despre_client }))
+    setSavingDetailEdit(false)
+    onSaved()
+  }
+
   async function saveOre() {
     if (!detailProg) return
     setSavingOre(true)
@@ -210,6 +231,37 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   async function updateMaterial(id, cantitate_inainte, cantitate_dupa) {
     await fetch('/api/admin/materiale', { method: 'PATCH', headers: authH, body: JSON.stringify({ id, cantitate_inainte, cantitate_dupa }) })
     setDetailMateriale(prev => prev.map(m => m.id === id ? { ...m, cantitate_inainte, cantitate_dupa } : m))
+  }
+
+  async function addMaterialToDetail(produs) {
+    const item = { produs_id: produs.id, produs_nume: produs.nume, marca: produs.marca || '', cantitate: 1 }
+    const res = await fetch('/api/admin/materiale', {
+      method: 'POST', headers: authH,
+      body: JSON.stringify({ programare_id: detailProg.id, ...item })
+    })
+    const data = await res.json()
+    setDetailMateriale(prev => [...prev, { ...item, id: data.id, cantitate_inainte: null, cantitate_dupa: null }])
+    setDetailMatSearch('')
+  }
+
+  async function salveazaMatNouToDetail() {
+    if (!detailMatNou.nume.trim()) return
+    setDetailMatSavingNou(true)
+    const res = await fetch('/api/admin/produse', {
+      method: 'POST', headers: authH,
+      body: JSON.stringify({ nume: detailMatNou.nume, marca: detailMatNou.marca, categorie: detailMatNou.categorie, stoc_bucati: 0, stoc_minim: 3 })
+    })
+    const data = await res.json()
+    const item = { produs_id: data.id, produs_nume: detailMatNou.nume, marca: detailMatNou.marca || '', cantitate: 1 }
+    const res2 = await fetch('/api/admin/materiale', {
+      method: 'POST', headers: authH,
+      body: JSON.stringify({ programare_id: detailProg.id, ...item })
+    })
+    const d2 = await res2.json()
+    setDetailMateriale(prev => [...prev, { ...item, id: d2.id, cantitate_inainte: null, cantitate_dupa: null }])
+    setDetailMatNou({ nume: '', marca: '', categorie: '' })
+    setDetailMatShowNou(false)
+    setDetailMatSavingNou(false)
   }
 
   async function deleteClient() {
@@ -486,7 +538,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                       <ExtraServicii
                         servicii={serviciiDBProp}
                         mainServiciu={editProg.serviciu}
-                        extras={(() => { try { return JSON.parse(editProg.extra_servicii || '[]') } catch { return [] } })()}
+                        extras={(() => { try { const v = JSON.parse(editProg.extra_servicii || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } })()}
                         onExtrasChange={extras => setEditProg({ ...editProg, extra_servicii: JSON.stringify(extras) })}
                         showPret={false}
                       />
@@ -509,7 +561,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1C1C1C' }}>{p.serviciu}</div>
-                        {(() => { try { const ex = JSON.parse(p.extra_servicii || '[]'); return ex.length > 0 ? <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>+ {ex.map(e => e.nume).join(' · ')}</div> : null } catch { return null } })()}
+                        {(() => { try { const ex = JSON.parse(p.extra_servicii || '[]'); const arr = Array.isArray(ex) ? ex : []; return arr.length > 0 ? <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>+ {arr.map(e => e.nume).join(' · ')}</div> : null } catch { return null } })()}
                         <div style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>{p.data} · {p.ora} · <span style={{ fontWeight: 'bold', color: '#1C1C1C' }}>{p.pret} lei</span></div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
@@ -545,7 +597,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
       {/* ── MODAL DETALII PROGRAMARE ── */}
       {detailProg && (() => {
         const p = detailProg
-        const extras = (() => { try { return JSON.parse(p.extra_servicii || '[]') } catch { return [] } })()
+        const extras = (() => { try { const v = JSON.parse(p.extra_servicii || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } })()
         const STATUS_LABEL = { confirmed: '✓ confirmată', pending: '⏳ așteptare', cancelled: '✗ anulată', noshow: '— neprezentare' }
         return (
           <>
@@ -570,21 +622,63 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
               {/* Body */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 26px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                {/* Info: data + plata */}
+                {/* Serviciu + Pret + Tips + Plata */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>DATA</div>
+                  <div style={{ fontSize: '13px', color: '#888', marginBottom: '14px' }}>{p.data}</div>
+
+                  {/* Serviciu */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>SERVICIU</div>
+                    <select value={detailEdit.serviciu} onChange={e => setDetailEdit(d => ({ ...d, serviciu: e.target.value }))}
+                      style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: '#1C1C1C', boxSizing: 'border-box' }}>
+                      {serviciiDBProp.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume}</option>)}
+                      {!serviciiDBProp.find(sv => sv.nume === detailEdit.serviciu) && detailEdit.serviciu && (
+                        <option value={detailEdit.serviciu}>{detailEdit.serviciu}</option>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Pret + Tips */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                     <div>
-                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '3px' }}>DATA</div>
-                      <div style={{ fontSize: '15px', color: '#1C1C1C', fontWeight: '500' }}>{p.data}</div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>PREȚ (lei)</div>
+                      <input type="number" min="0" value={detailEdit.pret} onChange={e => setDetailEdit(d => ({ ...d, pret: e.target.value }))}
+                        style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '15px', fontWeight: 'bold', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', color: '#1C1C1C' }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>PREȚ TOTAL</div>
-                      <div style={{ fontSize: '15px', color: '#1C1C1C', fontWeight: 'bold' }}>{p.pret || 0} lei</div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>TIPS (lei)</div>
+                      <input type="number" min="0" value={detailEdit.tips} onChange={e => setDetailEdit(d => ({ ...d, tips: e.target.value }))}
+                        placeholder="0"
+                        style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '15px', fontWeight: 'bold', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', color: '#1D9E75' }} />
                     </div>
                   </div>
 
+                  {/* Detalii tehnice */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>DETALII TEHNICE</div>
+                    <textarea value={detailEdit.detalii_tehnice} onChange={e => setDetailEdit(d => ({ ...d, detalii_tehnice: e.target.value }))}
+                      placeholder="Produse folosite, tehnica, culori, structura..."
+                      rows={3}
+                      style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', color: '#1C1C1C', resize: 'vertical' }} />
+                  </div>
+
+                  {/* Despre client */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>DESPRE CLIENT</div>
+                    <textarea value={detailEdit.despre_client} onChange={e => setDetailEdit(d => ({ ...d, despre_client: e.target.value }))}
+                      placeholder="Preferinte, alergii, comportament, ce îi place..."
+                      rows={3}
+                      style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', color: '#1C1C1C', resize: 'vertical' }} />
+                  </div>
+
+                  <button onClick={saveDetailMain} disabled={savingDetailEdit}
+                    style={{ width: '100%', background: savingDetailEdit ? '#CCC' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '10px', cursor: savingDetailEdit ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold', marginBottom: '14px' }}>
+                    {savingDetailEdit ? 'Se salvează...' : 'Salvează modificările'}
+                  </button>
+
                   {/* Plată toggle */}
-                  <div style={{ marginBottom: '14px' }}>
+                  <div style={{ borderTop: '1px solid #F0EAE0', paddingTop: '14px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '8px' }}>METODĂ PLATĂ</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {['numerar', 'card'].map(met => (
@@ -597,13 +691,6 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                       ))}
                     </div>
                   </div>
-
-                  {p.observatii && (
-                    <div style={{ paddingTop: '12px', borderTop: '1px solid #F0EAE0' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '4px' }}>OBSERVAȚII</div>
-                      <div style={{ fontSize: '13px', color: '#555', fontStyle: 'italic' }}>{p.observatii}</div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Ore: start + sfarsit */}
@@ -655,9 +742,10 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                 {/* Materiale utilizate cu cantități before/after */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                   <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>MATERIALE UTILIZATE</div>
-                  {detailMateriale.length === 0 ? (
-                    <div style={{ fontSize: '13px', color: '#CCC' }}>Niciun material înregistrat.</div>
-                  ) : detailMateriale.map((m, i) => {
+                  {detailMateriale.length === 0 && (
+                    <div style={{ fontSize: '13px', color: '#CCC', marginBottom: '12px' }}>Niciun material înregistrat.</div>
+                  )}
+                  {detailMateriale.length > 0 && detailMateriale.map((m, i) => {
                     const inainte = m.cantitate_inainte != null ? Number(m.cantitate_inainte) : ''
                     const dupa = m.cantitate_dupa != null ? Number(m.cantitate_dupa) : ''
                     const consumat = (inainte !== '' && dupa !== '') ? Math.max(0, inainte - dupa).toFixed(2) : null
@@ -697,6 +785,67 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                       </div>
                     )
                   })}
+                  {/* Adaugă material în detalii programare */}
+                  <div style={{ marginTop: detailMateriale.length > 0 ? '16px' : '0', borderTop: detailMateriale.length > 0 ? '1px solid #F7F2EC' : 'none', paddingTop: detailMateriale.length > 0 ? '14px' : '0' }}>
+                    <div style={{ position: 'relative', marginBottom: '8px' }}>
+                      <input
+                        value={detailMatSearch}
+                        onChange={e => setDetailMatSearch(e.target.value)}
+                        placeholder="Caută și adaugă produs din stoc..."
+                        style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: '#FDFAF7', fontFamily: 'Georgia, serif', color: '#1C1C1C', boxSizing: 'border-box' }}
+                      />
+                      {detailMatSearch.length >= 2 && (() => {
+                        const q = detailMatSearch.toLowerCase()
+                        const hits = produseDB.filter(p => p.nume?.toLowerCase().includes(q) || p.marca?.toLowerCase().includes(q)).slice(0, 6)
+                        return hits.length > 0 ? (
+                          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.13)', zIndex: 300, border: '1px solid #EDE4DC', marginTop: '4px', overflow: 'hidden' }}>
+                            {hits.map(p => (
+                              <button key={p.id} type="button" onMouseDown={() => addMaterialToDetail(p)}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #F5EEE8', fontFamily: 'Georgia, serif' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                <div>
+                                  <span style={{ fontSize: '13px', color: '#1C1C1C' }}>{p.nume}</span>
+                                  {p.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '6px' }}>{p.marca}</span>}
+                                </div>
+                                <span style={{ fontSize: '11px', color: '#BBB' }}>stoc: {p.stoc_bucati ?? '—'}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : null
+                      })()}
+                    </div>
+                    {!detailMatShowNou ? (
+                      <button type="button" onClick={() => setDetailMatShowNou(true)}
+                        style={{ background: 'none', border: '1.5px dashed #D0C0B0', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', color: '#AAA', width: '100%', fontFamily: 'Georgia, serif' }}>
+                        + Adaugă produs nou în baza de date
+                      </button>
+                    ) : (
+                      <div style={{ background: '#FDF8F4', border: '1.5px solid #E8DDD0', borderRadius: '12px', padding: '14px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '10px' }}>PRODUS NOU</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <input value={detailMatNou.nume} onChange={e => setDetailMatNou({ ...detailMatNou, nume: e.target.value })} placeholder="Denumire produs *"
+                            style={{ width: '100%', border: `1.5px solid ${detailMatNou.nume ? '#E8DDD0' : s.ruby}`, borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: '#1C1C1C', boxSizing: 'border-box' }} autoFocus />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <input value={detailMatNou.marca} onChange={e => setDetailMatNou({ ...detailMatNou, marca: e.target.value })} placeholder="Marcă"
+                              style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: '#1C1C1C', boxSizing: 'border-box' }} />
+                            <input value={detailMatNou.categorie} onChange={e => setDetailMatNou({ ...detailMatNou, categorie: e.target.value })} placeholder="Categorie"
+                              style={{ width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: '#1C1C1C', boxSizing: 'border-box' }} />
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button type="button" onClick={salveazaMatNouToDetail} disabled={detailMatSavingNou || !detailMatNou.nume.trim()}
+                              style={{ flex: 2, background: detailMatSavingNou ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '9px', cursor: detailMatSavingNou ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
+                              {detailMatSavingNou ? 'Se salvează...' : 'Salvează și adaugă'}
+                            </button>
+                            <button type="button" onClick={() => { setDetailMatShowNou(false); setDetailMatNou({ nume: '', marca: '', categorie: '' }) }}
+                              style={{ flex: 1, background: 'white', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>
+                              Renunță
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Before / After foto */}
@@ -737,8 +886,6 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                   </button>
                 ))}
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
-                  <button onClick={() => { setDetailProg(null); setEditProg({ ...p }) }}
-                    style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', fontSize: '12px', background: 'white', color: '#555' }}>✏️ Editează</button>
                   {confirmDelete === p.id ? (
                     <>
                       <button onClick={() => { deleteProg(p.id); setDetailProg(null) }} style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '11px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Confirm</button>
@@ -951,12 +1098,16 @@ export default function AdminDashboard() {
     setToken(t)
   }, [])
 
+  function fetchServicii() {
+    fetch('/api/admin/servicii', { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setServiciiDB(d) })
+  }
+
   useEffect(() => {
     if (!token) return
     fetchProgramari()
     fetchClienti()
-    fetch('/api/admin/servicii', { headers: { 'x-admin-token': token } })
-      .then(r => r.json()).then(d => { if (Array.isArray(d)) setServiciiDB(d) })
+    fetchServicii()
     fetch('/api/admin/produse', { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
   }, [token])
@@ -995,6 +1146,7 @@ export default function AdminDashboard() {
   }
 
   function openAddForm() {
+    fetchServicii()
     setNewProg({
       nume: '', telefon: '', serviciu: '',
       data: formatDateRO(viewDate),
@@ -1528,7 +1680,8 @@ export default function AdminDashboard() {
                       <button onClick={() => setSlotPopup(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#AAA', fontSize: '16px', lineHeight: 1, padding: '0 0 0 8px' }}>✕</button>
                     </div>
                     <button onClick={() => {
-                      setNewProg({ ...newProg, data: formatDateRO(viewDate), ora: slotPopup.time, serviciu: '', plata: 'numerar', observatii: '' })
+                      fetchServicii()
+                      setNewProg({ nume: '', telefon: '', data: formatDateRO(viewDate), ora: slotPopup.time, serviciu: '', plata: 'numerar', observatii: '', tip_vizita: 'client' })
                       setSlotPopup(null)
                       setShowAddForm(true)
                     }} style={{ display: 'block', width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#1C1C1C' }}

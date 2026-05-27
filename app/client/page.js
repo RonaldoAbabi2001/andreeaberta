@@ -124,7 +124,7 @@ export default function ClientPage() {
         <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
         <p style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '5px', textTransform: 'uppercase', marginBottom: '16px' }}>✦ Bine ai revenit ✦</p>
-        <h1 style={{ color: 'white', fontSize: '42px', fontWeight: 'normal', margin: '0 0 12px', letterSpacing: '1px' }}>{prenume}</h1>
+        <h1 style={{ color: '#F0DFC0', fontSize: '42px', fontWeight: 'normal', margin: '0 0 12px', letterSpacing: '1px' }}>{prenume}</h1>
         <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', letterSpacing: '1px', margin: '0 0 40px' }}>{client?.telefon}</p>
 
         {/* Stats */}
@@ -161,8 +161,47 @@ export default function ClientPage() {
         </div>
       </div>
 
+      {/* Loyalty Widget */}
+      {client && (
+        (() => {
+          const puncte = Number(client.puncte) || 0
+          const vizite = Number(client.vizite_total) || 0
+          const GOAL = 500
+          const pct = Math.min(100, Math.round((puncte / GOAL) * 100))
+          const badge = vizite >= 50 ? { icon: '🌟', label: 'Legendă' }
+            : vizite >= 20 ? { icon: '👑', label: 'Client VIP' }
+            : vizite >= 10 ? { icon: '💎', label: 'Client de Top' }
+            : vizite >= 5  ? { icon: '⭐', label: 'Client Fidel' }
+            : null
+          return (
+            <div style={{ maxWidth: '640px', margin: '24px auto 0', padding: '0 20px', position: 'relative', zIndex: 4 }}>
+              <div style={{ background: 'white', borderRadius: '20px', padding: '20px 24px', boxShadow: '0 4px 20px rgba(155,27,48,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div>
+                    <p style={{ color: '#C9A84C', fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', margin: '0 0 2px' }}>Puncte EVOLIS</p>
+                    <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#9B1B30', margin: 0 }}>{puncte} <span style={{ fontSize: '13px', color: '#AAA', fontWeight: 'normal' }}>/ {GOAL} pt</span></p>
+                  </div>
+                  {badge && (
+                    <div style={{ textAlign: 'center', background: 'linear-gradient(135deg, #FDF8F3, #F5E8C8)', border: '1px solid #C9A84C', borderRadius: '12px', padding: '8px 14px' }}>
+                      <p style={{ fontSize: '20px', margin: '0 0 2px' }}>{badge.icon}</p>
+                      <p style={{ fontSize: '10px', color: '#9B1B30', letterSpacing: '1px', margin: 0, fontWeight: 'bold' }}>{badge.label}</p>
+                    </div>
+                  )}
+                </div>
+                <div style={{ background: '#F0EAE0', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #C9A84C, #9B1B30)', borderRadius: '99px', transition: 'width 0.6s ease' }} />
+                </div>
+                <p style={{ color: '#AAA', fontSize: '11px', marginTop: '8px', marginBottom: 0 }}>
+                  {puncte >= GOAL ? '🎁 Ai atins 500 puncte — contactează-ne pentru recompensă!' : `Mai ai ${GOAL - puncte} puncte până la recompensă`}
+                </p>
+              </div>
+            </div>
+          )
+        })()
+      )}
+
       {/* Urmează + buton rezervă */}
-      <div style={{ maxWidth: '640px', margin: '-32px auto 0', padding: '0 20px', position: 'relative', zIndex: 5 }}>
+      <div style={{ maxWidth: '640px', margin: '16px auto 0', padding: '0 20px', position: 'relative', zIndex: 5 }}>
 
         {urmatoarea ? (
           <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', boxShadow: '0 8px 40px rgba(155,27,48,0.12)', border: '1px solid rgba(201,168,76,0.2)', marginBottom: '16px' }}>

@@ -18,6 +18,7 @@ async function getDb() {
       creat TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE servicii ADD COLUMN IF NOT EXISTS tip TEXT DEFAULT 'principal'`
   const count = await sql`SELECT COUNT(*) FROM servicii WHERE salon_id = 'evolis'`
   if (parseInt(count[0].count) === 0) {
     const seed = [
@@ -58,7 +59,7 @@ export async function POST(request) {
   const sql = await getDb()
   const id = Date.now()
   const maxOrdine = await sql`SELECT COALESCE(MAX(ordine), 0) as m FROM servicii WHERE salon_id = 'evolis'`
-  await sql`INSERT INTO servicii (id, nume, pret, durata, ordine) VALUES (${id}, ${body.nume}, ${body.pret || 0}, ${body.durata || 60}, ${maxOrdine[0].m + 1})`
+  await sql`INSERT INTO servicii (id, nume, pret, durata, ordine, tip) VALUES (${id}, ${body.nume}, ${body.pret || 0}, ${body.durata || 60}, ${maxOrdine[0].m + 1}, ${body.tip || 'principal'})`
   return NextResponse.json({ success: true, id })
 }
 
@@ -66,7 +67,7 @@ export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
-  await sql`UPDATE servicii SET nume = ${body.nume}, pret = ${body.pret || 0}, durata = ${body.durata || 60} WHERE id = ${body.id}`
+  await sql`UPDATE servicii SET nume = ${body.nume}, pret = ${body.pret || 0}, durata = ${body.durata || 60}, tip = ${body.tip || 'principal'} WHERE id = ${body.id}`
   return NextResponse.json({ success: true })
 }
 

@@ -19,6 +19,8 @@ async function getDb() {
   `
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS parola TEXT`
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS provenienta TEXT`
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS puncte INTEGER DEFAULT 0`
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS vizite_total INTEGER DEFAULT 0`
   return sql
 }
 

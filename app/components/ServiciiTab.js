@@ -100,11 +100,11 @@ function GaleriePanel({ serviciu, onClose }) {
   )
 }
 
-const EMPTY = { nume: '', pret: '', durata: 60 }
+const EMPTY = { nume: '', pret: '', durata: 60, tip: 'principal' }
 
-function ServiciuModal({ serviciu, onClose, onSaved }) {
+function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' }) {
   const isNew = !serviciu?.id
-  const [form, setForm] = useState(serviciu ? { nume: serviciu.nume, pret: serviciu.pret, durata: serviciu.durata } : { ...EMPTY })
+  const [form, setForm] = useState(serviciu ? { nume: serviciu.nume, pret: serviciu.pret, durata: serviciu.durata, tip: serviciu.tip || 'principal' } : { ...EMPTY, tip: tipDefault })
   const [saving, setSaving] = useState(false)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -152,6 +152,21 @@ function ServiciuModal({ serviciu, onClose, onSaved }) {
             </div>
           </div>
 
+          <div>
+            <label style={lbl}>TIP SERVICIU</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[{v:'principal',l:'Principal (baza)'},{v:'extra',l:'Extra / Design'}].map(opt => (
+                <div key={opt.v} onClick={() => set('tip', opt.v)}
+                  style={{ flex:1, padding:'10px', borderRadius:'10px', textAlign:'center', cursor:'pointer', fontSize:'12px', fontWeight:'bold',
+                    background: form.tip === opt.v ? (opt.v === 'principal' ? s.ruby : '#7C3AED') : 'white',
+                    color: form.tip === opt.v ? 'white' : '#888',
+                    border: `1.5px solid ${form.tip === opt.v ? (opt.v === 'principal' ? s.ruby : '#7C3AED') : '#E0D0C0'}` }}>
+                  {opt.l}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Preview */}
           {form.nume && (
             <div style={{ background: s.nude, borderRadius: '10px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -182,6 +197,7 @@ export default function ServiciiTab() {
   const [editServiciu, setEditServiciu] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [galerieServiciu, setGalerieServiciu] = useState(null)
+  const [showModalTip, setShowModalTip] = useState('principal')
 
   async function load() {
     const res = await fetch('/api/admin/servicii', { headers: { 'x-admin-token': TOKEN } })
@@ -203,58 +219,33 @@ export default function ServiciiTab() {
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div style={{ width: '36px', height: '36px', border: `3px solid #F7EFE5`, borderTopColor: s.ruby, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /></div>
 
-  return (
-    <div style={{ padding: '24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0, color: s.text }}>Servicii</h2>
-          <p style={{ fontSize: '12px', color: '#999', margin: '3px 0 0' }}>Listă servicii salon EVOLIS · {servicii.length} servicii active</p>
-        </div>
-        <button onClick={() => { setEditServiciu(null); setShowModal(true) }}
-          style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(155,27,48,0.3)', fontFamily: 'Georgia, serif' }}>
-          + Serviciu nou
-        </button>
-      </div>
+  const principale = servicii.filter(s => (s.tip || 'principal') === 'principal')
+  const extraList  = servicii.filter(s => s.tip === 'extra')
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-        {[
-          { label: 'Servicii active', value: servicii.length, color: s.ruby },
-          { label: 'Preț mediu', value: servicii.length ? `${Math.round(totalVenit / servicii.length)} RON` : '—', color: '#065F46' },
-          { label: 'Durată medie', value: `${durataMedie} min`, color: '#0369A1' },
-        ].map(stat => (
-          <div key={stat.label} style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${stat.color}` }}>
-            <div style={{ fontSize: '11px', color: '#999', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 'bold' }}>{stat.label.toUpperCase()}</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: stat.color }}>{stat.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabel */}
+  function renderTabel(list, accentColor = s.ruby) {
+    return (
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-        {/* Header tabel */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '8px 20px', background: '#FAFAF8', borderBottom: '1px solid #F0EAE0' }}>
           {['DENUMIRE SERVICIU', 'PREȚ', 'DURATĂ', ''].map(h => (
             <div key={h} style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '0.8px', padding: '4px 0' }}>{h}</div>
           ))}
         </div>
 
-        {servicii.length === 0 ? (
+        {list.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px', color: '#AAA' }}>
             <div style={{ fontSize: '32px', marginBottom: '10px' }}>💅</div>
-            <div>Niciun serviciu. Apasă "+ Serviciu nou" pentru a adăuga.</div>
+            <div>Niciun serviciu în această categorie.</div>
           </div>
-        ) : servicii.map((serv, i) => (
+        ) : list.map((serv, i) => (
           <div key={serv.id}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '0 20px', borderBottom: i < servicii.length - 1 ? '1px solid #F7F2EC' : 'none', transition: 'background 0.15s' }}
+            style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '0 20px', borderBottom: i < list.length - 1 ? '1px solid #F7F2EC' : 'none', transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#FDF8F3'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
             <div style={{ padding: '14px 0', fontSize: '14px', color: s.text }}>{serv.nume}</div>
 
             <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '15px', fontWeight: 'bold', color: s.ruby }}>{serv.pret}</span>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: accentColor }}>{serv.pret}</span>
               <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>RON</span>
             </div>
 
@@ -280,11 +271,65 @@ export default function ServiciiTab() {
           </div>
         ))}
 
-        {servicii.length > 0 && (
+        {list.length > 0 && (
           <div style={{ padding: '10px 20px', background: '#FAFAF8', borderTop: '1px solid #F0EAE0', fontSize: '12px', color: '#AAA' }}>
-            {servicii.length} servicii active · Prețurile se aplică automat la adăugarea programărilor
+            {list.length} servicii active · Prețurile se aplică automat la adăugarea programărilor
           </div>
         )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: '24px' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0, color: s.text }}>Servicii</h2>
+        <p style={{ fontSize: '12px', color: '#999', margin: '3px 0 0' }}>Listă servicii salon EVOLIS · {servicii.length} servicii active</p>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '28px' }}>
+        {[
+          { label: 'Servicii active', value: servicii.length, color: s.ruby },
+          { label: 'Preț mediu', value: servicii.length ? `${Math.round(totalVenit / servicii.length)} RON` : '—', color: '#065F46' },
+          { label: 'Durată medie', value: `${durataMedie} min`, color: '#0369A1' },
+        ].map(stat => (
+          <div key={stat.label} style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${stat.color}` }}>
+            <div style={{ fontSize: '11px', color: '#999', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 'bold' }}>{stat.label.toUpperCase()}</div>
+            <div style={{ fontSize: '24px', fontWeight: '500', color: stat.color }}>{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Secțiunea Principale */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+          <div>
+            <h3 style={{ fontSize:'16px', fontWeight:'bold', color:s.ruby, margin:0 }}>Servicii Principale</h3>
+            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 2 în rezervare</p>
+          </div>
+          <button onClick={() => { setShowModalTip('principal'); setEditServiciu(null); setShowModal(true) }}
+            style={{ background:`linear-gradient(135deg,${s.ruby},#7A1525)`, color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
+            + Adaugă
+          </button>
+        </div>
+        {renderTabel(principale)}
+      </div>
+
+      {/* Secțiunea Extra/Design */}
+      <div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+          <div>
+            <h3 style={{ fontSize:'16px', fontWeight:'bold', color:'#7C3AED', margin:0 }}>Servicii Extra / Design</h3>
+            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 3 în rezervare (opțional)</p>
+          </div>
+          <button onClick={() => { setShowModalTip('extra'); setEditServiciu(null); setShowModal(true) }}
+            style={{ background:'linear-gradient(135deg,#7C3AED,#5B21B6)', color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
+            + Adaugă Extra
+          </button>
+        </div>
+        {renderTabel(extraList, '#7C3AED')}
       </div>
 
       {showModal && (
@@ -292,6 +337,7 @@ export default function ServiciiTab() {
           serviciu={editServiciu}
           onClose={() => { setShowModal(false); setEditServiciu(null) }}
           onSaved={() => { setShowModal(false); setEditServiciu(null); load() }}
+          tipDefault={showModalTip}
         />
       )}
 
