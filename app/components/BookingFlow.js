@@ -133,6 +133,8 @@ export default function BookingFlow() {
     } catch {}
   }, [step, serviciu, data, ora, plata, form, clientExistent, status])
 
+  useEffect(() => { fetchOcupate(data) }, [data])
+
   const todayDate = new Date(); todayDate.setHours(0,0,0,0)
   const allDates = generateFutureDates(12)
   const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
