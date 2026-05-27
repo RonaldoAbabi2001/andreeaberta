@@ -20,12 +20,21 @@ async function initTable(sql) {
   `
 }
 
-// GET — Beelink cere SMS-urile pending
+// GET — Beelink cere SMS-urile pending, sau admin cere SMS-urile unei programari
 export async function GET(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sql = neon(process.env.DATABASE_URL)
   await initTable(sql)
+  const { searchParams } = new URL(request.url)
+  const programare_id = searchParams.get('programare_id')
+  if (programare_id) {
+    const rows = await sql`
+      SELECT * FROM sms_queue WHERE programare_id = ${programare_id}
+      ORDER BY de_trimis_la ASC
+    `
+    return NextResponse.json(rows)
+  }
   const rows = await sql`
     SELECT * FROM sms_queue
     WHERE trimis = false AND de_trimis_la <= NOW()

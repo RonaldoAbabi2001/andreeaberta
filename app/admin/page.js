@@ -162,6 +162,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
   const [detailMatSavingNou, setDetailMatSavingNou] = useState(false)
   const [detailEdit, setDetailEdit] = useState({ serviciu: '', pret: '', tips: '', detalii_tehnice: '', despre_client: '' })
   const [savingDetailEdit, setSavingDetailEdit] = useState(false)
+  const [smsProgramare, setSmsProgramare] = useState([])
   const newDateRef = useRef(null)
 
   useEffect(() => {
@@ -170,6 +171,8 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setDetailOre({ start: detailProg.ora || '', sfarsit: detailProg.ora_sfarsit || '' })
     fetch(`/api/admin/materiale?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => setDetailMateriale(Array.isArray(d) ? d : [])).catch(() => setDetailMateriale([]))
+    fetch(`/api/sms-queue?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => setSmsProgramare(Array.isArray(d) ? d : [])).catch(() => setSmsProgramare([]))
     setDetailMatSearch('')
     setDetailMatShowNou(false)
     setDetailMatNou({ nume: '', marca: '', categorie: '' })
@@ -692,6 +695,34 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                     </div>
                   </div>
                 </div>
+
+                {/* SMS Status */}
+                {smsProgramare.length > 0 && (
+                  <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '12px' }}>SMS-URI</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {smsProgramare.map(sms => {
+                        const trimisLa = sms.trimis_la ? new Date(sms.trimis_la) : null
+                        const deTrimisLa = sms.de_trimis_la ? new Date(sms.de_trimis_la) : null
+                        const formatData = d => d ? `${d.getDate()} ${['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : ''
+                        const tipLabel = { confirmare: 'Confirmare', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
+                        let icon, statusText, statusColor
+                        if (sms.trimis) { icon = '✅'; statusText = `trimis ${formatData(trimisLa)}`; statusColor = '#1D9E75' }
+                        else if (sms.eroare) { icon = '❌'; statusText = `eroare: ${sms.eroare}`; statusColor = '#9B1B30' }
+                        else { icon = '⏳'; statusText = `programat ${formatData(deTrimisLa)}`; statusColor = '#AAA' }
+                        return (
+                          <div key={sms.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 10px', background: '#FDFAF7', borderRadius: '10px' }}>
+                            <span style={{ fontSize: '14px', lineHeight: '1.4' }}>{icon}</span>
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1C1C1C' }}>{tipLabel}</div>
+                              <div style={{ fontSize: '11px', color: statusColor, marginTop: '2px' }}>{statusText}</div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Ore: start + sfarsit */}
                 <div style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
