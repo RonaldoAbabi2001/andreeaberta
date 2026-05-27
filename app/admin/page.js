@@ -1091,6 +1091,12 @@ export default function AdminDashboard() {
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
   const [scheduleModal, setScheduleModal] = useState(null)
+  const [scheduleData, setScheduleData] = useState(null)
+  const [scheduleWorker, setScheduleWorker] = useState(null)
+  const [scheduleWeek, setScheduleWeek] = useState(null)
+  const [savingSchedule, setSavingSchedule] = useState(false)
+  const [scheduleTimeOff, setScheduleTimeOff] = useState([])
+  const [newTimeOff, setNewTimeOff] = useState({ data: '', tip: 'zi_libera', ora_start: '', ora_sfarsit: '', nota: '' })
   const [showSpecialistPicker, setShowSpecialistPicker] = useState(false)
   const [showScheduleOptions, setShowScheduleOptions] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -1167,6 +1173,21 @@ export default function AdminDashboard() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    if (!scheduleModal || !token) return
+    fetch('/api/admin/schedule', { headers: { 'x-admin-token': token } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.workers?.length) {
+          const w = d.workers[0]
+          setScheduleWorker(w.id)
+          setScheduleWeek(w.schedule)
+          setScheduleTimeOff(w.time_off || [])
+        }
+      })
+      .catch(() => {})
+  }, [scheduleModal])
 
   const authHeaders = () => ({ 'Content-Type': 'application/json', 'x-admin-token': token })
 
@@ -1502,6 +1523,7 @@ export default function AdminDashboard() {
                         { id: 'repetitiv', icon: '🔁', label: 'Orar repetitiv' },
                         { id: 'azi',       icon: '📋', label: 'Orar azi' },
                         { id: 'inchide',   icon: '🔒', label: 'Închide ziua', red: true },
+                        { id: 'concediu',  icon: '🏖️', label: 'Concediu / Zile libere' },
                       ].map(opt => (
                         <button key={opt.id} onClick={() => { setScheduleModal(opt.id); setShowScheduleOptions(false) }}
                           style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'transparent', border: 'none', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '13px', color: opt.red ? '#EF4444' : '#333', textAlign: 'left' }}
@@ -2556,56 +2578,316 @@ export default function AdminDashboard() {
 
       {/* Modal orar lucru */}
       {scheduleModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '24px', padding: '32px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={e => { if (e.target === e.currentTarget) setScheduleModal(null) }}>
+          <div style={{ background: 'white', borderRadius: '24px', padding: '28px', maxWidth: '520px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 'normal', margin: 0, color: s.ruby }}>
                 {scheduleModal === 'repetitiv' && '🔁 Orar repetitiv'}
                 {scheduleModal === 'azi' && '📋 Orar pentru azi'}
                 {scheduleModal === 'inchide' && '🔒 Închide ziua de lucru'}
+                {scheduleModal === 'concediu' && '🏖️ Concediu / Zile libere'}
               </h3>
-              <button onClick={() => setScheduleModal(null)} style={{ background: '#F0EAE0', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              <button onClick={() => setScheduleModal(null)} style={{ background: '#F0EAE0', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
 
+            {/* ---- ORAR REPETITIV ---- */}
             {scheduleModal === 'repetitiv' && (
               <div>
-                <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Setează orarul săptămânal implicit — se aplică în fiecare săptămână.</p>
-                {['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'].map(zi => (
-                  <div key={zi} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                    <span style={{ width: '80px', fontSize: '13px', color: '#555' }}>{zi}</span>
-                    <input type="time" defaultValue="09:00" className="input-field" style={{ flex: 1 }} />
-                    <span style={{ fontSize: '12px', color: '#999' }}>—</span>
-                    <input type="time" defaultValue="19:00" className="input-field" style={{ flex: 1 }} />
+                <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>Orarul săptămânal implicit — se aplică automat în fiecare săptămână.</p>
+                {scheduleWeek ? (
+                  <>
+                    {['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică'].map((numeZi, idx) => {
+                      const row = scheduleWeek[idx] || { zi: idx, activ: false, ora_start: '09:00', ora_sfarsit: '19:00', pauza_start: '12:00', pauza_sfarsit: '13:00' }
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', padding: '10px 12px', background: row.activ ? '#FAFAFA' : '#F5F5F5', borderRadius: '10px', border: `1px solid ${row.activ ? '#EEE' : '#E0E0E0'}` }}>
+                          <input type="checkbox" checked={!!row.activ}
+                            onChange={e => {
+                              const updated = [...scheduleWeek]
+                              updated[idx] = { ...row, activ: e.target.checked }
+                              setScheduleWeek(updated)
+                            }}
+                            style={{ width: '16px', height: '16px', accentColor: s.ruby, cursor: 'pointer', flexShrink: 0 }}
+                          />
+                          <span style={{ width: '72px', fontSize: '13px', color: row.activ ? '#333' : '#AAA', fontWeight: row.activ ? '500' : 'normal', flexShrink: 0 }}>{numeZi}</span>
+                          {row.activ ? (
+                            <>
+                              <input type="time" value={row.ora_start || '09:00'}
+                                onChange={e => { const u=[...scheduleWeek]; u[idx]={...row,ora_start:e.target.value}; setScheduleWeek(u) }}
+                                style={{ flex: 1, padding: '6px 8px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', fontFamily: 'Georgia, serif' }}
+                              />
+                              <span style={{ fontSize: '11px', color: '#AAA' }}>—</span>
+                              <input type="time" value={row.ora_sfarsit || '19:00'}
+                                onChange={e => { const u=[...scheduleWeek]; u[idx]={...row,ora_sfarsit:e.target.value}; setScheduleWeek(u) }}
+                                style={{ flex: 1, padding: '6px 8px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', fontFamily: 'Georgia, serif' }}
+                              />
+                              <span style={{ fontSize: '11px', color: s.gold, flexShrink: 0 }}>P</span>
+                              <input type="time" value={row.pauza_start || ''}
+                                placeholder="--:--"
+                                onChange={e => { const u=[...scheduleWeek]; u[idx]={...row,pauza_start:e.target.value||null}; setScheduleWeek(u) }}
+                                style={{ flex: 1, padding: '6px 8px', border: `1px solid ${s.gold}`, borderRadius: '8px', fontSize: '12px', fontFamily: 'Georgia, serif' }}
+                              />
+                              <span style={{ fontSize: '11px', color: '#AAA' }}>—</span>
+                              <input type="time" value={row.pauza_sfarsit || ''}
+                                placeholder="--:--"
+                                onChange={e => { const u=[...scheduleWeek]; u[idx]={...row,pauza_sfarsit:e.target.value||null}; setScheduleWeek(u) }}
+                                style={{ flex: 1, padding: '6px 8px', border: `1px solid ${s.gold}`, borderRadius: '8px', fontSize: '12px', fontFamily: 'Georgia, serif' }}
+                              />
+                            </>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#AAA', flex: 1 }}>Zi închisă</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <button
+                      disabled={savingSchedule}
+                      onClick={async () => {
+                        if (!scheduleWorker || !scheduleWeek) return
+                        setSavingSchedule(true)
+                        await fetch('/api/admin/schedule', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                          body: JSON.stringify({ type: 'schedule', worker_id: scheduleWorker, schedule: scheduleWeek })
+                        })
+                        setSavingSchedule(false)
+                        setScheduleModal(null)
+                      }}
+                      style={{ width: '100%', padding: '13px', borderRadius: '50px', border: 'none', background: savingSchedule ? '#DDD' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', cursor: savingSchedule ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px', marginTop: '8px', boxShadow: savingSchedule ? 'none' : '0 4px 16px rgba(155,27,48,0.3)' }}>
+                      {savingSchedule ? 'Se salvează...' : 'SALVEAZĂ ORARUL'}
+                    </button>
+                  </>
+                ) : (
+                  <p style={{ color: '#AAA', fontSize: '14px', textAlign: 'center', padding: '20px' }}>Se încarcă...</p>
+                )}
+
+                {/* Existing time_off list */}
+                {scheduleTimeOff.length > 0 && (
+                  <div style={{ marginTop: '20px', borderTop: '1px solid #F0EAE0', paddingTop: '16px' }}>
+                    <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Zile speciale salvate</p>
+                    {scheduleTimeOff.map(to => (
+                      <div key={to.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#FFF8F8', borderRadius: '8px', marginBottom: '6px', border: '1px solid #FFE0E0' }}>
+                        <div>
+                          <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>{to.data}</span>
+                          <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '8px' }}>{to.tip}{to.ora_start ? ` ${to.ora_start}–${to.ora_sfarsit}` : ''}</span>
+                          {to.nota && <span style={{ fontSize: '11px', color: '#888', marginLeft: '6px' }}>· {to.nota}</span>}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/admin/schedule', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                              body: JSON.stringify({ id: to.id, type: 'time_off' })
+                            })
+                            setScheduleTimeOff(prev => prev.filter(x => x.id !== to.id))
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: '16px', padding: '2px 6px', borderRadius: '6px' }}>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <button className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '14px', marginTop: '16px' }} onClick={() => setScheduleModal(null)}>SALVEAZĂ ORARUL</button>
+                )}
               </div>
             )}
 
+            {/* ---- ORAR AZI ---- */}
             {scheduleModal === 'azi' && (
               <div>
-                <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Modifică orarul doar pentru <strong>{dateStr(viewDate)}</strong> — nu afectează celelalte zile.</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '13px', color: '#555' }}>Program:</span>
-                  <input type="time" defaultValue="09:00" className="input-field" style={{ flex: 1 }} />
-                  <span style={{ fontSize: '12px', color: '#999' }}>—</span>
-                  <input type="time" defaultValue="19:00" className="input-field" style={{ flex: 1 }} />
+                <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+                  Modifică orarul doar pentru <strong>{dateStr(viewDate)}</strong> — nu afectează celelalte zile.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Ora start</label>
+                    <input type="time"
+                      value={newTimeOff.ora_start || '09:00'}
+                      onChange={e => setNewTimeOff(prev => ({ ...prev, ora_start: e.target.value }))}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Ora sfârșit</label>
+                    <input type="time"
+                      value={newTimeOff.ora_sfarsit || '19:00'}
+                      onChange={e => setNewTimeOff(prev => ({ ...prev, ora_sfarsit: e.target.value }))}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', boxSizing: 'border-box' }}
+                    />
+                  </div>
                 </div>
-                <button className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '14px' }} onClick={() => setScheduleModal(null)}>SALVEAZĂ PENTRU AZI</button>
+                <p style={{ fontSize: '11px', color: '#AAA', marginBottom: '20px' }}>Pauza va fi eliminată pentru această zi. Poți adăuga una din orar repetitiv dacă e nevoie.</p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setScheduleModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '50px', border: '1.5px solid #DDD', background: 'white', cursor: 'pointer', fontSize: '13px', color: '#555' }}>Anulează</button>
+                  <button
+                    disabled={savingSchedule}
+                    onClick={async () => {
+                      if (!scheduleWorker) return
+                      setSavingSchedule(true)
+                      await fetch('/api/admin/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                        body: JSON.stringify({
+                          type: 'time_off',
+                          worker_id: scheduleWorker,
+                          data: formatDateRO(viewDate),
+                          tip: 'orar_zi',
+                          ora_start: newTimeOff.ora_start || '09:00',
+                          ora_sfarsit: newTimeOff.ora_sfarsit || '19:00',
+                          nota: ''
+                        })
+                      })
+                      setSavingSchedule(false)
+                      setNewTimeOff({ data: '', tip: 'zi_libera', ora_start: '', ora_sfarsit: '', nota: '' })
+                      setScheduleModal(null)
+                    }}
+                    style={{ flex: 1, padding: '12px', borderRadius: '50px', border: 'none', background: savingSchedule ? '#DDD' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', cursor: savingSchedule ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    {savingSchedule ? 'Se salvează...' : 'SALVEAZĂ PENTRU AZI'}
+                  </button>
+                </div>
               </div>
             )}
 
+            {/* ---- INCHIDE ZIUA ---- */}
             {scheduleModal === 'inchide' && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-                <p style={{ color: '#666', fontSize: '14px', marginBottom: '8px' }}>Ești sigură că vrei să marchezi <strong>{dateStr(viewDate)}</strong> ca zi liberă?</p>
+                <p style={{ color: '#444', fontSize: '15px', marginBottom: '8px' }}>
+                  Marchezi <strong style={{ color: s.ruby }}>{dateStr(viewDate)}</strong> ca zi liberă?
+                </p>
                 <p style={{ color: '#AAA', fontSize: '12px', marginBottom: '28px' }}>Clientele nu vor mai putea face programări în această zi.</p>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button onClick={() => setScheduleModal(null)} style={{ flex: 1, padding: '13px', borderRadius: '50px', border: '1.5px solid #DDD', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#555' }}>Anulează</button>
-                  <button onClick={() => setScheduleModal(null)} style={{ flex: 1, padding: '13px', borderRadius: '50px', border: 'none', background: '#EF4444', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>Închide ziua</button>
+                  <button
+                    disabled={savingSchedule}
+                    onClick={async () => {
+                      if (!scheduleWorker) return
+                      setSavingSchedule(true)
+                      await fetch('/api/admin/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                        body: JSON.stringify({
+                          type: 'time_off',
+                          worker_id: scheduleWorker,
+                          data: formatDateRO(viewDate),
+                          tip: 'zi_libera',
+                          nota: ''
+                        })
+                      })
+                      setSavingSchedule(false)
+                      setScheduleModal(null)
+                    }}
+                    style={{ flex: 1, padding: '13px', borderRadius: '50px', border: 'none', background: savingSchedule ? '#DDD' : '#EF4444', color: 'white', cursor: savingSchedule ? 'default' : 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
+                    {savingSchedule ? 'Se procesează...' : 'Închide ziua'}
+                  </button>
                 </div>
               </div>
             )}
+
+            {/* ---- CONCEDIU ---- */}
+            {scheduleModal === 'concediu' && (
+              <div>
+                <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>Adaugă concediu sau zile libere pentru o perioadă. Clientele nu vor putea face programări în zilele respective.</p>
+
+                {/* Form adaugare */}
+                <div style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', marginBottom: '16px', border: '1px solid #EEE' }}>
+                  <p style={{ fontSize: '12px', color: '#888', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Perioadă nouă</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Data start</label>
+                      <input type="date"
+                        value={newTimeOff.data || ''}
+                        onChange={e => setNewTimeOff(prev => ({ ...prev, data: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Data sfârșit</label>
+                      <input type="date"
+                        value={newTimeOff.ora_sfarsit || ''}
+                        onChange={e => setNewTimeOff(prev => ({ ...prev, ora_sfarsit: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Notă (opțional)</label>
+                    <input type="text"
+                      value={newTimeOff.nota || ''}
+                      onChange={e => setNewTimeOff(prev => ({ ...prev, nota: e.target.value }))}
+                      placeholder="ex: Concediu anual"
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <button
+                    disabled={savingSchedule || !newTimeOff.data}
+                    onClick={async () => {
+                      if (!scheduleWorker || !newTimeOff.data) return
+                      setSavingSchedule(true)
+                      // Generate all dates in range
+                      const startDate = new Date(newTimeOff.data)
+                      const endDate = newTimeOff.ora_sfarsit ? new Date(newTimeOff.ora_sfarsit) : new Date(newTimeOff.data)
+                      const added = []
+                      const cur = new Date(startDate)
+                      while (cur <= endDate) {
+                        const dataStr = `${cur.getDate()} ${LUNI[cur.getMonth()]} ${cur.getFullYear()}`
+                        const res = await fetch('/api/admin/schedule', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                          body: JSON.stringify({
+                            type: 'time_off',
+                            worker_id: scheduleWorker,
+                            data: dataStr,
+                            tip: 'concediu',
+                            nota: newTimeOff.nota || ''
+                          })
+                        })
+                        const r = await res.json()
+                        if (r.id) added.push({ id: r.id, data: dataStr, tip: 'concediu', nota: newTimeOff.nota || '', ora_start: null, ora_sfarsit: null })
+                        cur.setDate(cur.getDate() + 1)
+                      }
+                      setScheduleTimeOff(prev => [...added, ...prev])
+                      setNewTimeOff({ data: '', tip: 'zi_libera', ora_start: '', ora_sfarsit: '', nota: '' })
+                      setSavingSchedule(false)
+                    }}
+                    style={{ width: '100%', padding: '11px', borderRadius: '50px', border: 'none', background: savingSchedule || !newTimeOff.data ? '#DDD' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', cursor: savingSchedule || !newTimeOff.data ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    {savingSchedule ? 'Se salvează...' : '+ ADAUGĂ CONCEDIU'}
+                  </button>
+                </div>
+
+                {/* Lista existenta */}
+                {scheduleTimeOff.filter(t => t.tip === 'concediu' || t.tip === 'zi_libera').length > 0 ? (
+                  <div>
+                    <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Zile libere / Concediu salvate</p>
+                    {scheduleTimeOff
+                      .filter(t => t.tip === 'concediu' || t.tip === 'zi_libera')
+                      .map(to => (
+                        <div key={to.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#FFF8F0', borderRadius: '10px', marginBottom: '6px', border: `1px solid ${s.gold}40` }}>
+                          <div>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{to.data}</span>
+                            <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '8px', background: '#F0EAE0', borderRadius: '4px', padding: '1px 6px' }}>{to.tip === 'concediu' ? '🏖️ Concediu' : '🔒 Zi liberă'}</span>
+                            {to.nota && <p style={{ fontSize: '11px', color: '#888', margin: '2px 0 0' }}>{to.nota}</p>}
+                          </div>
+                          <button
+                            onClick={async () => {
+                              await fetch('/api/admin/schedule', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                                body: JSON.stringify({ id: to.id, type: 'time_off' })
+                              })
+                              setScheduleTimeOff(prev => prev.filter(x => x.id !== to.id))
+                            }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: '16px', padding: '4px 8px', borderRadius: '6px', flexShrink: 0 }}>
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p style={{ color: '#AAA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>Nu există zile libere / concediu salvate.</p>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       )}

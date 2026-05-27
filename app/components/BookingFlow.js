@@ -8,17 +8,26 @@ const SPECIALIST = {
   adresa: 'EVOLIS MANI B-dul Dacia n.6 PIATRA NEAMT',
 }
 
-function generateSlots(durata) {
+function generateSlots(durata, orar) {
   const slots = []
-  const ranges = [[9*60, 12*60], [13*60, 19*60]]
-  for (const [start, end] of ranges) {
-    let t = start
-    while (t + durata <= end) {
-      const h = String(Math.floor(t/60)).padStart(2,'0')
-      const m = String(t%60).padStart(2,'0')
-      slots.push(`${h}:${m}`)
-      t += durata
+  if (!orar || orar.inchis) return slots
+  const start = orar.ora_start || '09:00'
+  const end = orar.ora_sfarsit || '19:00'
+  const toMin = t => { const [h,m] = t.split(':').map(Number); return h*60+m }
+  const startMin = toMin(start)
+  const endMin = toMin(end)
+  const pauzaStart = orar.pauza_start ? toMin(orar.pauza_start) : null
+  const pauzaEnd = orar.pauza_sfarsit ? toMin(orar.pauza_sfarsit) : null
+  let t = startMin
+  while (t + durata <= endMin) {
+    if (pauzaStart !== null && pauzaEnd !== null) {
+      const slotEnd = t + durata
+      if (t < pauzaEnd && slotEnd > pauzaStart) { t += durata; continue }
     }
+    const h = String(Math.floor(t/60)).padStart(2,'0')
+    const m = String(t%60).padStart(2,'0')
+    slots.push(`${h}:${m}`)
+    t += durata
   }
   return slots
 }
@@ -70,6 +79,7 @@ export default function BookingFlow() {
   const [visibleMonth, setVisibleMonth] = useState(() => new Date().getMonth())
   const [visibleYear, setVisibleYear] = useState(() => new Date().getFullYear())
   const [ocupate, setOcupate] = useState([])
+  const [orarZi, setOrarZi] = useState(null)
   const scrollRef = useRef(null)
   const dayRefs = useRef({})
 
@@ -139,7 +149,7 @@ export default function BookingFlow() {
   const allDates = generateFutureDates(12)
   const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
   const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + e.durata, 0) : 0
-  const slots = serviciu ? generateSlots(durataTotal) : []
+  const slots = (serviciu && orarZi && !orarZi.inchis) ? generateSlots(durataTotal, orarZi) : []
 
   const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
 
@@ -167,10 +177,15 @@ export default function BookingFlow() {
     if (!d) return
     try {
       const dataStr = formatData(d)
-      const res = await fetch(`/api/programare/ocupate?data=${encodeURIComponent(dataStr)}`)
-      const rows = await res.json()
+      const [resOcupate, resOrar] = await Promise.all([
+        fetch(`/api/programare/ocupate?data=${encodeURIComponent(dataStr)}`),
+        fetch(`/api/orar?data=${encodeURIComponent(dataStr)}`)
+      ])
+      const rows = await resOcupate.json()
+      const orar = await resOrar.json()
       setOcupate(Array.isArray(rows) ? rows : [])
-    } catch { setOcupate([]) }
+      setOrarZi(orar && typeof orar === 'object' ? orar : null)
+    } catch { setOcupate([]); setOrarZi(null) }
   }
 
   function isPast(slot) {
@@ -452,17 +467,30 @@ export default function BookingFlow() {
 
           {data && (
             <div>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
-                {slots.filter(slot => !isBlocked(slot) && !isPast(slot)).map(slot => {
-                  const selected = ora === slot
-                  return (
-                    <div key={slot} onClick={() => setOra(slot)}
-                      style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}
-                    >{slot}</div>
-                  )
-                })}
-              </div>
+              {orarZi?.inchis ? (
+                <p style={{ color: style.ruby, fontSize: '14px', textAlign: 'center', padding: '20px', background: '#FFF0F2', borderRadius: '12px', marginBottom: '16px', border: `1px solid ${style.ruby}` }}>
+                  Zi indisponibilă — alegeți o altă dată
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
+                    {slots.filter(slot => !isBlocked(slot) && !isPast(slot)).map(slot => {
+                      const selected = ora === slot
+                      return (
+                        <div key={slot} onClick={() => setOra(slot)}
+                          style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}
+                        >{slot}</div>
+                      )
+                    })}
+                  </div>
+                  {data && orarZi && !orarZi.inchis && slots.filter(s => !isBlocked(s) && !isPast(s)).length === 0 && (
+                    <p style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '16px', background: '#F9F9F9', borderRadius: '12px', marginBottom: '16px' }}>
+                      Nu mai sunt ore disponibile în această zi
+                    </p>
+                  )}
+                </>
+              )}
               {ora && (
                 <button onClick={() => setStep(5)} className="btn-primary" style={{ width: '100%', textAlign: 'center', padding: '16px', fontSize: '14px' }}>
                   CONTINUAȚI →
