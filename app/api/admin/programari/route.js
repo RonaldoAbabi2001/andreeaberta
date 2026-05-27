@@ -59,10 +59,19 @@ export async function POST(request) {
     const oraF = body.ora || ''
     const serviciu = body.serviciu || ''
 
-    // 1. Confirmare imediata
-    const msgConf = `Buna ziua ${numeClient}! Programarea ta la EVOLIS a fost confirmata pentru ${dataF} ora ${oraF}. Serviciu: ${serviciu}. Te asteptam! 💅`
-    await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
-      VALUES (${Date.now()},${body.telefon},${msgConf},'confirmare',${id},NOW())`
+    // 1. Confirmare imediata — doar daca programarea nu a trecut deja
+    const acum = new Date()
+    let programareInViitor = false
+    if (dataF && oraF) {
+      const [an, luna, zi] = dataF.split('-').map(Number)
+      const [h, m] = oraF.split(':').map(Number)
+      programareInViitor = new Date(an, luna - 1, zi, h || 0, m || 0) > acum
+    }
+    if (programareInViitor) {
+      const msgConf = `Buna ziua ${numeClient}! Programarea ta la EVOLIS a fost confirmata pentru ${dataF} ora ${oraF}. Serviciu: ${serviciu}. Te asteptam! 💅`
+      await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
+        VALUES (${Date.now()},${body.telefon},${msgConf},'confirmare',${id},NOW())`
+    }
 
     // 2. Reminder cu 24h inainte
     if (dataF && oraF) {
