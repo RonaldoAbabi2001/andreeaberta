@@ -161,11 +161,20 @@ export default function BookingFlow() {
   async function fetchOcupate(d) {
     if (!d) return
     try {
-      const dataISO = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      const res = await fetch(`/api/programare/ocupate?data=${dataISO}`)
+      const dataStr = formatData(d)
+      const res = await fetch(`/api/programare/ocupate?data=${encodeURIComponent(dataStr)}`)
       const rows = await res.json()
       setOcupate(Array.isArray(rows) ? rows : [])
     } catch { setOcupate([]) }
+  }
+
+  function isPast(slot) {
+    if (!data) return false
+    const now = new Date()
+    const today = new Date(); today.setHours(0,0,0,0)
+    if (data > today) return false
+    const [h, m] = slot.split(':').map(Number)
+    return h * 60 + m <= now.getHours() * 60 + now.getMinutes()
   }
 
   function scrollToMonth(month, year) {
@@ -432,7 +441,7 @@ export default function BookingFlow() {
             <div>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
-                {slots.filter(slot => !isBlocked(slot)).map(slot => {
+                {slots.filter(slot => !isBlocked(slot) && !isPast(slot)).map(slot => {
                   const selected = ora === slot
                   return (
                     <div key={slot} onClick={() => setOra(slot)}
