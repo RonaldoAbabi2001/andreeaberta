@@ -432,14 +432,8 @@ export default function BookingFlow() {
             <div>
               <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
-                {slots.map(slot => {
+                {slots.filter(slot => !isBlocked(slot)).map(slot => {
                   const selected = ora === slot
-                  const blocked = isBlocked(slot)
-                  if (blocked) return (
-                    <div key={slot} title="Oră rezervată"
-                      style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'not-allowed', background: '#F5F5F5', color: '#BBBBB', border: '1.5px solid #E8E8E8', fontSize: '14px', textDecoration: 'line-through', opacity: 0.55, userSelect: 'none' }}
-                    >{slot}</div>
-                  )
                   return (
                     <div key={slot} onClick={() => setOra(slot)}
                       style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}
