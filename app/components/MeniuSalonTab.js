@@ -15,6 +15,14 @@ const SECTIUNI = [
     ready: true,
   },
   {
+    id: 'roata',
+    icon: '🎡',
+    label: 'Roata Norocului',
+    desc: 'Vezi codurile câștigate, validează-le la salon',
+    color: '#7C3AED',
+    ready: true,
+  },
+  {
     id: 'sms',
     icon: '📨',
     label: 'SMS în masă',
@@ -83,6 +91,105 @@ const SECTIUNI = [
     ready: false,
   },
 ]
+
+function RoataAdmin({ token, onBack }) {
+  const [rows, setRows] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
+
+  async function load() {
+    setLoading(true)
+    const res = await fetch('/api/roata', { headers: { 'x-admin-token': token } })
+    setRows(await res.json())
+    setLoading(false)
+  }
+
+  async function marcheazaFolosit(cod) {
+    await fetch('/api/roata', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ cod })
+    })
+    setRows(r => r.map(x => x.cod === cod ? { ...x, folosit: true } : x))
+  }
+
+  useState(() => { load() }, [])
+
+  const filtered = (rows || []).filter(r =>
+    r.telefon?.includes(search) || r.nume?.toLowerCase().includes(search.toLowerCase()) || r.cod?.includes(search.toUpperCase())
+  )
+  const total = (rows || []).length
+  const folosite = (rows || []).filter(r => r.folosit).length
+  const nefolosite = total - folosite
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={onBack} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
+        <span style={{ color: '#CCC' }}>/</span>
+        <span style={{ fontSize: '14px', color: '#1C1C1C', fontFamily: 'Georgia, serif' }}>🎡 Roata Norocului</span>
+      </div>
+
+      <div style={{ padding: '20px 24px', flex: 1, overflowY: 'auto' }}>
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total jocuri', val: total, color: '#7C3AED' },
+            { label: 'Coduri active', val: nefolosite, color: '#10B981' },
+            { label: 'Coduri folosite', val: folosite, color: '#888' },
+          ].map(st => (
+            <div key={st.label} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', minWidth: '120px', borderTop: `3px solid ${st.color}` }}>
+              <p style={{ fontSize: '26px', fontWeight: 'bold', color: st.color, margin: '0 0 4px', fontFamily: 'Georgia, serif' }}>{rows ? st.val : '—'}</p>
+              <p style={{ fontSize: '12px', color: '#aaa', margin: 0 }}>{st.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <input
+          placeholder="Caută după nume, telefon sau cod..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: '100%', maxWidth: '400px', padding: '10px 14px', border: '1px solid #E8DDD0', borderRadius: '10px', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box' }}
+        />
+
+        {loading && <p style={{ color: '#aaa', fontSize: '14px' }}>Se încarcă...</p>}
+
+        {!loading && rows && filtered.length === 0 && (
+          <p style={{ color: '#aaa', fontSize: '14px' }}>Niciun rezultat{search ? ' pentru această căutare' : ' — nimeni nu a jucat încă'}.</p>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filtered.map(r => (
+              <div key={r.id} style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', borderLeft: `4px solid ${r.folosit ? '#ddd' : '#7C3AED'}`, opacity: r.folosit ? 0.6 : 1 }}>
+                <div style={{ flex: 1, minWidth: '160px' }}>
+                  <p style={{ fontWeight: 'bold', fontSize: '15px', margin: '0 0 2px', fontFamily: 'Georgia, serif' }}>{r.nume || '—'}</p>
+                  <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>{r.telefon}</p>
+                </div>
+                <div style={{ minWidth: '140px' }}>
+                  <p style={{ color: '#9B1B30', fontWeight: 'bold', fontSize: '14px', margin: '0 0 2px' }}>{r.premiu}</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '16px', letterSpacing: '3px', color: '#444', margin: 0 }}>{r.cod}</p>
+                </div>
+                <div style={{ minWidth: '100px', textAlign: 'right' }}>
+                  <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 6px' }}>{new Date(r.creat).toLocaleDateString('ro-RO')}</p>
+                  {r.folosit ? (
+                    <span style={{ background: '#F3F4F6', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', color: '#aaa' }}>✓ Folosit</span>
+                  ) : (
+                    <button onClick={() => marcheazaFolosit(r.cod)}
+                      style={{ background: '#7C3AED', color: 'white', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      Validează
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function SmsBulkSection({ token, clientiCount, onBack }) {
   const [mesaj, setMesaj] = useState('')
@@ -212,6 +319,10 @@ export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
         <ServiciiTab />
       </div>
     )
+  }
+
+  if (sectiune === 'roata') {
+    return <RoataAdmin token={token} onBack={() => setSectiune(null)} />
   }
 
   if (sectiune === 'sms') {
