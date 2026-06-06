@@ -1443,7 +1443,6 @@ export default function AdminDashboard() {
             { id: 'analitica', icon: (a) => <IcoAnalitica active={a} size={32} />, label: 'Analitica' },
             { id: 'rapoarte', icon: (a) => <IcoRapoarte active={a} size={32} />, label: 'Rapoarte' },
             { id: 'import', icon: (a) => <IcoImport active={a} size={32} />, label: 'Import CSV' },
-            { id: 'sms', icon: (a) => <IcoSms active={a} size={32} />, label: 'SMS în masă' },
             { id: 'setari', icon: (a) => <IcoSetari active={a} size={32} />, label: 'Setări Admin' },
           ].map(item => {
             const active = tab === item.id
@@ -2451,74 +2450,7 @@ export default function AdminDashboard() {
 
         {/* PRODUSE TAB */}
         {tab === 'produse' && <ProdusTab />}
-        {tab === 'meniu' && <MeniuSalonTab />}
-
-        {/* SMS ÎN MASĂ TAB */}
-        {tab === 'sms' && (
-          <div style={{ padding: '24px', maxWidth: '680px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'normal', marginBottom: '6px' }}>SMS în masă</h2>
-            <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
-              Mesajul se trimite prin routerul TP-Link (SIM propriu) — fără costuri externe.<br />
-              <strong>{clienti.filter(c => c.telefon).length} clienți</strong> cu număr de telefon salvat.
-            </p>
-
-            {/* Mesaj template sugerat */}
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>Template rapid:</p>
-              <button onClick={() => setSmsMesaj(`Bună! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. 🎉 La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm! 💅`)}
-                style={{ padding: '8px 16px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#9B1B30' }}>
-                📋 Folosește template-ul
-              </button>
-            </div>
-
-            <textarea
-              value={smsMesaj}
-              onChange={e => { setSmsMesaj(e.target.value); setSmsStatus(null); setSmsPreview(null) }}
-              rows={6}
-              className="input-field"
-              placeholder="Scrie mesajul SMS aici..."
-              style={{ marginBottom: '8px', fontSize: '14px' }}
-            />
-            <p style={{ fontSize: '12px', color: smsMesaj.length > 160 ? '#E53E3E' : '#aaa', marginBottom: '16px' }}>
-              {smsMesaj.length}/160 caractere {smsMesaj.length > 160 ? `— ${Math.ceil(smsMesaj.length / 160)} SMS-uri per număr` : '— 1 SMS per număr'}
-            </p>
-
-            <button onClick={smsBulkPreview} disabled={!smsMesaj.trim() || smsStatus === 'loading'}
-              className="btn-primary" style={{ padding: '14px 32px', fontSize: '14px' }}>
-              VERIFICĂ ȘI TRIMITE
-            </button>
-
-            {smsPreview && (
-              <div style={{ marginTop: '16px', padding: '20px', background: '#FFF8E7', borderRadius: '12px', border: '1px solid #C9A84C' }}>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '15px' }}>
-                  ⚠️ Confirmare trimitere masivă
-                </p>
-                <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>
-                  Se vor trimite <strong>{smsPreview.nrClienti} SMS-uri</strong> la toți clienții cu telefon.
-                </p>
-                <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#444', marginBottom: '16px', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                  {smsPreview.mesaj}
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={smsBulkTrimite} className="btn-primary" style={{ padding: '10px 24px', fontSize: '14px' }}>
-                    DA, TRIMITE LA TOȚI ({smsPreview.nrClienti})
-                  </button>
-                  <button onClick={() => setSmsPreview(null)}
-                    style={{ padding: '10px 20px', background: 'none', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#888' }}>
-                    Anulează
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {smsStatus && smsStatus !== 'loading' && (
-              <p style={{ marginTop: '16px', fontSize: '14px', color: smsStatus.startsWith('✅') ? '#10B981' : '#E53E3E' }}>{smsStatus}</p>
-            )}
-            {smsStatus === 'loading' && (
-              <p style={{ marginTop: '16px', fontSize: '14px', color: '#888' }}>Se adaugă în coadă...</p>
-            )}
-          </div>
-        )}
+        {tab === 'meniu' && <MeniuSalonTab token={token} clientiCount={clienti.filter(c => c.telefon).length} />}
 
         {/* SETĂRI TAB */}
         {tab === 'setari' && (
