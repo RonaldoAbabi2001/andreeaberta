@@ -63,9 +63,21 @@ export async function POST(request) {
 
   if (body.bulk) {
     const sql = await getDb()
-    let inserted = 0
+    const telefoane = body.clienti.map(c => c.telefon).filter(Boolean)
+    const existenti = telefoane.length > 0
+      ? await sql`SELECT telefon FROM clienti WHERE telefon = ANY(${telefoane})`
+      : []
+    const existenteSet = new Set(existenti.map(r => r.telefon))
+
+    if (body.preview) {
+      const noi = body.clienti.filter(c => c.telefon && !existenteSet.has(c.telefon))
+      return NextResponse.json({ success: true, noi: noi.length, duplicate: existenteSet.size, preview: true })
+    }
+
+    let inserted = 0, skipped = 0
     for (const c of body.clienti) {
       if (!c.telefon) continue
+      if (existenteSet.has(c.telefon)) { skipped++; continue }
       const id = Date.now() + Math.floor(Math.random() * 10000)
       await sql`
         INSERT INTO clienti (id, nume, telefon, email, data_nastere, observatii, sursa)
@@ -74,7 +86,7 @@ export async function POST(request) {
       `
       inserted++
     }
-    return NextResponse.json({ success: true, inserted })
+    return NextResponse.json({ success: true, inserted, skipped })
   }
 
   const sql = await getDb()

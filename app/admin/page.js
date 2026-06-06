@@ -1109,6 +1109,8 @@ export default function AdminDashboard() {
   const [selectedClient, setSelectedClient] = useState(null)
   const [csvText, setCsvText] = useState('')
   const [importStatus, setImportStatus] = useState(null)
+  const [importPreview, setImportPreview] = useState(null)
+  const [pendingClienti, setPendingClienti] = useState(null)
   const [token, setToken] = useState(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [confirmDeleteProg, setConfirmDeleteProg] = useState(null)
@@ -1300,11 +1302,10 @@ export default function AdminDashboard() {
     await fetchProgramari()
   }
 
-  async function importCSV() {
-    setImportStatus('loading')
-    const lines = csvText.trim().split('\n')
+  function parseCSVClients(text) {
+    const lines = text.trim().split('\n')
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''))
-    const clientiList = lines.slice(1).map(line => {
+    return lines.slice(1).map(line => {
       const vals = line.split(',').map(v => v.trim().replace(/['"]/g, ''))
       const obj = {}
       headers.forEach((h, i) => { obj[h] = vals[i] || '' })
@@ -1316,14 +1317,34 @@ export default function AdminDashboard() {
         observatii: obj.observatii || obj.notes || '',
       }
     }).filter(c => c.telefon)
+  }
 
+  async function importCSV() {
+    setImportStatus('loading')
+    setImportPreview(null)
+    const clientiList = parseCSVClients(csvText)
     const res = await fetch('/api/admin/clienti', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ bulk: true, clienti: clientiList })
+      body: JSON.stringify({ bulk: true, preview: true, clienti: clientiList })
     })
     const data = await res.json()
-    setImportStatus(`✅ ${data.inserted} clienți importați`)
+    setImportStatus(null)
+    setImportPreview(data)
+    setPendingClienti(clientiList)
+  }
+
+  async function confirmImport() {
+    setImportStatus('loading')
+    setImportPreview(null)
+    const res = await fetch('/api/admin/clienti', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ bulk: true, clienti: pendingClienti })
+    })
+    const data = await res.json()
+    setImportStatus(`✅ ${data.inserted} clienți importați, ${data.skipped} ignorați (deja existenți)`)
+    setPendingClienti(null)
     fetchClienti()
     setCsvText('')
   }
@@ -2331,15 +2352,69 @@ export default function AdminDashboard() {
               Sau importați manual din CSV (export Mero):<br />
               Coloane acceptate: <strong>nume, telefon, email, data_nastere, observatii</strong>
             </p>
+
+            {/* Zona drag & drop + buton selectare fișier */}
+            <div
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#9B1B30' }}
+              onDragLeave={e => { e.currentTarget.style.borderColor = '#C9A84C' }}
+              onDrop={e => {
+                e.preventDefault()
+                e.currentTarget.style.borderColor = '#C9A84C'
+                const file = e.dataTransfer.files[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = ev => setCsvText(ev.target.result)
+                reader.readAsText(file)
+              }}
+              style={{ border: '2px dashed #C9A84C', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '12px', cursor: 'pointer', background: '#FDFAF4', transition: 'border-color 0.2s' }}
+              onClick={() => document.getElementById('csv-file-input').click()}
+            >
+              <input
+                id="csv-file-input"
+                type="file"
+                accept=".csv,.txt"
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files[0]
+                  if (!file) return
+                  const reader = new FileReader()
+                  reader.onload = ev => setCsvText(ev.target.result)
+                  reader.readAsText(file)
+                  e.target.value = ''
+                }}
+              />
+              <p style={{ margin: 0, color: '#9B1B30', fontWeight: 'bold', fontSize: '15px' }}>📂 Selectează fișier CSV</p>
+              <p style={{ margin: '4px 0 0', color: '#aaa', fontSize: '13px' }}>sau trage fișierul aici</p>
+            </div>
+
             <textarea value={csvText} onChange={e => setCsvText(e.target.value)}
-              rows={12} className="input-field"
+              rows={8} className="input-field"
               placeholder={'nume,telefon,email\nMaria Ionescu,0712345678,maria@email.com\nAna Pop,0723456789,'}
               style={{ marginBottom: '16px', fontFamily: 'monospace', fontSize: '13px' }}
             />
             <button onClick={importCSV} disabled={!csvText.trim() || importStatus === 'loading'}
               className="btn-primary" style={{ padding: '14px 32px', fontSize: '14px' }}>
-              {importStatus === 'loading' ? 'Se importă...' : 'IMPORTĂ CLIENȚII'}
+              {importStatus === 'loading' ? 'Se verifică...' : 'VERIFICĂ CSV'}
             </button>
+            {importPreview && (
+              <div style={{ marginTop: '16px', padding: '16px', background: '#F7EFE5', borderRadius: '10px', border: '1px solid #C9A84C' }}>
+                <p style={{ fontSize: '15px', marginBottom: '12px' }}>
+                  <strong style={{ color: '#10B981' }}>✅ {importPreview.noi} clienți noi</strong>
+                  {importPreview.duplicate > 0 && <span style={{ color: '#888', marginLeft: '12px' }}>• {importPreview.duplicate} deja existenți (se ignoră)</span>}
+                </p>
+                {importPreview.noi > 0 ? (
+                  <button onClick={confirmImport} className="btn-primary" style={{ padding: '10px 24px', fontSize: '14px' }}>
+                    CONFIRMĂ IMPORTUL ({importPreview.noi} clienți)
+                  </button>
+                ) : (
+                  <p style={{ color: '#888', fontSize: '14px' }}>Toți clienții din CSV există deja în baza de date.</p>
+                )}
+                <button onClick={() => { setImportPreview(null); setPendingClienti(null) }}
+                  style={{ marginLeft: '12px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px' }}>
+                  Anulează
+                </button>
+              </div>
+            )}
             {importStatus && importStatus !== 'loading' && (
               <p style={{ marginTop: '16px', color: '#10B981', fontSize: '15px' }}>{importStatus}</p>
             )}
