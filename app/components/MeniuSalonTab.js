@@ -23,6 +23,42 @@ const SECTIUNI = [
     ready: true,
   },
   {
+    id: 'produse',
+    icon: '📦',
+    label: 'Produse & Stoc',
+    desc: 'Gestionează produsele și stocul salonului',
+    color: '#2F80ED',
+    ready: true,
+    external: true,
+  },
+  {
+    id: 'import',
+    icon: '📥',
+    label: 'Import CSV',
+    desc: 'Importă clienți din fișier CSV sau Google Sheets',
+    color: '#00B4D8',
+    ready: true,
+    external: true,
+  },
+  {
+    id: 'rapoarte',
+    icon: '📊',
+    label: 'Rapoarte',
+    desc: 'Vizualizează rapoarte și statistici salon',
+    color: '#6A3093',
+    ready: true,
+    external: true,
+  },
+  {
+    id: 'setari',
+    icon: '⚙️',
+    label: 'Setări Admin',
+    desc: 'Parolă, date salon, configurații',
+    color: '#F5576C',
+    ready: true,
+    external: true,
+  },
+  {
     id: 'pachete',
     icon: '🎁',
     label: 'Pachete',
@@ -154,8 +190,13 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
   )
 }
 
-export default function MeniuSalonTab({ token, clientiCount = 0 }) {
+export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
   const [sectiune, setSectiune] = useState(null)
+
+  function handleClick(sec) {
+    if (!sec.ready) return
+    if (sec.external) { onNavigate?.(sec.id) } else { setSectiune(sec.id) }
+  }
 
   if (sectiune === 'servicii') {
     return (
@@ -187,7 +228,7 @@ export default function MeniuSalonTab({ token, clientiCount = 0 }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', maxWidth: '900px', margin: '0 auto' }}>
         {SECTIUNI.map(sec => (
           <div key={sec.id}
-            onClick={() => sec.ready && setSectiune(sec.id)}
+            onClick={() => handleClick(sec)}
             style={{
               background: 'white',
               borderRadius: '18px',

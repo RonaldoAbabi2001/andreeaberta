@@ -1438,12 +1438,8 @@ export default function AdminDashboard() {
           {[
             { id: 'calendar', icon: (a) => <IcoCalendar active={a} size={32} />, label: 'Calendar' },
             { id: 'clienti', icon: (a) => <IcoClienti active={a} size={32} />, label: 'Clienți' },
-            { id: 'produse', icon: (a) => <IcoProduse active={a} size={32} />, label: 'Produse & Stoc' },
             { id: 'meniu', icon: (a) => <IcoMeniu active={a} size={32} />, label: 'Meniu Salon' },
             { id: 'analitica', icon: (a) => <IcoAnalitica active={a} size={32} />, label: 'Analitica' },
-            { id: 'rapoarte', icon: (a) => <IcoRapoarte active={a} size={32} />, label: 'Rapoarte' },
-            { id: 'import', icon: (a) => <IcoImport active={a} size={32} />, label: 'Import CSV' },
-            { id: 'setari', icon: (a) => <IcoSetari active={a} size={32} />, label: 'Setări Admin' },
           ].map(item => {
             const active = tab === item.id
             return (
@@ -2051,6 +2047,7 @@ export default function AdminDashboard() {
         {/* RAPOARTE TAB */}
         {tab === 'rapoarte' && (
           <div style={{ padding: '24px' }}>
+            <button onClick={() => setTab('meniu')} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', marginBottom: '16px', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
             <h2 style={{ fontSize: '24px', fontWeight: 'normal', marginBottom: '24px' }}>Rapoarte</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {[
@@ -2363,6 +2360,7 @@ export default function AdminDashboard() {
         {/* IMPORT CSV TAB */}
         {tab === 'import' && (
           <div style={{ padding: '24px', maxWidth: '700px' }}>
+            <button onClick={() => setTab('meniu')} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', marginBottom: '16px', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
             <h2 style={{ fontSize: '24px', fontWeight: 'normal', marginBottom: '8px' }}>Import clienți</h2>
 
             {/* Sync Google Sheets */}
@@ -2449,12 +2447,20 @@ export default function AdminDashboard() {
         )}
 
         {/* PRODUSE TAB */}
-        {tab === 'produse' && <ProdusTab />}
-        {tab === 'meniu' && <MeniuSalonTab token={token} clientiCount={clienti.filter(c => c.telefon).length} />}
+        {tab === 'produse' && (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '12px 24px 0' }}>
+              <button onClick={() => setTab('meniu')} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
+            </div>
+            <ProdusTab />
+          </div>
+        )}
+        {tab === 'meniu' && <MeniuSalonTab token={token} clientiCount={clienti.filter(c => c.telefon).length} onNavigate={t => setTab(t)} />}
 
         {/* SETĂRI TAB */}
         {tab === 'setari' && (
           <div style={{ padding: '32px', maxWidth: '600px' }}>
+            <button onClick={() => setTab('meniu')} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', marginBottom: '20px', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
             <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', color: '#1C1C1C', margin: '0 0 6px' }}>Setări Admin</h2>
             <p style={{ color: '#AAA', fontSize: '13px', margin: '0 0 32px' }}>Modifică datele de acces și configurațiile salonului</p>
 
@@ -2779,8 +2785,8 @@ export default function AdminDashboard() {
 
         {/* Ultimele 2 tab-uri */}
         {[
-          { id: 'produse', icon: (a) => <IcoProduse active={a} size={26} />, label: 'Produse' },
-          { id: 'servicii', icon: (a) => <IcoServicii active={a} size={26} />, label: 'Servicii' },
+          { id: 'meniu', icon: (a) => <IcoMeniu active={a} size={26} />, label: 'Meniu' },
+          { id: 'analitica', icon: (a) => <IcoAnalitica active={a} size={26} />, label: 'Analitica' },
         ].map(item => {
           const active = tab === item.id
           return (
