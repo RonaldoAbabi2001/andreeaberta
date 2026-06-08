@@ -249,8 +249,6 @@ export default function SpinWheel() {
         cancelAnimationFrame(animRef.current)
         setStep('blocat')
       } else {
-        // Oprește rotația lentă, trece la spin interactiv
-        cancelAnimationFrame(animRef.current)
         setStep('spin')
       }
     } catch {
