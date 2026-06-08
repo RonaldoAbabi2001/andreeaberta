@@ -370,6 +370,8 @@ function MesajeSection({ token, onBack }) {
   const [mesajNou, setMesajNou] = useState(false)
   const [cautareClient, setCautareClient] = useState('')
   const [totiClientii, setTotiClientii] = useState([])
+  const [tabActiv, setTabActiv] = useState('conversatii')
+  const [esuate, setEsuate] = useState(null)
   const [clientiSugestii, setClientiSugestii] = useState([])
 
   async function loadConversatii() {
@@ -442,6 +444,14 @@ function MesajeSection({ token, onBack }) {
 
   useEffect(() => { loadConversatii() }, [])
 
+  async function loadEsuate() {
+    setTabActiv('esuate')
+    setActiva(null)
+    const res = await fetch('/api/admin/sms-inbox?esuate=1', { headers: { 'x-admin-token': token } })
+    const data = await res.json()
+    setEsuate(Array.isArray(data) ? data : [])
+  }
+
   const convActiva = conversatii?.find(c => c.telefon === activa)
 
   return (
@@ -453,6 +463,16 @@ function MesajeSection({ token, onBack }) {
         </button>
         <span style={{ color: '#CCC' }}>/</span>
         <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>💬 Mesaje</span>
+        <div style={{ display: 'flex', gap: '6px', marginLeft: '12px' }}>
+          <button onClick={() => { setTabActiv('conversatii'); loadConversatii() }}
+            style={{ padding: '4px 12px', background: tabActiv === 'conversatii' ? s.ruby : '#F7EFE5', color: tabActiv === 'conversatii' ? 'white' : s.ruby, border: `1px solid ${s.ruby}`, borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            Conversații
+          </button>
+          <button onClick={loadEsuate}
+            style={{ padding: '4px 12px', background: tabActiv === 'esuate' ? '#DC2626' : '#FEE2E2', color: tabActiv === 'esuate' ? 'white' : '#DC2626', border: '1px solid #FECACA', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            ✗ Netrimise
+          </button>
+        </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
           <button onClick={deschideMesajNou}
             style={{ padding: '5px 14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
@@ -497,7 +517,25 @@ function MesajeSection({ token, onBack }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '0 24px 24px' }}>
+      {tabActiv === 'esuate' && (
+        <div style={{ margin: '0 24px 24px', overflowY: 'auto' }}>
+          {esuate === null && <p style={{ color: '#aaa', fontSize: '13px' }}>Se încarcă...</p>}
+          {esuate?.length === 0 && <p style={{ color: '#10B981', fontSize: '14px' }}>✓ Niciun mesaj nelivrat. Totul a fost trimis cu succes.</p>}
+          {esuate?.map(m => (
+            <div key={m.id} style={{ padding: '14px 16px', background: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{m.nume || m.telefon}</span>
+                <span style={{ fontSize: '12px', color: '#aaa' }}>{new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              {m.nume && <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 6px' }}>{m.telefon}</p>}
+              <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 6px' }}>{m.mesaj}</p>
+              <p style={{ fontSize: '12px', color: '#DC2626', margin: 0 }}>✗ {m.eroare || 'Eroare trimitere'}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tabActiv === 'conversatii' && <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '0 24px 24px' }}>
 
         {/* Lista conversatii */}
         <div style={{ width: '260px', flexShrink: 0, borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'auto', background: '#FAFAFA' }}>
@@ -532,16 +570,24 @@ function MesajeSection({ token, onBack }) {
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {mesaje.map(m => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: m.directie === 'OUT' ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: m.directie === 'OUT' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: m.directie === 'OUT' ? `linear-gradient(135deg, ${s.ruby}, #7A1525)` : '#F7EFE5', color: m.directie === 'OUT' ? 'white' : s.text, fontSize: '14px', lineHeight: 1.5 }}>
-                      <p style={{ margin: 0 }}>{m.mesaj}</p>
-                      <p style={{ margin: '4px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right' }}>
-                        {new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                {mesaje.map(m => {
+                  const esuat = m.status === 'esuat'
+                  const pending = m.status === 'pending'
+                  const bgOut = esuat ? '#FEE2E2' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`
+                  const colorOut = esuat ? '#991B1B' : 'white'
+                  return (
+                    <div key={m.id} style={{ display: 'flex', justifyContent: m.directie === 'OUT' ? 'flex-end' : 'flex-start' }}>
+                      <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: m.directie === 'OUT' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: m.directie === 'OUT' ? bgOut : '#F7EFE5', color: m.directie === 'OUT' ? colorOut : s.text, fontSize: '14px', lineHeight: 1.5, border: esuat ? '1px solid #FECACA' : 'none' }}>
+                        <p style={{ margin: 0 }}>{m.mesaj}</p>
+                        {esuat && <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#B91C1C' }}>✗ Nelivrat — {m.eroare || 'eroare trimitere'}</p>}
+                        <p style={{ margin: '4px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right' }}>
+                          {pending ? '⏳' : esuat ? '✗' : m.directie === 'OUT' ? '✓' : ''}
+                          {' '}{new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               <div style={{ padding: '14px 20px', borderTop: '1px solid #F0E8DF', display: 'flex', gap: '10px' }}>
@@ -560,7 +606,7 @@ function MesajeSection({ token, onBack }) {
             </>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

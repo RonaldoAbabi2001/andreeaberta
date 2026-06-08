@@ -3,7 +3,13 @@ import { neon } from '@neondatabase/serverless'
 
 const SECRET = 'evolis2026secret'
 
-// GET — conversatii sau mesaje dintr-o conversatie
+function normTel(t) {
+  if (!t) return t
+  t = t.trim().replace(/\s+/g, '')
+  if (t.startsWith('+40')) t = '0' + t.slice(3)
+  return t
+}
+
 export async function GET(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -11,9 +17,22 @@ export async function GET(request) {
   const sql = neon(process.env.DATABASE_URL)
   const { searchParams } = new URL(request.url)
   const telefon = normTel(searchParams.get('telefon'))
+  const esuate = searchParams.get('esuate')
+
+  // Mesaje esuate — toate OUT cu status esuat
+  if (esuate) {
+    const rows = await sql`
+      SELECT i.*, c.nume
+      FROM sms_inbox i
+      LEFT JOIN clienti c ON c.telefon = i.telefon
+      WHERE i.directie = 'OUT' AND i.status = 'esuat'
+      ORDER BY i.creat DESC
+      LIMIT 50
+    `
+    return NextResponse.json(rows)
+  }
 
   if (telefon) {
-    // Toate mesajele cu un client specific
     const mesaje = await sql`
       SELECT * FROM sms_inbox WHERE telefon = ${telefon}
       ORDER BY creat ASC
@@ -22,7 +41,7 @@ export async function GET(request) {
     return NextResponse.json(mesaje)
   }
 
-  // Lista conversatii — ultimul mesaj per telefon + numar necitite
+  // Lista conversatii
   const conversatii = await sql`
     SELECT
       sub.telefon,
@@ -46,14 +65,6 @@ export async function GET(request) {
   return NextResponse.json(conversatii)
 }
 
-function normTel(t) {
-  if (!t) return t
-  t = t.trim().replace(/\s+/g, '')
-  if (t.startsWith('+40')) t = '0' + t.slice(3)
-  return t
-}
-
-// POST — mesaj nou din reader (Beelink) sau reply din admin
 export async function POST(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -66,22 +77,47 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Date incomplete' }, { status: 400 })
 
   const sql = neon(process.env.DATABASE_URL)
-  const id = `${telefon}_${new Date(creat || Date.now()).getTime()}`
+  const ts = new Date(creat || Date.now()).getTime()
+  const id = `${telefon}_${ts}`
 
-  await sql`
-    INSERT INTO sms_inbox (id, telefon, mesaj, directie, creat)
-    VALUES (${id}, ${telefon}, ${mesaj}, ${directie || 'IN'}, ${creat ? new Date(creat).toISOString() : new Date().toISOString()})
-    ON CONFLICT (id) DO NOTHING
-  `
+  let queueId = null
 
-  // Daca e reply (OUT) — adauga si in sms_queue pentru trimitere
+  // Daca e reply OUT — adauga in sms_queue si retine id-ul
   if (directie === 'OUT') {
-    const qid = Date.now()
+    queueId = Date.now()
     await sql`
       INSERT INTO sms_queue (id, telefon, mesaj, tip, de_trimis_la)
-      VALUES (${qid}, ${telefon}, ${mesaj}, 'reply', NOW())
+      VALUES (${queueId}, ${telefon}, ${mesaj}, 'reply', NOW())
     `
   }
 
+  await sql`
+    INSERT INTO sms_inbox (id, telefon, mesaj, directie, creat, status, sms_queue_id)
+    VALUES (
+      ${id}, ${telefon}, ${mesaj}, ${directie || 'IN'},
+      ${creat ? new Date(creat).toISOString() : new Date().toISOString()},
+      ${directie === 'OUT' ? 'pending' : 'trimis'},
+      ${queueId}
+    )
+    ON CONFLICT (id) DO NOTHING
+  `
+
   return NextResponse.json({ success: true, id })
+}
+
+// PATCH — worker actualizeaza statusul unui mesaj OUT
+export async function PATCH(request) {
+  if (request.headers.get('x-admin-token') !== SECRET)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { sms_queue_id, status, eroare } = await request.json()
+  if (!sms_queue_id) return NextResponse.json({ error: 'sms_queue_id lipsa' }, { status: 400 })
+
+  const sql = neon(process.env.DATABASE_URL)
+  await sql`
+    UPDATE sms_inbox
+    SET status = ${status || 'esuat'}, eroare = ${eroare || null}
+    WHERE sms_queue_id = ${sms_queue_id}
+  `
+  return NextResponse.json({ success: true })
 }
