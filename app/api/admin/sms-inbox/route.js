@@ -24,16 +24,24 @@ export async function GET(request) {
 
   // Lista conversatii — ultimul mesaj per telefon + numar necitite
   const conversatii = await sql`
-    SELECT DISTINCT ON (telefon)
-      i.telefon,
-      i.mesaj AS ultim_mesaj,
-      i.directie AS ultima_directie,
-      i.creat AS ultima_data,
+    SELECT
+      sub.telefon,
+      sub.ultim_mesaj,
+      sub.ultima_directie,
+      sub.ultima_data,
       c.nume,
-      (SELECT COUNT(*) FROM sms_inbox WHERE telefon = i.telefon AND directie = 'IN' AND citit = false)::int AS necitite
-    FROM sms_inbox i
-    LEFT JOIN clienti c ON c.telefon = i.telefon
-    ORDER BY telefon, creat DESC
+      (SELECT COUNT(*)::int FROM sms_inbox WHERE telefon = sub.telefon AND directie = 'IN' AND citit = false) AS necitite
+    FROM (
+      SELECT DISTINCT ON (telefon)
+        telefon,
+        mesaj AS ultim_mesaj,
+        directie AS ultima_directie,
+        creat AS ultima_data
+      FROM sms_inbox
+      ORDER BY telefon, creat DESC
+    ) sub
+    LEFT JOIN clienti c ON c.telefon = sub.telefon
+    ORDER BY sub.ultima_data DESC
   `
   return NextResponse.json(conversatii)
 }
