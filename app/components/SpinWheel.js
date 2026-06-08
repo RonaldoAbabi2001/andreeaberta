@@ -12,7 +12,93 @@ const PREMII = [
   { label: 'Top pe Dedesubt', color: '#C9A84C', text: '#1C1C1C' },
 ]
 
+// 9 segmente vizuale — ultimul (index 8) este decorativ, nu poate câștiga niciodată
+const PREMII_VIZ = [
+  ...PREMII,
+  { label: '★ 30% Reducere', color: '#1C1C1C', text: '#FFD700' },
+]
+const N_VIZ = PREMII_VIZ.length       // 9
+const SEG_VIZ = (2 * Math.PI) / N_VIZ // 40°
+
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
+
+// Desenează roata HD pe canvas cu o anumită rotație
+function drawWheelHD(canvas, rot, SIZE) {
+  if (!canvas) return
+  const dpr = window.devicePixelRatio || 1
+  if (canvas.width !== SIZE * dpr) {
+    canvas.width = SIZE * dpr
+    canvas.height = SIZE * dpr
+    canvas.style.width = SIZE + 'px'
+    canvas.style.height = SIZE + 'px'
+  }
+  const ctx = canvas.getContext('2d')
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, SIZE, SIZE)
+  const cx = SIZE / 2
+  const cy = SIZE / 2
+  const r = cx - 8
+
+  // Umbra roții
+  ctx.save()
+  ctx.shadowColor = 'rgba(155,27,48,0.25)'
+  ctx.shadowBlur = 20
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+  ctx.fillStyle = '#fff'
+  ctx.fill()
+  ctx.restore()
+
+  // Segmente
+  PREMII_VIZ.forEach(({ label, color, text }, i) => {
+    const startAngle = rot + i * SEG_VIZ
+    const endAngle = startAngle + SEG_VIZ
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.arc(cx, cy, r, startAngle, endAngle)
+    ctx.closePath()
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+
+    // Text pe segment
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.rotate(startAngle + SEG_VIZ / 2)
+    ctx.textAlign = 'right'
+    ctx.fillStyle = text
+    // Segmentul 30% e special — font mai mare și bold
+    const isSpecial = i === 8
+    ctx.font = isSpecial ? 'bold 12px Georgia, serif' : 'bold 10px Georgia, serif'
+    if (isSpecial) {
+      // Două rânduri pentru 30%
+      ctx.fillText('30% Reducere', r - 10, -5)
+      ctx.font = '10px Georgia, serif'
+      ctx.fillText('★ ★ ★', r - 10, 8)
+    } else {
+      ctx.fillText(label, r - 12, 4)
+    }
+    ctx.restore()
+  })
+
+  // Cerc central auriu
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30)
+  grad.addColorStop(0, '#E2C97E')
+  grad.addColorStop(1, '#C9A84C')
+  ctx.beginPath()
+  ctx.arc(cx, cy, 30, 0, 2 * Math.PI)
+  ctx.fillStyle = grad
+  ctx.fill()
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = 3
+  ctx.stroke()
+  ctx.fillStyle = '#7A1525'
+  ctx.font = 'bold 9px Georgia, serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('EVOLIS', cx, cy + 3)
+}
 
 // ─── Timer blocat ────────────────────────────────────────────────────────
 function Blocat({ dataExpirare, numeUser }) {
@@ -77,10 +163,8 @@ function RegisterForm({ onSuccess }) {
     setLoading(false)
 
     if (data.exists && data.blocat) {
-      // a mai jucat și e în perioada de blocare
       onSuccess({ blocat: true, data_expirare: data.data_expirare, nume: nume.trim(), telefon: tel })
     } else {
-      // nu a jucat niciodată SAU a jucat dar au trecut 14 zile → spin permis
       onSuccess({ alreadyPlayed: false, nume: nume.trim(), telefon: tel })
     }
   }
@@ -125,91 +209,16 @@ function RegisterForm({ onSuccess }) {
   )
 }
 
-// ─── Pasul 2: Roata ───────────────────────────────────────────────────────
+// ─── Pasul 2: Roata (interactivă) ─────────────────────────────────────────
 function Wheel({ user, onResult }) {
   const canvasRef = useRef(null)
   const [spinning, setSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
   const [saving, setSaving] = useState(false)
   const animRef = useRef(null)
-  const segmentAngle = (2 * Math.PI) / PREMII.length
+  const SIZE = 300
 
-  function drawWheel(rot) {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const cx = canvas.width / 2
-    const cy = canvas.height / 2
-    const r = cx - 8
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    ctx.save()
-    ctx.shadowColor = 'rgba(155,27,48,0.3)'
-    ctx.shadowBlur = 30
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-    ctx.fillStyle = '#fff'
-    ctx.fill()
-    ctx.restore()
-
-    PREMII.forEach(({ label, color, text }, i) => {
-      const startAngle = rot + i * segmentAngle
-      const endAngle = startAngle + segmentAngle
-      ctx.beginPath()
-      ctx.moveTo(cx, cy)
-      ctx.arc(cx, cy, r, startAngle, endAngle)
-      ctx.closePath()
-      ctx.fillStyle = color
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-      ctx.lineWidth = 2
-      ctx.stroke()
-      ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate(startAngle + segmentAngle / 2)
-      ctx.textAlign = 'right'
-      ctx.fillStyle = text
-      ctx.font = 'bold 11px Georgia, serif'
-      ctx.fillText(label, r - 12, 4)
-      ctx.restore()
-    })
-
-    // Bandă decorativă "30% Reducere" — doar vizuală, 0% șanse reale
-    const decorAngle = rot + 2.5 * segmentAngle // între segmentele 2 și 3
-    const decorWidth = 0.04 // ~2 grade din 360
-    ctx.save()
-    ctx.beginPath()
-    ctx.moveTo(cx, cy)
-    ctx.arc(cx, cy, r, decorAngle - decorWidth / 2, decorAngle + decorWidth / 2)
-    ctx.closePath()
-    ctx.fillStyle = '#1C1C1C'
-    ctx.fill()
-    ctx.translate(cx, cy)
-    ctx.rotate(decorAngle)
-    ctx.textAlign = 'right'
-    ctx.fillStyle = '#FFD700'
-    ctx.font = 'bold 9px Georgia, serif'
-    ctx.fillText('30% Reducere', r - 8, 3)
-    ctx.restore()
-
-    // Cerc central
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28)
-    grad.addColorStop(0, '#E2C97E')
-    grad.addColorStop(1, '#C9A84C')
-    ctx.beginPath()
-    ctx.arc(cx, cy, 28, 0, 2 * Math.PI)
-    ctx.fillStyle = grad
-    ctx.fill()
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 3
-    ctx.stroke()
-    ctx.fillStyle = '#7A1525'
-    ctx.font = 'bold 9px Georgia, serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('EVOLIS', cx, cy + 3)
-  }
-
-  useEffect(() => { drawWheel(rotation) }, [])
+  useEffect(() => { drawWheelHD(canvasRef.current, 0, SIZE) }, [])
 
   function playTick() {
     try {
@@ -241,10 +250,21 @@ function Wheel({ user, onResult }) {
   function spin() {
     if (spinning || saving) return
     setSpinning(true)
+
     const extraSpins = 5 + Math.random() * 5
-    const randomStop = Math.random() * 2 * Math.PI
-    const totalRotation = rotation + extraSpins * 2 * Math.PI + randomStop
-    const duration = 4000
+
+    // Predetermina câștigătorul: index 0-7, niciodată 8 (30% Reducere)
+    const winnerIdx = Math.floor(Math.random() * 8)
+    const jitter = (Math.random() - 0.5) * SEG_VIZ * 0.6
+    const targetPointerAngle = (winnerIdx + 0.5) * SEG_VIZ + jitter
+
+    // Inversă: pointerAngle = (7π/2 - normFinal) % 2π → normFinal = (7π/2 - pointerAngle) % 2π
+    const targetNorm = ((7 * Math.PI / 2 - targetPointerAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
+    const currentNorm = ((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+    const delta = (targetNorm - currentNorm + 2 * Math.PI) % (2 * Math.PI)
+
+    const totalRotation = rotation + extraSpins * 2 * Math.PI + delta
+    const duration = 4500
     const start = performance.now()
     const startRot = rotation
     let lastSegment = -1
@@ -254,24 +274,20 @@ function Wheel({ user, onResult }) {
       const progress = Math.min(elapsed / duration, 1)
       const eased = 1 - Math.pow(1 - progress, 3)
       const currentRot = startRot + (totalRotation - startRot) * eased
-      drawWheel(currentRot)
+      drawWheelHD(canvasRef.current, currentRot, SIZE)
 
       const norm = ((currentRot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-      const seg = Math.floor(norm / segmentAngle) % PREMII.length
+      const seg = Math.floor(norm / SEG_VIZ) % N_VIZ
       if (seg !== lastSegment) { playTick(); lastSegment = seg }
 
       if (progress < 1) {
         animRef.current = requestAnimationFrame(animate)
       } else {
         setRotation(totalRotation)
-        const normFinal = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-        const pointerAngle = (2 * Math.PI - normFinal + 3 * Math.PI / 2) % (2 * Math.PI)
-        const winnerIndex = Math.floor(pointerAngle / segmentAngle) % PREMII.length
-        const premiu = PREMII[winnerIndex].label
+        const premiu = PREMII[winnerIdx].label
         playWin()
         setSpinning(false)
         setSaving(true)
-        // Salvează în DB
         fetch('/api/roata', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -280,7 +296,7 @@ function Wheel({ user, onResult }) {
           .then(r => r.json())
           .then(data => {
             setSaving(false)
-            if (data.success) onResult({ premiu, cod: data.cod })
+            if (data.success || data.respin) onResult({ premiu, cod: data.cod })
             else if (data.exists) onResult({ premiu: data.premiu, cod: data.cod, alreadyPlayed: true })
           })
           .catch(() => { setSaving(false); onResult({ premiu, cod: '—' }) })
@@ -298,7 +314,7 @@ function Wheel({ user, onResult }) {
 
       <div style={{ position: 'relative', display: 'inline-block', marginBottom: '24px' }}>
         <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '12px solid transparent', borderRight: '12px solid transparent', borderTop: `24px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
-        <canvas ref={canvasRef} width={300} height={300}
+        <canvas ref={canvasRef} width={SIZE} height={SIZE}
           style={{ borderRadius: '50%', boxShadow: '0 16px 48px rgba(155,27,48,0.25)', cursor: spinning || saving ? 'not-allowed' : 'pointer' }}
           onClick={spin} />
       </div>
@@ -312,7 +328,7 @@ function Wheel({ user, onResult }) {
 }
 
 // ─── Pasul 3: Rezultat ────────────────────────────────────────────────────
-function Result({ premiu, cod, folosit, nume, alreadyPlayed }) {
+function Result({ premiu, cod, folosit, alreadyPlayed }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
       {alreadyPlayed ? (
@@ -331,15 +347,11 @@ function Result({ premiu, cod, folosit, nume, alreadyPlayed }) {
 
       <div style={{ background: 'linear-gradient(135deg, #F7EFE5, #EDE0D0)', borderRadius: '20px', padding: '32px', border: '1.5px solid #C9A84C', boxShadow: '0 8px 32px rgba(201,168,76,0.2)', marginBottom: '24px' }}>
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '26px', color: s.ruby, marginBottom: '20px', fontWeight: 'bold' }}>{premiu}</p>
-
         <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px dashed #C9A84C' }}>
           <p style={{ fontSize: '11px', letterSpacing: '3px', color: '#aaa', marginBottom: '6px', textTransform: 'uppercase' }}>Codul tău unic</p>
           <p style={{ fontFamily: 'monospace', fontSize: '28px', fontWeight: 'bold', color: s.ruby, letterSpacing: '4px', margin: 0 }}>{cod}</p>
         </div>
-
-        {folosit && (
-          <p style={{ color: '#aaa', fontSize: '12px', marginTop: '12px' }}>✓ Acest cod a fost deja folosit.</p>
-        )}
+        {folosit && <p style={{ color: '#aaa', fontSize: '12px', marginTop: '12px' }}>✓ Acest cod a fost deja folosit.</p>}
       </div>
 
       <p style={{ color: '#888', fontSize: '14px', lineHeight: 1.7 }}>
@@ -352,92 +364,18 @@ function Result({ premiu, cod, folosit, nume, alreadyPlayed }) {
   )
 }
 
-// ─── Roată decorativă (doar vizuală, nu se poate învârti) ─────────────────
+// ─── Roată decorativă (preview homepage) ─────────────────────────────────
 function WheelPreview() {
   const canvasRef = useRef(null)
   const rotRef = useRef(0)
   const animRef = useRef(null)
-  const segmentAngle = (2 * Math.PI) / PREMII.length
-
-  function drawWheel(rot) {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const cx = canvas.width / 2
-    const cy = canvas.height / 2
-    const r = cx - 8
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    ctx.save()
-    ctx.shadowColor = 'rgba(155,27,48,0.3)'
-    ctx.shadowBlur = 30
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-    ctx.fillStyle = '#fff'
-    ctx.fill()
-    ctx.restore()
-
-    PREMII.forEach(({ label, color, text }, i) => {
-      const startAngle = rot + i * segmentAngle
-      const endAngle = startAngle + segmentAngle
-      ctx.beginPath()
-      ctx.moveTo(cx, cy)
-      ctx.arc(cx, cy, r, startAngle, endAngle)
-      ctx.closePath()
-      ctx.fillStyle = color
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-      ctx.lineWidth = 2
-      ctx.stroke()
-      ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate(startAngle + segmentAngle / 2)
-      ctx.textAlign = 'right'
-      ctx.fillStyle = text
-      ctx.font = 'bold 11px Georgia, serif'
-      ctx.fillText(label, r - 12, 4)
-      ctx.restore()
-    })
-
-    // Bandă decorativă 30%
-    const decorAngle = rot + 2.5 * segmentAngle
-    const decorWidth = 0.04
-    ctx.save()
-    ctx.beginPath()
-    ctx.moveTo(cx, cy)
-    ctx.arc(cx, cy, r, decorAngle - decorWidth / 2, decorAngle + decorWidth / 2)
-    ctx.closePath()
-    ctx.fillStyle = '#1C1C1C'
-    ctx.fill()
-    ctx.translate(cx, cy)
-    ctx.rotate(decorAngle)
-    ctx.textAlign = 'right'
-    ctx.fillStyle = '#FFD700'
-    ctx.font = 'bold 9px Georgia, serif'
-    ctx.fillText('30% Reducere', r - 8, 3)
-    ctx.restore()
-
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28)
-    grad.addColorStop(0, '#E2C97E')
-    grad.addColorStop(1, '#C9A84C')
-    ctx.beginPath()
-    ctx.arc(cx, cy, 28, 0, 2 * Math.PI)
-    ctx.fillStyle = grad
-    ctx.fill()
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 3
-    ctx.stroke()
-    ctx.fillStyle = '#7A1525'
-    ctx.font = 'bold 9px Georgia, serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('EVOLIS', cx, cy + 3)
-  }
+  const SIZE = 320
 
   useEffect(() => {
-    drawWheel(0)
+    drawWheelHD(canvasRef.current, 0, SIZE)
     function slowSpin() {
       rotRef.current += 0.003
-      drawWheel(rotRef.current)
+      drawWheelHD(canvasRef.current, rotRef.current, SIZE)
       animRef.current = requestAnimationFrame(slowSpin)
     }
     animRef.current = requestAnimationFrame(slowSpin)
@@ -447,7 +385,7 @@ function WheelPreview() {
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
-      <canvas ref={canvasRef} width={320} height={320}
+      <canvas ref={canvasRef} width={SIZE} height={SIZE}
         style={{ borderRadius: '50%', boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)' }} />
     </div>
   )
@@ -461,15 +399,12 @@ export default function SpinWheel() {
 
   function handleRegister(data) {
     setUser(data)
-    if (data.blocat) {
-      setStep('blocat')
-    } else {
-      setStep('spin')
-    }
+    if (data.blocat) setStep('blocat')
+    else setStep('spin')
   }
 
   if (step === 'spin') return <Wheel user={user} onResult={r => { setResult(r); setStep('result') }} />
-  if (step === 'result') return <Result {...result} nume={user?.nume} />
+  if (step === 'result') return <Result {...result} />
   if (step === 'blocat') return <Blocat dataExpirare={user?.data_expirare} numeUser={user?.nume} />
 
   return (
@@ -495,7 +430,7 @@ export default function SpinWheel() {
 
       {step === 'register' && (
         <div style={{ marginTop: '40px', maxWidth: '400px', margin: '40px auto 0' }}>
-          <RegisterForm onSuccess={handleRegister} embedded />
+          <RegisterForm onSuccess={handleRegister} />
         </div>
       )}
     </div>
