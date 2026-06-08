@@ -195,6 +195,18 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
   const [mesaj, setMesaj] = useState('')
   const [preview, setPreview] = useState(null)
   const [status, setStatus] = useState(null)
+  const [campanii, setCampanii] = useState(null)
+  const [loadingCampanii, setLoadingCampanii] = useState(false)
+
+  async function loadCampanii() {
+    setLoadingCampanii(true)
+    try {
+      const res = await fetch('/api/admin/sms-bulk', { headers: { 'x-admin-token': token } })
+      const data = await res.json()
+      setCampanii(Array.isArray(data) ? data : [])
+    } catch { setCampanii([]) }
+    setLoadingCampanii(false)
+  }
 
   function handlePreview() {
     if (!mesaj.trim()) return
@@ -212,10 +224,13 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
     })
     const data = await res.json()
     if (data.success) {
-      setStatus(`✅ ${data.adaugate} SMS-uri adăugate în coadă. Beelink le trimite în ~${Math.ceil(data.adaugate / 20)} minute.`)
+      setStatus({ ok: true, text: `✅ ${data.adaugate} SMS-uri adăugate în coadă. Beelink le trimite în ~${Math.ceil(data.adaugate / 20)} minute.` })
       setMesaj('')
+      loadCampanii()
+    } else if (data.duplicate) {
+      setStatus({ ok: false, text: `⚠️ ${data.error}` })
     } else {
-      setStatus(`❌ Eroare: ${data.error}`)
+      setStatus({ ok: false, text: `❌ Eroare: ${data.error}` })
     }
   }
 
@@ -223,14 +238,14 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button onClick={onBack}
-          style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Georgia, serif' }}>
+          style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>
           ← Meniu Salon
         </button>
         <span style={{ color: '#CCC', fontSize: '14px' }}>/</span>
         <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>📨 SMS în masă</span>
       </div>
 
-      <div style={{ padding: '24px', maxWidth: '680px' }}>
+      <div style={{ padding: '24px', maxWidth: '680px', overflowY: 'auto' }}>
         <h2 style={{ fontSize: '22px', fontWeight: 'normal', marginBottom: '6px', fontFamily: 'Georgia, serif' }}>SMS în masă</h2>
         <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
           Trimite prin routerul TP-Link (SIM propriu) — fără costuri externe.<br />
@@ -240,7 +255,7 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
         <div style={{ marginBottom: '16px' }}>
           <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>Template rapid:</p>
           <button
-            onClick={() => { setMesaj('Bună! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. 🎉 La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm! 💅'); setStatus(null); setPreview(null) }}
+            onClick={() => { setMesaj('Bună! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm!'); setStatus(null); setPreview(null) }}
             style={{ padding: '8px 16px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>
             📋 Folosește template-ul
           </button>
@@ -249,7 +264,7 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
         <textarea
           value={mesaj}
           onChange={e => { setMesaj(e.target.value); setStatus(null); setPreview(null) }}
-          rows={6}
+          rows={5}
           placeholder="Scrie mesajul SMS aici..."
           style={{ width: '100%', padding: '12px', border: '1px solid #E8DDD0', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', resize: 'vertical', marginBottom: '8px', boxSizing: 'border-box' }}
         />
@@ -287,11 +302,52 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
         )}
 
         {status && status !== 'loading' && (
-          <p style={{ marginTop: '16px', fontSize: '14px', color: status.startsWith('✅') ? '#10B981' : '#E53E3E' }}>{status}</p>
+          <p style={{ marginTop: '16px', fontSize: '14px', color: status.ok ? '#10B981' : '#E07000' }}>{status.text}</p>
         )}
         {status === 'loading' && (
           <p style={{ marginTop: '16px', fontSize: '14px', color: '#888' }}>Se adaugă în coadă...</p>
         )}
+
+        {/* Raport campanii */}
+        <div style={{ marginTop: '40px', borderTop: '1px solid #F0E8DF', paddingTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', margin: 0 }}>Campanii anterioare</p>
+            <button onClick={loadCampanii} disabled={loadingCampanii}
+              style={{ padding: '6px 14px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>
+              {loadingCampanii ? 'Se încarcă...' : '↻ Actualizează'}
+            </button>
+          </div>
+
+          {campanii === null && (
+            <p style={{ color: '#bbb', fontSize: '13px' }}>Apasă „Actualizează" pentru a vedea istoricul.</p>
+          )}
+          {campanii !== null && campanii.length === 0 && (
+            <p style={{ color: '#bbb', fontSize: '13px' }}>Nicio campanie trimisă încă.</p>
+          )}
+          {campanii !== null && campanii.length > 0 && campanii.map(c => {
+            const data = new Date(c.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            const pct = c.total > 0 ? Math.round((c.trimise / c.total) * 100) : 0
+            return (
+              <div key={c.id} style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', marginBottom: '12px', border: '1px solid #F0E8DF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#aaa' }}>{data}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: pct === 100 ? '#10B981' : pct > 0 ? '#F59E0B' : '#888' }}>
+                    {pct}% trimis
+                  </span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#444', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {c.mesaj}
+                </p>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                  <span style={{ color: '#10B981' }}>✓ {c.trimise} trimise</span>
+                  <span style={{ color: '#F59E0B' }}>⏳ {c.pending} în așteptare</span>
+                  {c.erori > 0 && <span style={{ color: '#EF4444' }}>✗ {c.erori} erori</span>}
+                  <span style={{ color: '#aaa' }}>Total: {c.total}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
