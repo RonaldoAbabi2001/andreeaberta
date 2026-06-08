@@ -263,7 +263,7 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
         <div style={{ marginBottom: '16px' }}>
           <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>Template rapid:</p>
           <button
-            onClick={() => { setMesaj('Bună! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm!'); setStatus(null); setPreview(null) }}
+            onClick={() => { setMesaj('Bună, {nume}! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm!'); setStatus(null); setPreview(null) }}
             style={{ padding: '8px 16px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>
             📋 Folosește template-ul
           </button>
@@ -276,9 +276,14 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
           placeholder="Scrie mesajul SMS aici..."
           style={{ width: '100%', padding: '12px', border: '1px solid #E8DDD0', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', resize: 'vertical', marginBottom: '8px', boxSizing: 'border-box' }}
         />
-        <p style={{ fontSize: '12px', color: mesaj.length > 160 ? '#E53E3E' : '#aaa', marginBottom: '16px' }}>
-          {mesaj.length}/160 caractere {mesaj.length > 160 ? `— ${Math.ceil(mesaj.length / 160)} SMS-uri per număr` : '— 1 SMS per număr'}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ fontSize: '12px', color: mesaj.length > 160 ? '#E53E3E' : '#aaa', margin: 0 }}>
+            {mesaj.length}/160 caractere {mesaj.length > 160 ? `— ${Math.ceil(mesaj.length / 160)} SMS-uri per număr` : '— 1 SMS per număr'}
+          </p>
+          <p style={{ fontSize: '12px', color: '#C9A84C', margin: 0 }}>
+            Scrie <strong style={{ fontFamily: 'monospace' }}>{'{nume}'}</strong> și se înlocuiește automat cu prenumele fiecărei cliente
+          </p>
+        </div>
 
         <button
           onClick={handlePreview}

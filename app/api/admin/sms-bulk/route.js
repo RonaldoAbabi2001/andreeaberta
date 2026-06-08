@@ -44,7 +44,7 @@ export async function POST(request) {
       duplicate: true
     }, { status: 409 })
 
-  const clienti = await sql`SELECT telefon FROM clienti WHERE telefon IS NOT NULL AND telefon != '' ORDER BY creat DESC`
+  const clienti = await sql`SELECT telefon, nume FROM clienti WHERE telefon IS NOT NULL AND telefon != '' ORDER BY creat DESC`
 
   const campaignId = `bulk_${Date.now()}`
   await sql`INSERT INTO sms_bulk_campaigns (id, mesaj, total) VALUES (${campaignId}, ${mesaj.trim()}, ${clienti.length})`
@@ -52,10 +52,13 @@ export async function POST(request) {
   let adaugate = 0
   const now = Date.now()
   for (let i = 0; i < clienti.length; i++) {
+    const { telefon, nume } = clienti[i]
+    const prenume = (nume || '').split(' ')[0] || 'dragă'
+    const mesajPersonalizat = mesaj.trim().replace(/\{nume\}/gi, prenume)
     const id = now + i
     await sql`
       INSERT INTO sms_queue (id, telefon, mesaj, tip, de_trimis_la, campaign_id)
-      VALUES (${id}, ${clienti[i].telefon}, ${mesaj.trim()}, 'bulk', NOW(), ${campaignId})
+      VALUES (${id}, ${telefon}, ${mesajPersonalizat}, 'bulk', NOW(), ${campaignId})
       ON CONFLICT DO NOTHING
     `
     adaugate++
