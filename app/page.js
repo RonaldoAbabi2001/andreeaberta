@@ -2,6 +2,7 @@ import Link from 'next/link'
 import SpinWheel from './components/SpinWheel'
 import ClientHeaderButton from './components/ClientHeaderButton'
 import ServiciiGrid from './components/ServiciiGrid'
+import GalerieGrid from './components/GalerieGrid'
 import { neon } from '@neondatabase/serverless'
 
 async function getServiciiSiGalerie() {
@@ -92,29 +93,7 @@ export default async function Home() {
       <section style={{ background: 'linear-gradient(160deg, #F7EFE5 0%, #EDE0D0 100%)', padding: '80px 20px' }}>
         <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>✦ Atmosfera salonului ✦</p>
         <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>Galerie</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', maxWidth: '900px', margin: '0 auto' }}>
-          {[
-            { src: '/galerie/salon-interior.jpg', label: 'Salonul EVOLIS' },
-            { src: '/galerie/receptie.jpg', label: 'Primire & Consultație' },
-            { src: '/galerie/andreea-lucreaza.jpg', label: 'Tehnică & Precizie' },
-            { src: '/galerie/swarovski-detail.jpg', label: 'Design Swarovski' },
-            { src: '/galerie/nail-art-aplicare.jpg', label: 'Nail Art Premium' },
-            { src: '/galerie/freza-nail-art.jpg', label: 'Finishing Touch' },
-            { src: '/galerie/clienta-fericita.jpg', label: 'Clientele Noastre' },
-            { src: '/galerie/uv-lamp.jpg', label: 'Echipament Profesional' },
-            { src: '/galerie/ambiance.jpg', label: 'Atmosfera EVOLIS' },
-          ].map((foto, i) => (
-            <div key={i} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}>
-              <img src={foto.src} alt={foto.label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-              />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.55))', padding: '24px 12px 10px', borderRadius: '0 0 16px 16px' }}>
-                <p style={{ color: 'white', fontSize: '12px', letterSpacing: '1px', margin: 0, textAlign: 'center', fontFamily: 'Georgia, serif' }}>{foto.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <GalerieGrid />
       </section>
 
       {/* Roata Norocului */}
