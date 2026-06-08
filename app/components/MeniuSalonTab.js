@@ -367,11 +367,29 @@ function MesajeSection({ token, onBack }) {
   const [mesaje, setMesaje] = useState([])
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
+  const [mesajNou, setMesajNou] = useState(false)
+  const [cautareClient, setCautareClient] = useState('')
+  const [clientiSugestii, setClientiSugestii] = useState([])
 
   async function loadConversatii() {
     const res = await fetch('/api/admin/sms-inbox', { headers: { 'x-admin-token': token } })
     const data = await res.json()
     setConversatii(Array.isArray(data) ? data : [])
+  }
+
+  async function cautaClienti(q) {
+    setCautareClient(q)
+    if (q.length < 2) { setClientiSugestii([]); return }
+    const res = await fetch(`/api/admin/clienti?q=${encodeURIComponent(q)}&limit=8`, { headers: { 'x-admin-token': token } })
+    const data = await res.json()
+    setClientiSugestii(Array.isArray(data) ? data : (data.clienti || []))
+  }
+
+  function startConversatie(client) {
+    setMesajNou(false)
+    setCautareClient('')
+    setClientiSugestii([])
+    loadMesaje(client.telefon)
   }
 
   async function loadMesaje(telefon) {
@@ -408,10 +426,51 @@ function MesajeSection({ token, onBack }) {
         </button>
         <span style={{ color: '#CCC' }}>/</span>
         <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>💬 Mesaje</span>
-        <button onClick={loadConversatii} style={{ marginLeft: 'auto', padding: '5px 12px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>↻ Actualizează</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button onClick={() => { setMesajNou(true); setActiva(null) }}
+            style={{ padding: '5px 14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            + Mesaj nou
+          </button>
+          <button onClick={loadConversatii} style={{ padding: '5px 12px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>↻</button>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '16px 24px 24px' }}>
+      {mesajNou && (
+        <div style={{ margin: '0 24px 12px', padding: '16px', background: '#F7EFE5', borderRadius: '12px', border: '1px solid #C9A84C', position: 'relative' }}>
+          <button onClick={() => { setMesajNou(false); setCautareClient(''); setClientiSugestii([]) }}
+            style={{ position: 'absolute', top: '10px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#aaa' }}>✕</button>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '14px', marginBottom: '10px' }}>Caută clientă după nume sau telefon:</p>
+          <input
+            value={cautareClient}
+            onChange={e => cautaClienti(e.target.value)}
+            placeholder="ex: Maria sau 0712..."
+            style={{ width: '100%', padding: '9px 14px', border: '1px solid #E8DDD0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+          />
+          {clientiSugestii.length > 0 && (
+            <div style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '8px', marginTop: '6px', overflow: 'hidden' }}>
+              {clientiSugestii.map(c => (
+                <div key={c.id || c.telefon} onClick={() => startConversatie(c)}
+                  style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #F5F5F5', fontSize: '13px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F7EFE5'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'white'}>
+                  <strong>{c.nume}</strong> <span style={{ color: '#aaa' }}>{c.telefon}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {cautareClient.length >= 2 && clientiSugestii.length === 0 && (
+            <p style={{ fontSize: '12px', color: '#aaa', marginTop: '8px' }}>Niciun client găsit. Poți scrie direct numărul de telefon și apasă Enter.</p>
+          )}
+          {cautareClient.match(/^(\+4|0)\d{9,}$/) && (
+            <button onClick={() => startConversatie({ telefon: cautareClient, nume: cautareClient })}
+              style={{ marginTop: '8px', padding: '8px 16px', background: s.ruby, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}>
+              Deschide conversație cu {cautareClient}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '0 24px 24px' }}>
 
         {/* Lista conversatii */}
         <div style={{ width: '260px', flexShrink: 0, borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'auto', background: '#FAFAFA' }}>
