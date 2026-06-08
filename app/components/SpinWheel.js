@@ -224,12 +224,19 @@ function Result({ premiu, cod, folosit, alreadyPlayed }) {
         </div>
         {folosit && <p style={{ color: '#aaa', fontSize: '12px', marginTop: '12px' }}>✓ Acest cod a fost deja folosit.</p>}
       </div>
-      <p style={{ color: '#888', fontSize: '14px', lineHeight: 1.7 }}>
+      <p style={{ color: '#888', fontSize: '14px', lineHeight: 1.7, marginBottom: '28px' }}>
         {folosit
           ? 'Codul a fost validat. Mulțumim că ai ales EVOLIS! 💅'
           : <>Menționează codul <strong>{cod}</strong> când faci programarea sau arată-l la salon.<br />Valabil la prima ta programare la EVOLIS.</>
         }
       </p>
+
+      {!folosit && (
+        <a href="/programare"
+          style={{ display: 'inline-block', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', textDecoration: 'none', borderRadius: '50px', padding: '16px 40px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
+          ✦ REZERVAȚI O ȘEDINȚĂ ✦
+        </a>
+      )}
     </div>
   )
 }
