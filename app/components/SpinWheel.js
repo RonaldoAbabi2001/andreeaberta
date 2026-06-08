@@ -308,9 +308,110 @@ function Result({ premiu, cod, folosit, nume, alreadyPlayed }) {
   )
 }
 
+// ─── Roată decorativă (doar vizuală, nu se poate învârti) ─────────────────
+function WheelPreview() {
+  const canvasRef = useRef(null)
+  const rotRef = useRef(0)
+  const animRef = useRef(null)
+  const segmentAngle = (2 * Math.PI) / PREMII.length
+
+  function drawWheel(rot) {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const cx = canvas.width / 2
+    const cy = canvas.height / 2
+    const r = cx - 8
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    ctx.save()
+    ctx.shadowColor = 'rgba(155,27,48,0.3)'
+    ctx.shadowBlur = 30
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+    ctx.fillStyle = '#fff'
+    ctx.fill()
+    ctx.restore()
+
+    PREMII.forEach(({ label, color, text }, i) => {
+      const startAngle = rot + i * segmentAngle
+      const endAngle = startAngle + segmentAngle
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.arc(cx, cy, r, startAngle, endAngle)
+      ctx.closePath()
+      ctx.fillStyle = color
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate(startAngle + segmentAngle / 2)
+      ctx.textAlign = 'right'
+      ctx.fillStyle = text
+      ctx.font = 'bold 11px Georgia, serif'
+      ctx.fillText(label, r - 12, 4)
+      ctx.restore()
+    })
+
+    // Bandă decorativă 30%
+    const decorAngle = rot + 2.5 * segmentAngle
+    const decorWidth = 0.04
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.arc(cx, cy, r, decorAngle - decorWidth / 2, decorAngle + decorWidth / 2)
+    ctx.closePath()
+    ctx.fillStyle = '#1C1C1C'
+    ctx.fill()
+    ctx.translate(cx, cy)
+    ctx.rotate(decorAngle)
+    ctx.textAlign = 'right'
+    ctx.fillStyle = '#FFD700'
+    ctx.font = 'bold 9px Georgia, serif'
+    ctx.fillText('30% Reducere', r - 8, 3)
+    ctx.restore()
+
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28)
+    grad.addColorStop(0, '#E2C97E')
+    grad.addColorStop(1, '#C9A84C')
+    ctx.beginPath()
+    ctx.arc(cx, cy, 28, 0, 2 * Math.PI)
+    ctx.fillStyle = grad
+    ctx.fill()
+    ctx.strokeStyle = '#fff'
+    ctx.lineWidth = 3
+    ctx.stroke()
+    ctx.fillStyle = '#7A1525'
+    ctx.font = 'bold 9px Georgia, serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('EVOLIS', cx, cy + 3)
+  }
+
+  useEffect(() => {
+    drawWheel(0)
+    function slowSpin() {
+      rotRef.current += 0.003
+      drawWheel(rotRef.current)
+      animRef.current = requestAnimationFrame(slowSpin)
+    }
+    animRef.current = requestAnimationFrame(slowSpin)
+    return () => cancelAnimationFrame(animRef.current)
+  }, [])
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
+      <canvas ref={canvasRef} width={320} height={320}
+        style={{ borderRadius: '50%', boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)' }} />
+    </div>
+  )
+}
+
 // ─── Componenta principală ────────────────────────────────────────────────
 export default function SpinWheel() {
-  const [step, setStep] = useState('register') // register | spin | result
+  const [step, setStep] = useState('preview') // preview | register | spin | result
   const [user, setUser] = useState(null)
   const [result, setResult] = useState(null)
 
@@ -324,8 +425,35 @@ export default function SpinWheel() {
     }
   }
 
-  if (step === 'register') return <RegisterForm onSuccess={handleRegister} />
   if (step === 'spin') return <Wheel user={user} onResult={r => { setResult(r); setStep('result') }} />
   if (step === 'result') return <Result {...result} nume={user?.nume} />
-  return null
+
+  return (
+    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Încearcă norocul ✦</p>
+      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '36px', fontWeight: 'normal', marginBottom: '8px', color: '#1C1C1C' }}>Roata Norocului</h3>
+      <p style={{ color: '#888', fontSize: '16px', marginBottom: '40px', maxWidth: '440px', margin: '0 auto 40px', lineHeight: 1.7 }}>
+        Înregistrează-te și învârte roata pentru a câștiga un premiu la prima ta programare!
+      </p>
+
+      <WheelPreview />
+
+      {step === 'preview' && (
+        <div style={{ marginTop: '40px' }}>
+          <button
+            onClick={() => setStep('register')}
+            style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 48px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
+            ✦ ÎNCEARCĂ NOROCUL ✦
+          </button>
+          <p style={{ color: '#bbb', fontSize: '12px', marginTop: '14px' }}>O singură șansă per număr de telefon</p>
+        </div>
+      )}
+
+      {step === 'register' && (
+        <div style={{ marginTop: '40px', maxWidth: '400px', margin: '40px auto 0' }}>
+          <RegisterForm onSuccess={handleRegister} embedded />
+        </div>
+      )}
+    </div>
+  )
 }
