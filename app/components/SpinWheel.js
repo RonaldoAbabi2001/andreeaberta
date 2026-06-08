@@ -94,40 +94,106 @@ function drawWheelHD(canvas, rot) {
 }
 
 // ─── Timer blocat ─────────────────────────────────────────────────────────
+const TOTAL_MS = 14 * 24 * 60 * 60 * 1000
+const RING_R = 72
+const RING_C = 2 * Math.PI * RING_R
+
 function Blocat({ dataExpirare, numeUser }) {
-  const [ramas, setRamas] = useState('')
+  const [tick, setTick] = useState(0)
+
   useEffect(() => {
-    function update() {
-      const diff = new Date(dataExpirare) - new Date()
-      if (diff <= 0) { setRamas('Poți învârti acum!'); return }
-      const zile = Math.floor(diff / 86400000)
-      const ore = Math.floor((diff % 86400000) / 3600000)
-      const min = Math.floor((diff % 3600000) / 60000)
-      if (zile > 0) setRamas(`${zile} zile și ${ore} ore`)
-      else if (ore > 0) setRamas(`${ore} ore și ${min} minute`)
-      else setRamas(`${min} minute`)
-    }
-    update()
-    const t = setInterval(update, 60000)
+    const t = setInterval(() => setTick(n => n + 1), 1000)
     return () => clearInterval(t)
-  }, [dataExpirare])
+  }, [])
+
+  const diff = Math.max(0, new Date(dataExpirare) - new Date())
+  const progress = diff / TOTAL_MS           // 1 = plin, 0 = gol
+  const offset = RING_C * (1 - progress)
+
+  const zile = Math.floor(diff / 86400000)
+  const ore  = Math.floor((diff % 86400000) / 3600000)
+  const min  = Math.floor((diff % 3600000) / 60000)
+  const sec  = Math.floor((diff % 60000) / 1000)
+
   const dataFormatata = new Date(dataExpirare).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const unitStyle = {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '56px'
+  }
+  const numStyle = {
+    fontFamily: 'Georgia, serif', fontSize: '32px', fontWeight: 'bold',
+    color: s.ruby, lineHeight: 1, marginBottom: '4px'
+  }
+  const labelStyle = {
+    fontSize: '10px', letterSpacing: '2px', color: '#bbb', textTransform: 'uppercase'
+  }
+  const sepStyle = {
+    fontFamily: 'Georgia, serif', fontSize: '28px', color: '#D4AF6A',
+    alignSelf: 'flex-start', marginTop: '4px', padding: '0 2px'
+  }
+
   return (
-    <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
-      <p style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</p>
-      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '12px' }}>Roata Norocului</p>
-      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 'normal', marginBottom: '16px' }}>
+    <div style={{ textAlign: 'center', padding: '52px 20px 40px', maxWidth: '460px', margin: '0 auto' }}>
+      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' }}>✦ Roata Norocului ✦</p>
+      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '6px', color: '#1C1C1C' }}>
         {numeUser ? `Bună, ${numeUser}!` : 'Ai mai jucat recent!'}
       </h3>
-      <p style={{ color: '#888', fontSize: '15px', marginBottom: '32px', lineHeight: 1.7 }}>
-        Poți reveni și învârti din nou pe <strong style={{ color: '#1C1C1C' }}>{dataFormatata}</strong>.
+      <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '36px' }}>
+        Poți reveni pe <strong style={{ color: '#888' }}>{dataFormatata}</strong>
       </p>
-      <div style={{ background: 'linear-gradient(135deg, #F7EFE5, #EDE0D0)', borderRadius: '16px', padding: '24px', border: '1.5px solid #C9A84C', display: 'inline-block', minWidth: '200px' }}>
-        <p style={{ fontSize: '11px', letterSpacing: '3px', color: '#aaa', marginBottom: '8px', textTransform: 'uppercase' }}>Timp rămas</p>
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: '24px', color: s.ruby, fontWeight: 'bold', margin: 0 }}>{ramas}</p>
+
+      {/* Inel SVG */}
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '36px' }}>
+        <svg width={180} height={180} style={{ transform: 'rotate(-90deg)' }}>
+          {/* Track */}
+          <circle cx={90} cy={90} r={RING_R}
+            fill="none" stroke="#F0E8DE" strokeWidth={10} />
+          {/* Progress ruby → gold gradient */}
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#9B1B30" />
+              <stop offset="100%" stopColor="#C9A84C" />
+            </linearGradient>
+          </defs>
+          <circle cx={90} cy={90} r={RING_R}
+            fill="none"
+            stroke="url(#ringGrad)"
+            strokeWidth={10}
+            strokeLinecap="round"
+            strokeDasharray={RING_C}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 1s linear' }}
+          />
+        </svg>
+        {/* Text în centru */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '36px', fontWeight: 'bold', color: s.ruby, lineHeight: 1, margin: 0 }}>{zile}</p>
+          <p style={{ fontSize: '11px', letterSpacing: '2px', color: '#bbb', textTransform: 'uppercase', margin: '4px 0 0' }}>
+            {zile === 1 ? 'zi' : 'zile'}
+          </p>
+        </div>
       </div>
-      <p style={{ color: '#bbb', fontSize: '13px', marginTop: '24px', lineHeight: 1.6 }}>
-        Roata se resetează automat după 2 săptămâni.<br />Revino pentru o nouă șansă!
+
+      {/* Contorizare ore : min : sec */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '32px' }}>
+        <div style={unitStyle}>
+          <span style={numStyle}>{String(ore).padStart(2,'0')}</span>
+          <span style={labelStyle}>ore</span>
+        </div>
+        <span style={sepStyle}>:</span>
+        <div style={unitStyle}>
+          <span style={numStyle}>{String(min).padStart(2,'0')}</span>
+          <span style={labelStyle}>min</span>
+        </div>
+        <span style={sepStyle}>:</span>
+        <div style={unitStyle}>
+          <span style={{ ...numStyle, color: s.gold }}>{String(sec).padStart(2,'0')}</span>
+          <span style={labelStyle}>sec</span>
+        </div>
+      </div>
+
+      <p style={{ color: '#ccc', fontSize: '12px', lineHeight: 1.7 }}>
+        Roata se deblochează automat după 2 săptămâni.<br />Revino pentru o nouă șansă! ✦
       </p>
     </div>
   )
