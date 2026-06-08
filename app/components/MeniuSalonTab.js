@@ -369,6 +369,7 @@ function MesajeSection({ token, onBack }) {
   const [sending, setSending] = useState(false)
   const [mesajNou, setMesajNou] = useState(false)
   const [cautareClient, setCautareClient] = useState('')
+  const [totiClientii, setTotiClientii] = useState([])
   const [clientiSugestii, setClientiSugestii] = useState([])
 
   async function loadConversatii() {
@@ -377,12 +378,26 @@ function MesajeSection({ token, onBack }) {
     setConversatii(Array.isArray(data) ? data : [])
   }
 
-  async function cautaClienti(q) {
+  async function deschideMesajNou() {
+    setMesajNou(true)
+    setActiva(null)
+    setCautareClient('')
+    setClientiSugestii([])
+    if (totiClientii.length === 0) {
+      const res = await fetch('/api/admin/clienti', { headers: { 'x-admin-token': token } })
+      const data = await res.json()
+      setTotiClientii(Array.isArray(data) ? data : [])
+    }
+  }
+
+  function cautaClienti(q) {
     setCautareClient(q)
     if (q.length < 2) { setClientiSugestii([]); return }
-    const res = await fetch(`/api/admin/clienti?q=${encodeURIComponent(q)}&limit=8`, { headers: { 'x-admin-token': token } })
-    const data = await res.json()
-    setClientiSugestii(Array.isArray(data) ? data : (data.clienti || []))
+    const lower = q.toLowerCase()
+    const filtrati = totiClientii
+      .filter(c => (c.nume && c.nume.toLowerCase().includes(lower)) || (c.telefon && c.telefon.includes(q)))
+      .slice(0, 8)
+    setClientiSugestii(filtrati)
   }
 
   function startConversatie(client) {
@@ -427,7 +442,7 @@ function MesajeSection({ token, onBack }) {
         <span style={{ color: '#CCC' }}>/</span>
         <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>💬 Mesaje</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-          <button onClick={() => { setMesajNou(true); setActiva(null) }}
+          <button onClick={deschideMesajNou}
             style={{ padding: '5px 14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
             + Mesaj nou
           </button>
