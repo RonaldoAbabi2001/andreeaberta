@@ -1,24 +1,9 @@
 import Link from 'next/link'
 import SpinWheel from './components/SpinWheel'
 import ClientHeaderButton from './components/ClientHeaderButton'
-import ServiciiGrid from './components/ServiciiGrid'
 import GalerieGrid from './components/GalerieGrid'
-import { neon } from '@neondatabase/serverless'
 
-async function getServiciiSiGalerie() {
-  try {
-    const sql = neon(process.env.DATABASE_URL)
-    const servicii = await sql`SELECT * FROM servicii WHERE activ = true AND salon_id = 'evolis' ORDER BY ordine ASC, creat ASC`
-    const galerie = await sql`SELECT * FROM servicii_galerie WHERE salon_id = 'evolis' ORDER BY serviciu_id, ordine ASC`
-    return { servicii, galerie }
-  } catch {
-    return { servicii: [], galerie: [] }
-  }
-}
-
-export default async function Home() {
-  const { servicii, galerie } = await getServiciiSiGalerie()
-
+export default function Home() {
   return (
     <main style={{ background: '#fff', minHeight: '100vh' }}>
 
@@ -73,26 +58,49 @@ export default async function Home() {
         </Link>
       </section>
 
-      {/* Servicii */}
-      <section style={{ padding: '80px 40px', maxWidth: '1100px', margin: '0 auto' }}>
-        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>
-          ✦ Ce vă oferim ✦
+      {/* Ce oferim */}
+      <section style={{ padding: '80px 40px', maxWidth: '780px', margin: '0 auto', textAlign: 'center' }}>
+        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '20px' }}>
+          ✦ Pentru dumneavoastră ✦
         </p>
-        <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>
-          Servicii
+        <h3 style={{ fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '40px', color: '#1C1C1C', lineHeight: 1.3 }}>
+          Nu vindem un serviciu.<br />
+          <span style={{ color: '#9B1B30' }}>Creăm o experiență.</span>
         </h3>
-        <ServiciiGrid servicii={servicii} galerie={galerie} />
-        <div style={{ textAlign: 'center', marginTop: '50px' }}>
-          <Link href="/programare" className="btn-primary">
-            REZERVAȚI O ȘEDINȚĂ
-          </Link>
+
+        <p style={{ color: '#555', fontSize: '17px', lineHeight: 1.9, marginBottom: '32px' }}>
+          Fiecare clientă care intră la EVOLIS este ascultată înainte de a fi servită.
+          Consultarea nu începe cu pensula — începe cu atenția. Înțelegem stilul dumneavoastră,
+          starea unghiilor, ritmul vieții. Abia apoi începem.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', margin: '48px 0', textAlign: 'left' }}>
+          {[
+            { titlu: 'Manichiură & Unghii', desc: 'Gel, acryl, semipermanent — aplicat cu precizie certificată și produse de calitate europeană.' },
+            { titlu: 'Nail Art & Design', desc: 'De la linii curate la cristale Swarovski — fiecare design este adaptat personalității dumneavoastră.' },
+            { titlu: 'Consultație inclusă', desc: 'Fiecare ședință include o consultație a plăcii unghiale. Sănătatea vine înainte de estetică.' },
+            { titlu: 'Relație pe termen lung', desc: 'Nu închidem o ședință — continuăm o relație. Clientele noastre revin pentru că se simt acasă.' },
+          ].map((item, i) => (
+            <div key={i} style={{ padding: '24px', background: '#F7EFE5', borderRadius: '16px', borderLeft: '3px solid #9B1B30' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '15px', color: '#1C1C1C', marginBottom: '8px', fontWeight: 'bold' }}>{item.titlu}</p>
+              <p style={{ color: '#777', fontSize: '14px', lineHeight: 1.7, margin: 0 }}>{item.desc}</p>
+            </div>
+          ))}
         </div>
+
+        <blockquote style={{ borderLeft: 'none', margin: '0 0 40px', padding: 0 }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '20px', color: '#9B1B30', fontStyle: 'italic', lineHeight: 1.6 }}>
+            „Perfecțiunea tehnică impresionează.<br />Perfecțiunea comportamentului fidelizează."
+          </p>
+        </blockquote>
+
+        <Link href="/programare" className="btn-primary">
+          REZERVAȚI O ȘEDINȚĂ
+        </Link>
       </section>
 
       {/* Galerie */}
-      <section style={{ background: 'linear-gradient(160deg, #F7EFE5 0%, #EDE0D0 100%)', padding: '80px 20px' }}>
-        <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>✦ Atmosfera salonului ✦</p>
-        <h3 style={{ textAlign: 'center', fontSize: '36px', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '50px', color: '#1C1C1C' }}>Galerie</h3>
+      <section style={{ background: 'linear-gradient(160deg, #F7EFE5 0%, #EDE0D0 100%)', padding: '48px 0 56px' }}>
         <GalerieGrid />
       </section>
 
