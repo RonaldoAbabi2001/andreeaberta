@@ -15,6 +15,14 @@ const SECTIUNI = [
     ready: true,
   },
   {
+    id: 'mesaje',
+    icon: '💬',
+    label: 'Mesaje',
+    desc: 'Răspunde clienților direct din admin — inbox SMS în timp real',
+    color: '#0EA5E9',
+    ready: true,
+  },
+  {
     id: 'roata',
     icon: '🎡',
     label: 'Roata Norocului',
@@ -353,6 +361,124 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
   )
 }
 
+function MesajeSection({ token, onBack }) {
+  const [conversatii, setConversatii] = useState(null)
+  const [activa, setActiva] = useState(null)
+  const [mesaje, setMesaje] = useState([])
+  const [reply, setReply] = useState('')
+  const [sending, setSending] = useState(false)
+
+  async function loadConversatii() {
+    const res = await fetch('/api/admin/sms-inbox', { headers: { 'x-admin-token': token } })
+    const data = await res.json()
+    setConversatii(Array.isArray(data) ? data : [])
+  }
+
+  async function loadMesaje(telefon) {
+    setActiva(telefon)
+    const res = await fetch(`/api/admin/sms-inbox?telefon=${encodeURIComponent(telefon)}`, { headers: { 'x-admin-token': token } })
+    const data = await res.json()
+    setMesaje(Array.isArray(data) ? data : [])
+    loadConversatii()
+  }
+
+  async function handleReply() {
+    if (!reply.trim() || !activa) return
+    setSending(true)
+    await fetch('/api/admin/sms-inbox', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ telefon: activa, mesaj: reply.trim(), directie: 'OUT', creat: new Date().toISOString() })
+    })
+    setReply('')
+    setSending(false)
+    loadMesaje(activa)
+  }
+
+  useState(() => { loadConversatii() }, [])
+
+  const convActiva = conversatii?.find(c => c.telefon === activa)
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={onBack}
+          style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>
+          ← Meniu Salon
+        </button>
+        <span style={{ color: '#CCC' }}>/</span>
+        <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>💬 Mesaje</span>
+        <button onClick={loadConversatii} style={{ marginLeft: 'auto', padding: '5px 12px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>↻ Actualizează</button>
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '16px 24px 24px' }}>
+
+        {/* Lista conversatii */}
+        <div style={{ width: '260px', flexShrink: 0, borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'auto', background: '#FAFAFA' }}>
+          {conversatii === null && <p style={{ padding: '20px', color: '#aaa', fontSize: '13px' }}>Se încarcă...</p>}
+          {conversatii?.length === 0 && <p style={{ padding: '20px', color: '#aaa', fontSize: '13px' }}>Niciun mesaj primit încă.</p>}
+          {conversatii?.map(c => (
+            <div key={c.telefon} onClick={() => loadMesaje(c.telefon)}
+              style={{ padding: '14px 16px', borderBottom: '1px solid #F0E8DF', cursor: 'pointer', background: activa === c.telefon ? '#F7EFE5' : 'transparent', borderLeft: activa === c.telefon ? `3px solid ${s.ruby}` : '3px solid transparent' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'Georgia, serif', fontSize: '13px', fontWeight: 'bold', color: s.text }}>{c.nume || c.telefon}</span>
+                {c.necitite > 0 && <span style={{ background: s.ruby, color: 'white', borderRadius: '10px', padding: '1px 7px', fontSize: '11px', fontWeight: 'bold' }}>{c.necitite}</span>}
+              </div>
+              {c.nume && <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 4px' }}>{c.telefon}</p>}
+              <p style={{ fontSize: '12px', color: '#888', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {c.ultima_directie === 'OUT' ? '↗ ' : ''}{c.ultim_mesaj}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Chat */}
+        <div style={{ flex: 1, marginLeft: '16px', display: 'flex', flexDirection: 'column', borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'hidden' }}>
+          {!activa ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: '14px' }}>
+              Selectează o conversație
+            </div>
+          ) : (
+            <>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #F0E8DF', background: '#FAFAFA' }}>
+                <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold' }}>{convActiva?.nume || activa}</p>
+                {convActiva?.nume && <p style={{ margin: 0, fontSize: '12px', color: '#aaa' }}>{activa}</p>}
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {mesaje.map(m => (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: m.directie === 'OUT' ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: m.directie === 'OUT' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: m.directie === 'OUT' ? `linear-gradient(135deg, ${s.ruby}, #7A1525)` : '#F7EFE5', color: m.directie === 'OUT' ? 'white' : s.text, fontSize: '14px', lineHeight: 1.5 }}>
+                      <p style={{ margin: 0 }}>{m.mesaj}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right' }}>
+                        {new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ padding: '14px 20px', borderTop: '1px solid #F0E8DF', display: 'flex', gap: '10px' }}>
+                <input
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply() } }}
+                  placeholder="Scrie un răspuns..."
+                  style={{ flex: 1, padding: '10px 16px', border: '1px solid #E8DDD0', borderRadius: '50px', fontSize: '14px', outline: 'none', fontFamily: 'Georgia, serif' }}
+                />
+                <button onClick={handleReply} disabled={!reply.trim() || sending}
+                  style={{ padding: '10px 20px', background: reply.trim() ? `linear-gradient(135deg, ${s.ruby}, #7A1525)` : '#ccc', color: 'white', border: 'none', borderRadius: '50px', cursor: reply.trim() ? 'pointer' : 'not-allowed', fontSize: '14px', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>
+                  {sending ? '...' : 'Trimite ↗'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
   const [sectiune, setSectiune] = useState(null)
 
@@ -383,6 +509,10 @@ export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
 
   if (sectiune === 'sms') {
     return <SmsBulkSection token={token} clientiCount={clientiCount} onBack={() => setSectiune(null)} />
+  }
+
+  if (sectiune === 'mesaje') {
+    return <MesajeSection token={token} onBack={() => setSectiune(null)} />
   }
 
   return (
