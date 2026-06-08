@@ -312,22 +312,26 @@ function Wheel({ user, onResult }) {
 
   return (
     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-      <p style={{ color: '#888', fontSize: '15px', marginBottom: '8px' }}>
-        Bună, <strong style={{ color: s.ruby }}>{user.nume}</strong>! Apasă roata pentru a o învârti.
-      </p>
-      <p style={{ color: '#bbb', fontSize: '13px', marginBottom: '28px' }}>O singură șansă — fă-o să conteze! 🎯</p>
+      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' }}>✦ Momentul tău ✦</p>
+      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 'normal', marginBottom: '4px', color: '#1C1C1C' }}>
+        Bună, <span style={{ color: s.ruby, fontStyle: 'italic' }}>{user.nume}</span>!
+      </h3>
+      <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '36px', letterSpacing: '1px' }}>Apasă roata sau butonul pentru a o învârti</p>
 
-      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '24px' }}>
-        <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '12px solid transparent', borderRight: '12px solid transparent', borderTop: `24px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '32px' }}>
+        <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
         <canvas ref={canvasRef} width={SIZE} height={SIZE}
-          style={{ borderRadius: '50%', boxShadow: '0 16px 48px rgba(155,27,48,0.25)', cursor: spinning || saving ? 'not-allowed' : 'pointer' }}
+          style={{ borderRadius: '50%', boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)', cursor: spinning || saving ? 'not-allowed' : 'pointer', display: 'block' }}
           onClick={spin} />
       </div>
-      <br />
-      <button onClick={spin} disabled={spinning || saving}
-        style={{ background: (spinning || saving) ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '14px 40px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: (spinning || saving) ? 'not-allowed' : 'pointer', boxShadow: '0 6px 24px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
-        {saving ? 'SE SALVEAZĂ...' : spinning ? 'SE ÎNVÂRTE...' : '✦ ÎNVÂRTIȚI ✦'}
-      </button>
+
+      <div>
+        <button onClick={spin} disabled={spinning || saving}
+          style={{ background: (spinning || saving) ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 52px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: (spinning || saving) ? 'not-allowed' : 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
+          {saving ? 'SE SALVEAZĂ...' : spinning ? '✦ SE ÎNVÂRTE... ✦' : '✦ ÎNVÂRTE ROATA ✦'}
+        </button>
+        <p style={{ color: '#ccc', fontSize: '12px', marginTop: '14px', letterSpacing: '1px' }}>O singură șansă — fă-o să conteze</p>
+      </div>
     </div>
   )
 }
