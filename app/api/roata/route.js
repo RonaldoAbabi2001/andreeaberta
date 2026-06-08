@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
 const SECRET = 'evolis2026secret'
+const INTERVAL_ZILE = 14
 
 async function getDb() {
   const sql = neon(process.env.DATABASE_URL)
@@ -27,6 +28,20 @@ function genCod() {
   return cod
 }
 
+async function codUnic(sql) {
+  let cod = genCod()
+  for (let i = 0; i < 5; i++) {
+    const conflict = await sql`SELECT id FROM roata_norocului WHERE cod = ${cod}`
+    if (conflict.length === 0) return cod
+    cod = genCod()
+  }
+  return cod
+}
+
+function calcExpirare(creat) {
+  return new Date(new Date(creat).getTime() + INTERVAL_ZILE * 24 * 60 * 60 * 1000)
+}
+
 // GET — verifică dacă telefonul a mai jucat (public) sau listează toate (admin)
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
@@ -41,33 +56,36 @@ export async function GET(request) {
   }
 
   if (!telefon) return NextResponse.json({ error: 'Telefon lipsă' }, { status: 400 })
-  const rows = await sql`SELECT premiu, cod, folosit FROM roata_norocului WHERE telefon = ${telefon}`
-  if (rows.length > 0) return NextResponse.json({ exists: true, ...rows[0] })
+  const rows = await sql`SELECT premiu, cod, folosit, creat FROM roata_norocului WHERE telefon = ${telefon}`
+  if (rows.length > 0) {
+    const expira = calcExpirare(rows[0].creat)
+    const blocat = new Date() < expira
+    return NextResponse.json({ exists: true, blocat, data_expirare: expira.toISOString(), premiu: rows[0].premiu, cod: rows[0].cod, folosit: rows[0].folosit })
+  }
   return NextResponse.json({ exists: false })
 }
 
-// POST — salvează un spin nou
+// POST — salvează un spin nou (sau re-spin după 14 zile)
 export async function POST(request) {
   const { telefon, nume, premiu } = await request.json()
   if (!telefon || !premiu) return NextResponse.json({ error: 'Date lipsă' }, { status: 400 })
 
   const sql = await getDb()
 
-  // dublu check să nu joace de 2x
-  const existing = await sql`SELECT cod, premiu FROM roata_norocului WHERE telefon = ${telefon}`
-  if (existing.length > 0) return NextResponse.json({ error: 'Deja jucat', exists: true, cod: existing[0].cod, premiu: existing[0].premiu }, { status: 409 })
-
-  const id = Date.now()
-  let cod = genCod()
-  // ensure unique cod
-  let attempts = 0
-  while (attempts < 5) {
-    const conflict = await sql`SELECT id FROM roata_norocului WHERE cod = ${cod}`
-    if (conflict.length === 0) break
-    cod = genCod()
-    attempts++
+  const existing = await sql`SELECT creat FROM roata_norocului WHERE telefon = ${telefon}`
+  if (existing.length > 0) {
+    const expira = calcExpirare(existing[0].creat)
+    if (new Date() < expira) {
+      return NextResponse.json({ error: 'Blocat', blocat: true, data_expirare: expira.toISOString() }, { status: 409 })
+    }
+    // >= 14 zile → re-spin: actualizăm înregistrarea
+    const cod = await codUnic(sql)
+    await sql`UPDATE roata_norocului SET premiu=${premiu}, cod=${cod}, creat=NOW(), folosit=FALSE, folosit_la=NULL, nume=${nume || ''} WHERE telefon=${telefon}`
+    return NextResponse.json({ success: true, cod, premiu, respin: true })
   }
 
+  const id = Date.now()
+  const cod = await codUnic(sql)
   await sql`INSERT INTO roata_norocului (id, telefon, nume, premiu, cod) VALUES (${id}, ${telefon}, ${nume || ''}, ${premiu}, ${cod})`
   return NextResponse.json({ success: true, cod, premiu })
 }

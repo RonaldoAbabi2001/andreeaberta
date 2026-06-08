@@ -14,6 +14,49 @@ const PREMII = [
 
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
 
+// ─── Timer blocat ────────────────────────────────────────────────────────
+function Blocat({ dataExpirare, numeUser }) {
+  const [ramas, setRamas] = useState('')
+
+  useEffect(() => {
+    function update() {
+      const diff = new Date(dataExpirare) - new Date()
+      if (diff <= 0) { setRamas('Poți învârti acum!'); return }
+      const zile = Math.floor(diff / 86400000)
+      const ore = Math.floor((diff % 86400000) / 3600000)
+      const min = Math.floor((diff % 3600000) / 60000)
+      if (zile > 0) setRamas(`${zile} zile și ${ore} ore`)
+      else if (ore > 0) setRamas(`${ore} ore și ${min} minute`)
+      else setRamas(`${min} minute`)
+    }
+    update()
+    const t = setInterval(update, 60000)
+    return () => clearInterval(t)
+  }, [dataExpirare])
+
+  const dataFormatata = new Date(dataExpirare).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  return (
+    <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
+      <p style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</p>
+      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '12px' }}>Roata Norocului</p>
+      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 'normal', marginBottom: '16px' }}>
+        {numeUser ? `Bună, ${numeUser}!` : 'Ai mai jucat recent!'}
+      </h3>
+      <p style={{ color: '#888', fontSize: '15px', marginBottom: '32px', lineHeight: 1.7 }}>
+        Poți reveni și învârti din nou pe <strong style={{ color: '#1C1C1C' }}>{dataFormatata}</strong>.
+      </p>
+      <div style={{ background: 'linear-gradient(135deg, #F7EFE5, #EDE0D0)', borderRadius: '16px', padding: '24px', border: '1.5px solid #C9A84C', display: 'inline-block', minWidth: '200px' }}>
+        <p style={{ fontSize: '11px', letterSpacing: '3px', color: '#aaa', marginBottom: '8px', textTransform: 'uppercase' }}>Timp rămas</p>
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: '24px', color: s.ruby, fontWeight: 'bold', margin: 0 }}>{ramas}</p>
+      </div>
+      <p style={{ color: '#bbb', fontSize: '13px', marginTop: '24px', lineHeight: 1.6 }}>
+        Roata se resetează automat după 2 săptămâni.<br />Revino pentru o nouă șansă!
+      </p>
+    </div>
+  )
+}
+
 // ─── Pasul 1: Formular înregistrare ───────────────────────────────────────
 function RegisterForm({ onSuccess }) {
   const [nume, setNume] = useState('')
@@ -33,10 +76,11 @@ function RegisterForm({ onSuccess }) {
     const data = await res.json()
     setLoading(false)
 
-    if (data.exists) {
-      // a mai jucat
-      onSuccess({ alreadyPlayed: true, premiu: data.premiu, cod: data.cod, folosit: data.folosit, nume: nume.trim(), telefon: tel })
+    if (data.exists && data.blocat) {
+      // a mai jucat și e în perioada de blocare
+      onSuccess({ blocat: true, data_expirare: data.data_expirare, nume: nume.trim(), telefon: tel })
     } else {
+      // nu a jucat niciodată SAU a jucat dar au trecut 14 zile → spin permis
       onSuccess({ alreadyPlayed: false, nume: nume.trim(), telefon: tel })
     }
   }
@@ -411,15 +455,14 @@ function WheelPreview() {
 
 // ─── Componenta principală ────────────────────────────────────────────────
 export default function SpinWheel() {
-  const [step, setStep] = useState('preview') // preview | register | spin | result
+  const [step, setStep] = useState('preview') // preview | register | spin | result | blocat
   const [user, setUser] = useState(null)
   const [result, setResult] = useState(null)
 
   function handleRegister(data) {
     setUser(data)
-    if (data.alreadyPlayed) {
-      setResult({ premiu: data.premiu, cod: data.cod, folosit: data.folosit, alreadyPlayed: true })
-      setStep('result')
+    if (data.blocat) {
+      setStep('blocat')
     } else {
       setStep('spin')
     }
@@ -427,6 +470,7 @@ export default function SpinWheel() {
 
   if (step === 'spin') return <Wheel user={user} onResult={r => { setResult(r); setStep('result') }} />
   if (step === 'result') return <Result {...result} nume={user?.nume} />
+  if (step === 'blocat') return <Blocat dataExpirare={user?.data_expirare} numeUser={user?.nume} />
 
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -445,7 +489,7 @@ export default function SpinWheel() {
             style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 48px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
             ✦ ÎNCEARCĂ NOROCUL ✦
           </button>
-          <p style={{ color: '#bbb', fontSize: '12px', marginTop: '14px' }}>O singură șansă per număr de telefon</p>
+          <p style={{ color: '#bbb', fontSize: '12px', marginTop: '14px' }}>Poți reveni la fiecare 2 săptămâni</p>
         </div>
       )}
 
