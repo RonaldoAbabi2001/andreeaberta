@@ -199,12 +199,46 @@ function RoataAdmin({ token, onBack }) {
   )
 }
 
-function SmsBulkSection({ token, clientiCount, onBack }) {
+function SmsBulkSection({ token, onBack }) {
   const [mesaj, setMesaj] = useState('')
   const [preview, setPreview] = useState(null)
   const [status, setStatus] = useState(null)
   const [campanii, setCampanii] = useState(null)
   const [loadingCampanii, setLoadingCampanii] = useState(false)
+  const [clienti, setClienti] = useState(null)
+  const [selectati, setSelectati] = useState(new Set())
+  const [cautare, setCautare] = useState('')
+
+  useEffect(() => {
+    fetch('/api/admin/clienti', { headers: { 'x-admin-token': token } })
+      .then(r => r.json())
+      .then(data => {
+        const lista = (Array.isArray(data) ? data : []).filter(c => c.telefon)
+        setClienti(lista)
+        setSelectati(new Set(lista.map(c => c.telefon)))
+      })
+  }, [])
+
+  const clientiFiltrati = (clienti || []).filter(c => {
+    if (!cautare.trim()) return true
+    const q = cautare.toLowerCase()
+    return (c.nume || '').toLowerCase().includes(q) || (c.telefon || '').includes(cautare)
+  })
+
+  const totiSelectati = clientiFiltrati.length > 0 && clientiFiltrati.every(c => selectati.has(c.telefon))
+
+  function toggleToti() {
+    const nou = new Set(selectati)
+    if (totiSelectati) clientiFiltrati.forEach(c => nou.delete(c.telefon))
+    else clientiFiltrati.forEach(c => nou.add(c.telefon))
+    setSelectati(nou)
+  }
+
+  function toggleClient(tel) {
+    const nou = new Set(selectati)
+    nou.has(tel) ? nou.delete(tel) : nou.add(tel)
+    setSelectati(nou)
+  }
 
   async function loadCampanii() {
     setLoadingCampanii(true)
@@ -217,8 +251,8 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
   }
 
   function handlePreview() {
-    if (!mesaj.trim()) return
-    setPreview({ nrClienti: clientiCount, mesaj: mesaj.trim() })
+    if (!mesaj.trim() || selectati.size === 0) return
+    setPreview({ nrClienti: selectati.size, mesaj: mesaj.trim() })
     setStatus(null)
   }
 
@@ -228,7 +262,7 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
     const res = await fetch('/api/admin/sms-bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-      body: JSON.stringify({ mesaj: mesaj.trim() })
+      body: JSON.stringify({ mesaj: mesaj.trim(), telefoane: [...selectati] })
     })
     const data = await res.json()
     if (data.success) {
@@ -253,73 +287,101 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
         <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>📨 SMS în masă</span>
       </div>
 
-      <div style={{ padding: '24px', maxWidth: '680px', overflowY: 'auto' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 'normal', marginBottom: '6px', fontFamily: 'Georgia, serif' }}>SMS în masă</h2>
-        <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
-          Trimite prin routerul TP-Link (SIM propriu) — fără costuri externe.<br />
-          <strong>{clientiCount} clienți</strong> cu număr de telefon salvat.
-        </p>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '16px 24px 24px', gap: '20px' }}>
 
-        <div style={{ marginBottom: '16px' }}>
-          <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>Template rapid:</p>
-          <button
-            onClick={() => { setMesaj('Bună, {nume}! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm!'); setStatus(null); setPreview(null) }}
-            style={{ padding: '8px 16px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>
-            📋 Folosește template-ul
-          </button>
-        </div>
-
-        <textarea
-          value={mesaj}
-          onChange={e => { setMesaj(e.target.value); setStatus(null); setPreview(null) }}
-          rows={5}
-          placeholder="Scrie mesajul SMS aici..."
-          style={{ width: '100%', padding: '12px', border: '1px solid #E8DDD0', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', resize: 'vertical', marginBottom: '8px', boxSizing: 'border-box' }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <p style={{ fontSize: '12px', color: mesaj.length > 160 ? '#E53E3E' : '#aaa', margin: 0 }}>
-            {mesaj.length}/160 caractere {mesaj.length > 160 ? `— ${Math.ceil(mesaj.length / 160)} SMS-uri per număr` : '— 1 SMS per număr'}
-          </p>
-          <p style={{ fontSize: '12px', color: '#C9A84C', margin: 0 }}>
-            Scrie <strong style={{ fontFamily: 'monospace' }}>{'{nume}'}</strong> și se înlocuiește automat cu prenumele fiecărei cliente
-          </p>
-        </div>
-
-        <button
-          onClick={handlePreview}
-          disabled={!mesaj.trim() || status === 'loading'}
-          style={{ padding: '14px 32px', fontSize: '14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '12px', cursor: mesaj.trim() ? 'pointer' : 'not-allowed', opacity: mesaj.trim() ? 1 : 0.5, fontFamily: 'Georgia, serif', letterSpacing: '0.5px' }}>
-          VERIFICĂ ȘI TRIMITE
-        </button>
-
-        {preview && (
-          <div style={{ marginTop: '16px', padding: '20px', background: '#FFF8E7', borderRadius: '12px', border: '1px solid #C9A84C' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '15px' }}>⚠️ Confirmare trimitere masivă</p>
-            <p style={{ color: '#555', fontSize: '14px', marginBottom: '12px' }}>
-              Se vor trimite <strong>{preview.nrClienti} SMS-uri</strong> la toți clienții cu telefon.
-            </p>
-            <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#444', marginBottom: '16px', whiteSpace: 'pre-wrap' }}>
-              {preview.mesaj}
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={handleTrimite}
-                style={{ padding: '10px 24px', fontSize: '14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif' }}>
-                DA, TRIMITE LA TOȚI ({preview.nrClienti})
-              </button>
-              <button onClick={() => setPreview(null)}
-                style={{ padding: '10px 20px', background: 'none', border: '1px solid #ddd', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', color: '#888' }}>
-                Anulează
-              </button>
+        {/* Stânga: selecție clienți */}
+        <div style={{ width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', border: '1px solid #F0E8DF', borderRadius: '14px', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #F0E8DF', background: '#FAFAFA' }}>
+            <input
+              value={cautare}
+              onChange={e => setCautare(e.target.value)}
+              placeholder="Caută clientă..."
+              style={{ width: '100%', padding: '7px 12px', border: '1px solid #E8DDD0', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', marginBottom: '8px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: s.text }}>
+                <input type="checkbox" checked={totiSelectati} onChange={toggleToti} style={{ width: '15px', height: '15px', accentColor: s.ruby }} />
+                Selectează toți
+              </label>
+              <span style={{ fontSize: '12px', color: s.ruby, fontWeight: 'bold' }}>{selectati.size} selectați</span>
             </div>
           </div>
-        )}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {clienti === null && <p style={{ padding: '16px', color: '#aaa', fontSize: '13px' }}>Se încarcă...</p>}
+            {clientiFiltrati.map(c => (
+              <label key={c.telefon} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: '1px solid #F9F5F0', cursor: 'pointer', background: selectati.has(c.telefon) ? '#FEF9F0' : 'white' }}>
+                <input type="checkbox" checked={selectati.has(c.telefon)} onChange={() => toggleClient(c.telefon)} style={{ width: '15px', height: '15px', accentColor: s.ruby, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: s.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nume || '—'}</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#aaa' }}>{c.telefon}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
 
-        {status && status !== 'loading' && (
-          <p style={{ marginTop: '16px', fontSize: '14px', color: status.ok ? '#10B981' : '#E07000' }}>{status.text}</p>
-        )}
-        {status === 'loading' && (
-          <p style={{ marginTop: '16px', fontSize: '14px', color: '#888' }}>Se adaugă în coadă...</p>
-        )}
+        {/* Dreapta: mesaj + trimitere */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ marginBottom: '14px' }}>
+            <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>Template rapid:</p>
+            <button
+              onClick={() => { setMesaj('Bună, {nume}! Programările la EVOLIS se fac acum pe andreeaberta.com — mai simplu, mai rapid. La prima programare online primești acces la Roata Norocului cu reduceri speciale! Te așteptăm!'); setStatus(null); setPreview(null) }}
+              style={{ padding: '8px 16px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: s.ruby }}>
+              📋 Folosește template-ul
+            </button>
+          </div>
+
+          <textarea
+            value={mesaj}
+            onChange={e => { setMesaj(e.target.value); setStatus(null); setPreview(null) }}
+            rows={5}
+            placeholder="Scrie mesajul SMS aici..."
+            style={{ width: '100%', padding: '12px', border: '1px solid #E8DDD0', borderRadius: '10px', fontSize: '14px', fontFamily: 'Georgia, serif', resize: 'vertical', marginBottom: '8px', boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <p style={{ fontSize: '12px', color: mesaj.length > 160 ? '#E53E3E' : '#aaa', margin: 0 }}>
+              {mesaj.length}/160 {mesaj.length > 160 ? `— ${Math.ceil(mesaj.length / 160)} SMS/nr` : '— 1 SMS/nr'}
+            </p>
+            <p style={{ fontSize: '12px', color: '#C9A84C', margin: 0 }}>
+              <strong style={{ fontFamily: 'monospace' }}>{'{nume}'}</strong> = prenume automat
+            </p>
+          </div>
+
+          <button
+            onClick={handlePreview}
+            disabled={!mesaj.trim() || selectati.size === 0 || status === 'loading'}
+            style={{ padding: '13px 28px', fontSize: '14px', background: mesaj.trim() && selectati.size > 0 ? `linear-gradient(135deg, ${s.ruby}, #7A1525)` : '#ccc', color: 'white', border: 'none', borderRadius: '12px', cursor: mesaj.trim() && selectati.size > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Georgia, serif' }}>
+            TRIMITE LA {selectati.size} CLIENTE
+          </button>
+
+          {preview && (
+            <div style={{ marginTop: '16px', padding: '20px', background: '#FFF8E7', borderRadius: '12px', border: '1px solid #C9A84C' }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '15px' }}>⚠️ Confirmare</p>
+              <p style={{ color: '#555', fontSize: '14px', marginBottom: '12px' }}>
+                Se trimit <strong>{preview.nrClienti} SMS-uri</strong> personalizate.
+              </p>
+              <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#444', marginBottom: '16px', whiteSpace: 'pre-wrap' }}>
+                {preview.mesaj}
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={handleTrimite}
+                  style={{ padding: '10px 24px', fontSize: '14px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontFamily: 'Georgia, serif' }}>
+                  DA, TRIMITE ({preview.nrClienti})
+                </button>
+                <button onClick={() => setPreview(null)}
+                  style={{ padding: '10px 20px', background: 'none', border: '1px solid #ddd', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', color: '#888' }}>
+                  Anulează
+                </button>
+              </div>
+            </div>
+          )}
+
+          {status && status !== 'loading' && (
+            <p style={{ marginTop: '16px', fontSize: '14px', color: status.ok ? '#10B981' : '#E07000' }}>{status.text}</p>
+          )}
+          {status === 'loading' && (
+            <p style={{ marginTop: '16px', fontSize: '14px', color: '#888' }}>Se adaugă în coadă...</p>
+          )}
 
         {/* Raport campanii */}
         <div style={{ marginTop: '40px', borderTop: '1px solid #F0E8DF', paddingTop: '24px' }}>
@@ -360,6 +422,7 @@ function SmsBulkSection({ token, clientiCount, onBack }) {
               </div>
             )
           })}
+        </div>
         </div>
       </div>
     </div>
@@ -645,7 +708,7 @@ export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
   }
 
   if (sectiune === 'sms') {
-    return <SmsBulkSection token={token} clientiCount={clientiCount} onBack={() => setSectiune(null)} />
+    return <SmsBulkSection token={token} onBack={() => setSectiune(null)} />
   }
 
   if (sectiune === 'mesaje') {

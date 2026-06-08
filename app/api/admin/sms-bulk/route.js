@@ -27,7 +27,7 @@ export async function POST(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { mesaj } = await request.json()
+  const { mesaj, telefoane } = await request.json()
   if (!mesaj?.trim())
     return NextResponse.json({ error: 'Mesaj gol' }, { status: 400 })
 
@@ -44,7 +44,10 @@ export async function POST(request) {
       duplicate: true
     }, { status: 409 })
 
-  const clienti = await sql`SELECT telefon, nume FROM clienti WHERE telefon IS NOT NULL AND telefon != '' ORDER BY creat DESC`
+  // Daca s-a trimis o lista specifica, folosim doar aceea; altfel toti clientii
+  const clienti = telefoane?.length > 0
+    ? await sql`SELECT telefon, nume FROM clienti WHERE telefon = ANY(${telefoane}) AND telefon IS NOT NULL AND telefon != ''`
+    : await sql`SELECT telefon, nume FROM clienti WHERE telefon IS NOT NULL AND telefon != '' ORDER BY creat DESC`
 
   const campaignId = `bulk_${Date.now()}`
   await sql`INSERT INTO sms_bulk_campaigns (id, mesaj, total) VALUES (${campaignId}, ${mesaj.trim()}, ${clienti.length})`
