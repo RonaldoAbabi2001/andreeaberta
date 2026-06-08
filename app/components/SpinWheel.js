@@ -12,18 +12,17 @@ const PREMII = [
   { label: 'Top pe Dedesubt', color: '#C9A84C', text: '#1C1C1C' },
 ]
 
-// 9 segmente vizuale — ultimul (index 8) este decorativ, nu poate câștiga niciodată
 const PREMII_VIZ = [
   ...PREMII,
   { label: '★ 30% Reducere', color: '#1C1C1C', text: '#FFD700' },
 ]
-const N_VIZ = PREMII_VIZ.length       // 9
-const SEG_VIZ = (2 * Math.PI) / N_VIZ // 40°
+const N_VIZ = PREMII_VIZ.length
+const SEG_VIZ = (2 * Math.PI) / N_VIZ
 
-const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
+const s = { ruby: '#9B1B30', gold: '#C9A84C' }
+const SIZE = 320
 
-// Desenează roata HD pe canvas cu o anumită rotație
-function drawWheelHD(canvas, rot, SIZE) {
+function drawWheelHD(canvas, rot) {
   if (!canvas) return
   const dpr = window.devicePixelRatio || 1
   if (canvas.width !== SIZE * dpr) {
@@ -39,7 +38,6 @@ function drawWheelHD(canvas, rot, SIZE) {
   const cy = SIZE / 2
   const r = cx - 8
 
-  // Umbra roții
   ctx.save()
   ctx.shadowColor = 'rgba(155,27,48,0.25)'
   ctx.shadowBlur = 20
@@ -49,7 +47,6 @@ function drawWheelHD(canvas, rot, SIZE) {
   ctx.fill()
   ctx.restore()
 
-  // Segmente
   PREMII_VIZ.forEach(({ label, color, text }, i) => {
     const startAngle = rot + i * SEG_VIZ
     const endAngle = startAngle + SEG_VIZ
@@ -63,17 +60,14 @@ function drawWheelHD(canvas, rot, SIZE) {
     ctx.lineWidth = 1.5
     ctx.stroke()
 
-    // Text pe segment
     ctx.save()
     ctx.translate(cx, cy)
     ctx.rotate(startAngle + SEG_VIZ / 2)
     ctx.textAlign = 'right'
     ctx.fillStyle = text
-    // Segmentul 30% e special — font mai mare și bold
     const isSpecial = i === 8
     ctx.font = isSpecial ? 'bold 12px Georgia, serif' : 'bold 10px Georgia, serif'
     if (isSpecial) {
-      // Două rânduri pentru 30%
       ctx.fillText('30% Reducere', r - 10, -5)
       ctx.font = '10px Georgia, serif'
       ctx.fillText('★ ★ ★', r - 10, 8)
@@ -83,7 +77,6 @@ function drawWheelHD(canvas, rot, SIZE) {
     ctx.restore()
   })
 
-  // Cerc central auriu
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30)
   grad.addColorStop(0, '#E2C97E')
   grad.addColorStop(1, '#C9A84C')
@@ -100,10 +93,9 @@ function drawWheelHD(canvas, rot, SIZE) {
   ctx.fillText('EVOLIS', cx, cy + 3)
 }
 
-// ─── Timer blocat ────────────────────────────────────────────────────────
+// ─── Timer blocat ─────────────────────────────────────────────────────────
 function Blocat({ dataExpirare, numeUser }) {
   const [ramas, setRamas] = useState('')
-
   useEffect(() => {
     function update() {
       const diff = new Date(dataExpirare) - new Date()
@@ -119,9 +111,7 @@ function Blocat({ dataExpirare, numeUser }) {
     const t = setInterval(update, 60000)
     return () => clearInterval(t)
   }, [dataExpirare])
-
   const dataFormatata = new Date(dataExpirare).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })
-
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
       <p style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</p>
@@ -143,200 +133,7 @@ function Blocat({ dataExpirare, numeUser }) {
   )
 }
 
-// ─── Pasul 1: Formular înregistrare ───────────────────────────────────────
-function RegisterForm({ onSuccess }) {
-  const [nume, setNume] = useState('')
-  const [telefon, setTelefon] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState(null)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setErr(null)
-    const tel = telefon.trim().replace(/\s/g, '')
-    if (!tel || tel.length < 10) { setErr('Introdu un număr de telefon valid.'); return }
-    if (!nume.trim()) { setErr('Introdu numele tău.'); return }
-
-    setLoading(true)
-    const res = await fetch(`/api/roata?telefon=${encodeURIComponent(tel)}`)
-    const data = await res.json()
-    setLoading(false)
-
-    if (data.exists && data.blocat) {
-      onSuccess({ blocat: true, data_expirare: data.data_expirare, nume: nume.trim(), telefon: tel })
-    } else {
-      onSuccess({ alreadyPlayed: false, nume: nume.trim(), telefon: tel })
-    }
-  }
-
-  return (
-    <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
-      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Încearcă norocul ✦</p>
-      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', fontWeight: 'normal', marginBottom: '8px' }}>Roata Norocului</h3>
-      <p style={{ color: '#888', fontSize: '15px', marginBottom: '36px', lineHeight: 1.6 }}>
-        Înregistrează-te și învârte roata pentru a câștiga un premiu la prima ta programare!
-      </p>
-
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <input
-          type="text"
-          placeholder="Numele tău"
-          value={nume}
-          onChange={e => setNume(e.target.value)}
-          style={{ padding: '14px 18px', border: '1.5px solid #E8DDD0', borderRadius: '12px', fontSize: '15px', fontFamily: 'Georgia, serif', outline: 'none', textAlign: 'center' }}
-        />
-        <input
-          type="tel"
-          placeholder="Numărul de telefon (ex: 0712345678)"
-          value={telefon}
-          onChange={e => setTelefon(e.target.value)}
-          style={{ padding: '14px 18px', border: '1.5px solid #E8DDD0', borderRadius: '12px', fontSize: '15px', fontFamily: 'Georgia, serif', outline: 'none', textAlign: 'center' }}
-        />
-        {err && <p style={{ color: '#E53E3E', fontSize: '13px', margin: 0 }}>{err}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ background: loading ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '15px 40px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 6px 24px rgba(155,27,48,0.3)', transition: 'all 0.3s', marginTop: '4px' }}
-        >
-          {loading ? 'SE VERIFICĂ...' : '✦ CONTINUĂ ✦'}
-        </button>
-      </form>
-
-      <p style={{ color: '#bbb', fontSize: '12px', marginTop: '20px', lineHeight: 1.5 }}>
-        Numărul tău de telefon este folosit doar pentru a-ți rezerva premiul.<br />Nu trimitem spam.
-      </p>
-    </div>
-  )
-}
-
-// ─── Pasul 2: Roata (interactivă) ─────────────────────────────────────────
-function Wheel({ user, onResult }) {
-  const canvasRef = useRef(null)
-  const [spinning, setSpinning] = useState(false)
-  const [rotation, setRotation] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const animRef = useRef(null)
-  const SIZE = 300
-
-  useEffect(() => { drawWheelHD(canvasRef.current, 0, SIZE) }, [])
-
-  function playTick() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const o = ctx.createOscillator(); const g = ctx.createGain()
-      o.connect(g); g.connect(ctx.destination)
-      o.frequency.value = 600
-      g.gain.setValueAtTime(0.15, ctx.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05)
-      o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.05)
-    } catch {}
-  }
-
-  function playWin() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      ;[523, 659, 784, 1047].forEach((freq, i) => {
-        const o = ctx.createOscillator(); const g = ctx.createGain()
-        o.connect(g); g.connect(ctx.destination)
-        o.frequency.value = freq; o.type = 'sine'
-        const t = ctx.currentTime + i * 0.15
-        g.gain.setValueAtTime(0.2, t)
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3)
-        o.start(t); o.stop(t + 0.3)
-      })
-    } catch {}
-  }
-
-  function spin() {
-    if (spinning || saving) return
-    setSpinning(true)
-
-    const extraSpins = 5 + Math.random() * 5
-
-    // Predetermina câștigătorul: index 0-7, niciodată 8 (30% Reducere)
-    const winnerIdx = Math.floor(Math.random() * 8)
-    const jitter = (Math.random() - 0.5) * SEG_VIZ * 0.6
-    const targetPointerAngle = (winnerIdx + 0.5) * SEG_VIZ + jitter
-
-    // Inversă: pointerAngle = (7π/2 - normFinal) % 2π → normFinal = (7π/2 - pointerAngle) % 2π
-    const targetNorm = ((7 * Math.PI / 2 - targetPointerAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
-    const currentNorm = ((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-    const delta = (targetNorm - currentNorm + 2 * Math.PI) % (2 * Math.PI)
-
-    const totalRotation = rotation + extraSpins * 2 * Math.PI + delta
-    const duration = 4500
-    const start = performance.now()
-    const startRot = rotation
-    let lastSegment = -1
-
-    function animate(now) {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      const currentRot = startRot + (totalRotation - startRot) * eased
-      drawWheelHD(canvasRef.current, currentRot, SIZE)
-
-      const norm = ((currentRot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-      const seg = Math.floor(norm / SEG_VIZ) % N_VIZ
-      if (seg !== lastSegment) { playTick(); lastSegment = seg }
-
-      if (progress < 1) {
-        animRef.current = requestAnimationFrame(animate)
-      } else {
-        setRotation(totalRotation)
-        // Citim câștigătorul din poziția vizuală reală a pointerului
-        const normFinal = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-        const pAngle = (7 * Math.PI / 2 - normFinal + 2 * Math.PI) % (2 * Math.PI)
-        const vizIdx = Math.floor(pAngle / SEG_VIZ) % N_VIZ
-        const finalIdx = vizIdx < 8 ? vizIdx : winnerIdx // fallback dacă pică pe 30%
-        const premiu = PREMII[finalIdx].label
-        playWin()
-        setSpinning(false)
-        setSaving(true)
-        fetch('/api/roata', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telefon: user.telefon, nume: user.nume, premiu })
-        })
-          .then(r => r.json())
-          .then(data => {
-            setSaving(false)
-            if (data.success || data.respin) onResult({ premiu, cod: data.cod })
-            else if (data.exists) onResult({ premiu: data.premiu, cod: data.cod, alreadyPlayed: true })
-          })
-          .catch(() => { setSaving(false); onResult({ premiu, cod: '—' }) })
-      }
-    }
-    animRef.current = requestAnimationFrame(animate)
-  }
-
-  return (
-    <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' }}>✦ Momentul tău ✦</p>
-      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 'normal', marginBottom: '4px', color: '#1C1C1C' }}>
-        Bună, <span style={{ color: s.ruby, fontStyle: 'italic' }}>{user.nume}</span>!
-      </h3>
-      <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '36px', letterSpacing: '1px' }}>Apasă roata sau butonul pentru a o învârti</p>
-
-      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '32px' }}>
-        <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
-        <canvas ref={canvasRef} width={SIZE} height={SIZE}
-          style={{ borderRadius: '50%', boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)', cursor: spinning || saving ? 'not-allowed' : 'pointer', display: 'block' }}
-          onClick={spin} />
-      </div>
-
-      <div>
-        <button onClick={spin} disabled={spinning || saving}
-          style={{ background: (spinning || saving) ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 52px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: (spinning || saving) ? 'not-allowed' : 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
-          {saving ? 'SE SALVEAZĂ...' : spinning ? '✦ SE ÎNVÂRTE... ✦' : '✦ ÎNVÂRTE ROATA ✦'}
-        </button>
-        <p style={{ color: '#ccc', fontSize: '12px', marginTop: '14px', letterSpacing: '1px' }}>O singură șansă — fă-o să conteze</p>
-      </div>
-    </div>
-  )
-}
-
-// ─── Pasul 3: Rezultat ────────────────────────────────────────────────────
+// ─── Rezultat ────────────────────────────────────────────────────────────
 function Result({ premiu, cod, folosit, alreadyPlayed }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
@@ -353,7 +150,6 @@ function Result({ premiu, cod, folosit, alreadyPlayed }) {
           <p style={{ color: '#888', fontSize: '15px', marginBottom: '28px' }}>Premiul tău pentru prima programare:</p>
         </>
       )}
-
       <div style={{ background: 'linear-gradient(135deg, #F7EFE5, #EDE0D0)', borderRadius: '20px', padding: '32px', border: '1.5px solid #C9A84C', boxShadow: '0 8px 32px rgba(201,168,76,0.2)', marginBottom: '24px' }}>
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '26px', color: s.ruby, marginBottom: '20px', fontWeight: 'bold' }}>{premiu}</p>
         <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px dashed #C9A84C' }}>
@@ -362,7 +158,6 @@ function Result({ premiu, cod, folosit, alreadyPlayed }) {
         </div>
         {folosit && <p style={{ color: '#aaa', fontSize: '12px', marginTop: '12px' }}>✓ Acest cod a fost deja folosit.</p>}
       </div>
-
       <p style={{ color: '#888', fontSize: '14px', lineHeight: 1.7 }}>
         {folosit
           ? 'Codul a fost validat. Mulțumim că ai ales EVOLIS! 💅'
@@ -373,74 +168,264 @@ function Result({ premiu, cod, folosit, alreadyPlayed }) {
   )
 }
 
-// ─── Roată decorativă (preview homepage) ─────────────────────────────────
-function WheelPreview() {
+// ─── Componenta principală — un singur canvas, mereu vizibil ──────────────
+export default function SpinWheel() {
+  const [step, setStep] = useState('preview') // preview | register | spin | spinning | result | blocat
+  const [user, setUser] = useState(null)
+  const [result, setResult] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  // Form state
+  const [nume, setNume] = useState('')
+  const [telefon, setTelefon] = useState('')
+  const [formLoading, setFormLoading] = useState(false)
+  const [formErr, setFormErr] = useState(null)
+
+  // Canvas & animație
   const canvasRef = useRef(null)
   const rotRef = useRef(0)
   const animRef = useRef(null)
-  const SIZE = 320
 
-  useEffect(() => {
-    drawWheelHD(canvasRef.current, 0, SIZE)
-    function slowSpin() {
+  // Pornește rotația lentă (preview/register)
+  function startSlowSpin() {
+    cancelAnimationFrame(animRef.current)
+    function loop() {
       rotRef.current += 0.003
-      drawWheelHD(canvasRef.current, rotRef.current, SIZE)
-      animRef.current = requestAnimationFrame(slowSpin)
+      drawWheelHD(canvasRef.current, rotRef.current)
+      animRef.current = requestAnimationFrame(loop)
     }
-    animRef.current = requestAnimationFrame(slowSpin)
+    animRef.current = requestAnimationFrame(loop)
+  }
+
+  // La mount: desenează imediat și pornește rotația lentă
+  useEffect(() => {
+    drawWheelHD(canvasRef.current, 0)
+    startSlowSpin()
     return () => cancelAnimationFrame(animRef.current)
   }, [])
 
-  return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
-      <canvas ref={canvasRef} width={SIZE} height={SIZE}
-        style={{ borderRadius: '50%', boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)' }} />
-    </div>
-  )
-}
-
-// ─── Componenta principală ────────────────────────────────────────────────
-export default function SpinWheel() {
-  const [step, setStep] = useState('preview') // preview | register | spin | result | blocat
-  const [user, setUser] = useState(null)
-  const [result, setResult] = useState(null)
-
-  function handleRegister(data) {
-    setUser(data)
-    if (data.blocat) setStep('blocat')
-    else setStep('spin')
+  // ── Sunet ──
+  function playTick() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)()
+      const o = ac.createOscillator(); const g = ac.createGain()
+      o.connect(g); g.connect(ac.destination)
+      o.frequency.value = 600
+      g.gain.setValueAtTime(0.15, ac.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.05)
+      o.start(ac.currentTime); o.stop(ac.currentTime + 0.05)
+    } catch {}
+  }
+  function playWin() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)()
+      ;[523, 659, 784, 1047].forEach((freq, i) => {
+        const o = ac.createOscillator(); const g = ac.createGain()
+        o.connect(g); g.connect(ac.destination)
+        o.frequency.value = freq; o.type = 'sine'
+        const t = ac.currentTime + i * 0.15
+        g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3)
+        o.start(t); o.stop(t + 0.3)
+      })
+    } catch {}
   }
 
-  if (step === 'spin') return <Wheel user={user} onResult={r => { setResult(r); setStep('result') }} />
-  if (step === 'result') return <Result {...result} />
+  // ── Submit formular ──
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setFormErr(null)
+    const tel = telefon.trim().replace(/\s/g, '')
+    if (!tel || tel.length < 10) { setFormErr('Introdu un număr de telefon valid.'); return }
+    if (!nume.trim()) { setFormErr('Introdu numele tău.'); return }
+    setFormLoading(true)
+    try {
+      const res = await fetch(`/api/roata?telefon=${encodeURIComponent(tel)}`)
+      const data = await res.json()
+      setFormLoading(false)
+      const userData = { nume: nume.trim(), telefon: tel }
+      setUser(userData)
+      if (data.exists && data.blocat) {
+        setUser({ ...userData, data_expirare: data.data_expirare })
+        cancelAnimationFrame(animRef.current)
+        setStep('blocat')
+      } else {
+        // Oprește rotația lentă, trece la spin interactiv
+        cancelAnimationFrame(animRef.current)
+        setStep('spin')
+      }
+    } catch {
+      setFormLoading(false)
+      setFormErr('Eroare de conexiune. Încearcă din nou.')
+    }
+  }
+
+  // ── Spin interactiv ──
+  function doSpin() {
+    if (step === 'spinning' || saving) return
+    setStep('spinning')
+
+    const extraSpins = 5 + Math.random() * 5
+    const winnerIdx = Math.floor(Math.random() * 8)
+    const jitter = (Math.random() - 0.5) * SEG_VIZ * 0.6
+    const targetPointerAngle = (winnerIdx + 0.5) * SEG_VIZ + jitter
+    const targetNorm = ((7 * Math.PI / 2 - targetPointerAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
+    const currentNorm = ((rotRef.current % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+    const delta = (targetNorm - currentNorm + 2 * Math.PI) % (2 * Math.PI)
+    const totalRotation = rotRef.current + extraSpins * 2 * Math.PI + delta
+
+    const duration = 4500
+    const start = performance.now()
+    const startRot = rotRef.current
+    let lastSegment = -1
+
+    function animate(now) {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const currentRot = startRot + (totalRotation - startRot) * eased
+      rotRef.current = currentRot
+      drawWheelHD(canvasRef.current, currentRot)
+
+      const norm = ((currentRot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+      const seg = Math.floor(norm / SEG_VIZ) % N_VIZ
+      if (seg !== lastSegment) { playTick(); lastSegment = seg }
+
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate)
+      } else {
+        rotRef.current = totalRotation
+        const normFinal = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+        const pAngle = (7 * Math.PI / 2 - normFinal + 2 * Math.PI) % (2 * Math.PI)
+        const vizIdx = Math.floor(pAngle / SEG_VIZ) % N_VIZ
+        const finalIdx = vizIdx < 8 ? vizIdx : winnerIdx
+        const premiu = PREMII[finalIdx].label
+        playWin()
+        setSaving(true)
+        fetch('/api/roata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telefon: user.telefon, nume: user.nume, premiu })
+        })
+          .then(r => r.json())
+          .then(data => {
+            setSaving(false)
+            setResult({ premiu, cod: data.cod || '—' })
+            setStep('result')
+          })
+          .catch(() => { setSaving(false); setResult({ premiu, cod: '—' }); setStep('result') })
+      }
+    }
+    animRef.current = requestAnimationFrame(animate)
+  }
+
+  // ── Ecranele fără roată (blocat, result) ──
   if (step === 'blocat') return <Blocat dataExpirare={user?.data_expirare} numeUser={user?.nume} />
+  if (step === 'result') return <Result {...result} />
+
+  // ── Layout principal — roata MEREU vizibilă ──
+  const isSpinning = step === 'spinning'
+  const canSpin = step === 'spin' && !saving
 
   return (
-    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-      <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '12px' }}>✦ Încearcă norocul ✦</p>
-      <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '36px', fontWeight: 'normal', marginBottom: '8px', color: '#1C1C1C' }}>Roata Norocului</h3>
-      <p style={{ color: '#888', fontSize: '16px', marginBottom: '40px', maxWidth: '440px', margin: '0 auto 40px', lineHeight: 1.7 }}>
-        Înregistrează-te și învârte roata pentru a câștiga un premiu la prima ta programare!
-      </p>
+    <div style={{ textAlign: 'center', padding: '48px 20px 40px' }}>
+      {/* Titlu */}
+      {(step === 'preview' || step === 'register') && (
+        <>
+          <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' }}>✦ Încearcă norocul ✦</p>
+          <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '34px', fontWeight: 'normal', marginBottom: '8px', color: '#1C1C1C' }}>Roata Norocului</h3>
+          <p style={{ color: '#888', fontSize: '15px', marginBottom: '36px', maxWidth: '420px', margin: '0 auto 36px', lineHeight: 1.7 }}>
+            Înregistrează-te și câștigă un premiu la prima ta programare!
+          </p>
+        </>
+      )}
+      {step === 'spin' && (
+        <>
+          <p style={{ color: s.ruby, fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' }}>✦ Momentul tău ✦</p>
+          <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '30px', fontWeight: 'normal', marginBottom: '8px', color: '#1C1C1C' }}>
+            Bună, <span style={{ color: s.ruby, fontStyle: 'italic' }}>{user?.nume}</span>!
+          </h3>
+          <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '36px', letterSpacing: '0.5px' }}>
+            Apasă roata sau butonul pentru a o învârti
+          </p>
+        </>
+      )}
+      {isSpinning && (
+        <div style={{ height: '62px' }} />
+      )}
 
-      <WheelPreview />
+      {/* Roata — un singur canvas, mereu pe pagină */}
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: '36px' }}>
+        <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderTop: `28px solid ${s.ruby}`, zIndex: 10, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} />
+        <canvas
+          ref={canvasRef}
+          width={SIZE}
+          height={SIZE}
+          style={{
+            borderRadius: '50%',
+            boxShadow: '0 20px 60px rgba(155,27,48,0.3), 0 0 0 6px rgba(201,168,76,0.2)',
+            cursor: canSpin ? 'pointer' : 'default',
+            display: 'block',
+          }}
+          onClick={canSpin ? doSpin : undefined}
+        />
+      </div>
 
+      {/* Secțiunea de jos — se schimbă în funcție de step */}
       {step === 'preview' && (
-        <div style={{ marginTop: '40px' }}>
+        <div>
           <button
             onClick={() => setStep('register')}
             style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 48px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
             ✦ ÎNCEARCĂ NOROCUL ✦
           </button>
-          <p style={{ color: '#bbb', fontSize: '12px', marginTop: '14px' }}>Poți reveni la fiecare 2 săptămâni</p>
+          <p style={{ color: '#ccc', fontSize: '12px', marginTop: '14px' }}>Poți reveni la fiecare 2 săptămâni</p>
         </div>
       )}
 
       {step === 'register' && (
-        <div style={{ marginTop: '40px', maxWidth: '400px', margin: '40px auto 0' }}>
-          <RegisterForm onSuccess={handleRegister} />
+        <div style={{ maxWidth: '380px', margin: '0 auto' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <input
+              type="text"
+              placeholder="Numele tău"
+              value={nume}
+              onChange={e => setNume(e.target.value)}
+              style={{ padding: '14px 18px', border: '1.5px solid #E8DDD0', borderRadius: '12px', fontSize: '15px', fontFamily: 'Georgia, serif', outline: 'none', textAlign: 'center' }}
+            />
+            <input
+              type="tel"
+              placeholder="Numărul de telefon (ex: 0712345678)"
+              value={telefon}
+              onChange={e => setTelefon(e.target.value)}
+              style={{ padding: '14px 18px', border: '1.5px solid #E8DDD0', borderRadius: '12px', fontSize: '15px', fontFamily: 'Georgia, serif', outline: 'none', textAlign: 'center' }}
+            />
+            {formErr && <p style={{ color: '#E53E3E', fontSize: '13px', margin: 0 }}>{formErr}</p>}
+            <button
+              type="submit"
+              disabled={formLoading}
+              style={{ background: formLoading ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '15px 40px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: formLoading ? 'not-allowed' : 'pointer', boxShadow: '0 6px 24px rgba(155,27,48,0.3)', transition: 'all 0.3s' }}>
+              {formLoading ? 'SE VERIFICĂ...' : '✦ CONTINUĂ ✦'}
+            </button>
+          </form>
+          <p style={{ color: '#bbb', fontSize: '12px', marginTop: '16px', lineHeight: 1.5 }}>
+            Numărul tău este folosit doar pentru a-ți rezerva premiul.<br />Nu trimitem spam.
+          </p>
         </div>
+      )}
+
+      {step === 'spin' && (
+        <div>
+          <button
+            onClick={doSpin}
+            style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '50px', padding: '16px 52px', fontSize: '15px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer', boxShadow: '0 8px 28px rgba(155,27,48,0.35)', transition: 'all 0.3s' }}>
+            ✦ ÎNVÂRTE ROATA ✦
+          </button>
+          <p style={{ color: '#ccc', fontSize: '12px', marginTop: '14px', letterSpacing: '0.5px' }}>O singură șansă — fă-o să conteze</p>
+        </div>
+      )}
+
+      {isSpinning && (
+        <p style={{ color: s.ruby, fontSize: '14px', letterSpacing: '3px', fontFamily: 'Georgia, serif' }}>✦ SE ÎNVÂRTE... ✦</p>
       )}
     </div>
   )
