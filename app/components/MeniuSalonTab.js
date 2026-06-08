@@ -382,21 +382,32 @@ function MesajeSection({ token, onBack }) {
     setMesajNou(true)
     setActiva(null)
     setCautareClient('')
-    setClientiSugestii([])
     if (totiClientii.length === 0) {
       const res = await fetch('/api/admin/clienti', { headers: { 'x-admin-token': token } })
       const data = await res.json()
-      setTotiClientii(Array.isArray(data) ? data : [])
+      const lista = Array.isArray(data) ? data : []
+      setTotiClientii(lista)
+      setClientiSugestii(lista.filter(c => c.telefon).slice(0, 8))
+    } else {
+      setClientiSugestii(totiClientii.filter(c => c.telefon).slice(0, 8))
     }
   }
 
   function cautaClienti(q) {
     setCautareClient(q)
-    if (q.length < 2) { setClientiSugestii([]); return }
-    const lower = q.toLowerCase()
-    const filtrati = totiClientii
-      .filter(c => (c.nume && c.nume.toLowerCase().includes(lower)) || (c.telefon && c.telefon.includes(q)))
-      .slice(0, 8)
+    if (!q.trim()) {
+      setClientiSugestii(totiClientii.filter(c => c.telefon).slice(0, 8))
+      return
+    }
+    const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const normQ = norm(q).replace(/\s+/g, '')
+    const filtrati = totiClientii.filter(c => {
+      const numeMatch = norm(c.nume).includes(normQ)
+      const telNorm = (c.telefon || '').replace(/\s+/g, '').replace(/^\+40/, '0')
+      const qTelNorm = q.replace(/\s+/g, '').replace(/^\+40/, '0')
+      const telMatch = telNorm.includes(qTelNorm)
+      return numeMatch || telMatch
+    }).slice(0, 8)
     setClientiSugestii(filtrati)
   }
 
@@ -474,12 +485,12 @@ function MesajeSection({ token, onBack }) {
             </div>
           )}
           {cautareClient.length >= 2 && clientiSugestii.length === 0 && (
-            <p style={{ fontSize: '12px', color: '#aaa', marginTop: '8px' }}>Niciun client găsit. Poți scrie direct numărul de telefon și apasă Enter.</p>
+            <p style={{ fontSize: '12px', color: '#aaa', marginTop: '8px' }}>Niciun client găsit.</p>
           )}
-          {cautareClient.match(/^(\+4|0)\d{9,}$/) && (
-            <button onClick={() => startConversatie({ telefon: cautareClient, nume: cautareClient })}
-              style={{ marginTop: '8px', padding: '8px 16px', background: s.ruby, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}>
-              Deschide conversație cu {cautareClient}
+          {cautareClient.replace(/\s/g,'').match(/^(\+40|0)\d{9}$/) && (
+            <button onClick={() => startConversatie({ telefon: cautareClient.replace(/\s/g,''), nume: '' })}
+              style={{ marginTop: '10px', padding: '10px 18px', background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', width: '100%' }}>
+              Trimite mesaj la {cautareClient.replace(/\s/g,'')} →
             </button>
           )}
         </div>
