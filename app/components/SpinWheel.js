@@ -5,11 +5,11 @@ const PREMII = [
   { label: '10% Reducere', color: '#9B1B30', text: '#fff' },
   { label: 'Design Gratuit', color: '#C9A84C', text: '#1C1C1C' },
   { label: '15% Reducere', color: '#7A1525', text: '#fff' },
-  { label: 'Cuticule Gratuite', color: '#D4AF6A', text: '#1C1C1C' },
+  { label: 'Design Swarovski', color: '#D4AF6A', text: '#1C1C1C' },
   { label: '20% Reducere', color: '#B5223C', text: '#fff' },
-  { label: 'Ojă Semi Gratuită', color: '#E2C97E', text: '#1C1C1C' },
+  { label: 'Îndepărtare Gratuită', color: '#E2C97E', text: '#1C1C1C' },
   { label: '25% Reducere', color: '#6A1020', text: '#fff' },
-  { label: 'Nail Art Gratuit', color: '#C9A84C', text: '#1C1C1C' },
+  { label: '30% Reducere', color: '#C9A84C', text: '#1C1C1C' },
 ]
 
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
