@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ServiciiTab from './ServiciiTab'
 
 const SECRET = 'evolis2026secret'
@@ -395,7 +395,7 @@ function MesajeSection({ token, onBack }) {
     loadMesaje(activa)
   }
 
-  useState(() => { loadConversatii() }, [])
+  useEffect(() => { loadConversatii() }, [])
 
   const convActiva = conversatii?.find(c => c.telefon === activa)
 
