@@ -197,10 +197,29 @@ export default function SpinWheel() {
     animRef.current = requestAnimationFrame(loop)
   }
 
-  // La mount: desenează imediat și pornește rotația lentă
+  // La mount: desenează imediat, pornește rotația lentă, verifică dacă e blocat din sesiunea anterioară
   useEffect(() => {
     drawWheelHD(canvasRef.current, 0)
     startSlowSpin()
+
+    const saved = localStorage.getItem('roata_telefon')
+    if (saved) {
+      fetch(`/api/roata?telefon=${encodeURIComponent(saved)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.exists && data.blocat) {
+            cancelAnimationFrame(animRef.current)
+            setUser({ telefon: saved, nume: localStorage.getItem('roata_nume') || '', data_expirare: data.data_expirare })
+            setStep('blocat')
+          } else if (data.exists && !data.blocat) {
+            // Au trecut 14 zile — ștergem din localStorage, poate juca din nou
+            localStorage.removeItem('roata_telefon')
+            localStorage.removeItem('roata_nume')
+          }
+        })
+        .catch(() => {})
+    }
+
     return () => cancelAnimationFrame(animRef.current)
   }, [])
 
@@ -307,6 +326,9 @@ export default function SpinWheel() {
           .then(r => r.json())
           .then(data => {
             setSaving(false)
+            // Salvează în localStorage ca să blocheze refresh-ul
+            localStorage.setItem('roata_telefon', user.telefon)
+            localStorage.setItem('roata_nume', user.nume)
             setResult({ premiu, cod: data.cod || '—' })
             setStep('result')
           })
