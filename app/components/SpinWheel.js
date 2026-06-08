@@ -2,14 +2,14 @@
 import { useRef, useState, useEffect } from 'react'
 
 const PREMII = [
-  { label: '10% Reducere', color: '#9B1B30', text: '#fff' },
-  { label: 'Design Gratuit', color: '#C9A84C', text: '#1C1C1C' },
-  { label: '15% Reducere', color: '#7A1525', text: '#fff' },
-  { label: 'Design Swarovski', color: '#D4AF6A', text: '#1C1C1C' },
-  { label: '20% Reducere', color: '#B5223C', text: '#fff' },
-  { label: 'Îndepărtare Gratuită', color: '#E2C97E', text: '#1C1C1C' },
-  { label: '25% Reducere', color: '#6A1020', text: '#fff' },
-  { label: '30% Reducere', color: '#C9A84C', text: '#1C1C1C' },
+  { label: '5% Reducere', color: '#9B1B30', text: '#fff' },
+  { label: 'French / Babyboomer', color: '#C9A84C', text: '#1C1C1C' },
+  { label: '10% Reducere', color: '#7A1525', text: '#fff' },
+  { label: 'Swarovski pe Inelar', color: '#D4AF6A', text: '#1C1C1C' },
+  { label: '15% Reducere', color: '#B5223C', text: '#fff' },
+  { label: 'Culoare Omagiu', color: '#E2C97E', text: '#1C1C1C' },
+  { label: 'Design pe 2 Degete', color: '#6A1020', text: '#fff' },
+  { label: 'Top pe Dedesubt', color: '#C9A84C', text: '#1C1C1C' },
 ]
 
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5' }
