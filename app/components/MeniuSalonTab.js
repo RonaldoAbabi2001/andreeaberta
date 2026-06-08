@@ -400,9 +400,10 @@ function MesajeSection({ token, onBack }) {
       return
     }
     const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    const normQ = norm(q).replace(/\s+/g, '')
+    const cuvinte = norm(q).trim().split(/\s+/)
     const filtrati = totiClientii.filter(c => {
-      const numeMatch = norm(c.nume).includes(normQ)
+      const numeNorm = norm(c.nume)
+      const numeMatch = cuvinte.every(cuv => numeNorm.includes(cuv))
       const telNorm = (c.telefon || '').replace(/\s+/g, '').replace(/^\+40/, '0')
       const qTelNorm = q.replace(/\s+/g, '').replace(/^\+40/, '0')
       const telMatch = telNorm.includes(qTelNorm)
