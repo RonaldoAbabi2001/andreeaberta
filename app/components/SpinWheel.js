@@ -130,6 +130,24 @@ function Wheel({ user, onResult }) {
       ctx.restore()
     })
 
+    // Bandă decorativă "30% Reducere" — doar vizuală, 0% șanse reale
+    const decorAngle = rot + 2.5 * segmentAngle // între segmentele 2 și 3
+    const decorWidth = 0.04 // ~2 grade din 360
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.arc(cx, cy, r, decorAngle - decorWidth / 2, decorAngle + decorWidth / 2)
+    ctx.closePath()
+    ctx.fillStyle = '#1C1C1C'
+    ctx.fill()
+    ctx.translate(cx, cy)
+    ctx.rotate(decorAngle)
+    ctx.textAlign = 'right'
+    ctx.fillStyle = '#FFD700'
+    ctx.font = 'bold 9px Georgia, serif'
+    ctx.fillText('30% Reducere', r - 8, 3)
+    ctx.restore()
+
     // Cerc central
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28)
     grad.addColorStop(0, '#E2C97E')
