@@ -284,7 +284,12 @@ function Wheel({ user, onResult }) {
         animRef.current = requestAnimationFrame(animate)
       } else {
         setRotation(totalRotation)
-        const premiu = PREMII[winnerIdx].label
+        // Citim câștigătorul din poziția vizuală reală a pointerului
+        const normFinal = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+        const pAngle = (7 * Math.PI / 2 - normFinal + 2 * Math.PI) % (2 * Math.PI)
+        const vizIdx = Math.floor(pAngle / SEG_VIZ) % N_VIZ
+        const finalIdx = vizIdx < 8 ? vizIdx : winnerIdx // fallback dacă pică pe 30%
+        const premiu = PREMII[finalIdx].label
         playWin()
         setSpinning(false)
         setSaving(true)
