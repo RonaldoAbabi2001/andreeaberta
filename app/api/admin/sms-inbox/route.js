@@ -10,7 +10,7 @@ export async function GET(request) {
 
   const sql = neon(process.env.DATABASE_URL)
   const { searchParams } = new URL(request.url)
-  const telefon = searchParams.get('telefon')
+  const telefon = normTel(searchParams.get('telefon'))
 
   if (telefon) {
     // Toate mesajele cu un client specific
@@ -46,13 +46,21 @@ export async function GET(request) {
   return NextResponse.json(conversatii)
 }
 
+function normTel(t) {
+  if (!t) return t
+  t = t.trim().replace(/\s+/g, '')
+  if (t.startsWith('+40')) t = '0' + t.slice(3)
+  return t
+}
+
 // POST — mesaj nou din reader (Beelink) sau reply din admin
 export async function POST(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { telefon, mesaj, directie, creat } = body
+  const { mesaj, directie, creat } = body
+  const telefon = normTel(body.telefon)
 
   if (!telefon || !mesaj)
     return NextResponse.json({ error: 'Date incomplete' }, { status: 400 })
