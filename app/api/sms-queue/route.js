@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
+export const dynamic = 'force-dynamic'
+
 const SECRET = 'evolis2026secret'
 
 async function initTable(sql) {

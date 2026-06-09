@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { neon } from '@neondatabase/serverless'
 
 const LUNI_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
