@@ -1121,6 +1121,7 @@ export default function AdminDashboard() {
   const [analitica, setAnalitica] = useState(null)
   const [loadingAnalitica, setLoadingAnalitica] = useState(false)
   const [analiticaKey, setAnaliticaKey] = useState(0)
+  const [vizitatori, setVizitatori] = useState(null)
   const datePickerRef = useRef(null)
   const monthOverviewRef = useRef(null)
   const [slotPopup, setSlotPopup] = useState(null)
@@ -1173,6 +1174,10 @@ export default function AdminDashboard() {
       .then(r => r.json())
       .then(d => { setAnalitica(d); setLoadingAnalitica(false) })
       .catch(() => setLoadingAnalitica(false))
+    fetch('/api/track', { headers: { 'x-admin-token': token } })
+      .then(r => r.json())
+      .then(d => setVizitatori(d))
+      .catch(() => {})
   }, [tab, token, analiticaKey])
 
   useEffect(() => {
@@ -2128,6 +2133,61 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+
+                  {/* ── Vizitatori site ── */}
+                  {vizitatori && (
+                    <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', marginBottom: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                      <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: '#1C1C1C', margin: '0 0 4px' }}>Vizitatori site</p>
+                      <p style={{ color: '#AAA', fontSize: '12px', margin: '0 0 20px' }}>Sesiuni unice pe andreeaberta.com</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                        {[
+                          { label: 'Azi', value: vizitatori.azi, color: '#9B1B30' },
+                          { label: 'Săptămâna aceasta', value: vizitatori.saptamana, color: '#C9A84C' },
+                          { label: 'Luna aceasta', value: vizitatori.luna, color: '#3B82F6' },
+                          { label: 'Total all-time', value: vizitatori.total, color: '#10B981' },
+                        ].map((v, i) => (
+                          <div key={i} style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', textAlign: 'center', borderTop: `3px solid ${v.color}` }}>
+                            <p style={{ fontSize: '28px', fontWeight: 'bold', color: v.color, margin: '0 0 4px', fontFamily: 'Georgia, serif' }}>{v.value}</p>
+                            <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>{v.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {vizitatori.zilnice?.length > 0 && (() => {
+                        const max = Math.max(...vizitatori.zilnice.map(z => z.sesiuni), 1)
+                        return (
+                          <div>
+                            <p style={{ fontSize: '12px', color: '#AAA', marginBottom: '10px' }}>Vizite zilnice — ultimele 30 zile</p>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '60px' }}>
+                              {vizitatori.zilnice.map((z, i) => (
+                                <div key={i} title={`${z.zi}: ${z.sesiuni} vizitatori`}
+                                  style={{ flex: 1, background: '#9B1B30', borderRadius: '3px 3px 0 0', height: `${Math.max(4, Math.round((z.sesiuni / max) * 60))}px`, opacity: 0.7, cursor: 'default', transition: 'opacity 0.15s' }}
+                                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                  onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
+                      {vizitatori.paginaTop?.length > 0 && (
+                        <div style={{ marginTop: '20px' }}>
+                          <p style={{ fontSize: '12px', color: '#AAA', marginBottom: '10px' }}>Top pagini — ultimele 30 zile</p>
+                          {vizitatori.paginaTop.map((p, i) => {
+                            const maxV = vizitatori.paginaTop[0].vizite
+                            return (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '12px', color: '#555', width: '140px', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.pagina || '/'}</span>
+                                <div style={{ flex: 1, background: '#F0EAE0', borderRadius: '4px', height: '8px' }}>
+                                  <div style={{ width: `${Math.round((p.vizite / maxV) * 100)}%`, height: '100%', background: '#C9A84C', borderRadius: '4px' }} />
+                                </div>
+                                <span style={{ fontSize: '12px', color: '#888', width: '30px', textAlign: 'right' }}>{p.vizite}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* ── Venituri 6 luni ── */}
                   <div style={{ background: 'white', borderRadius: '20px', padding: '24px 28px', marginBottom: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>

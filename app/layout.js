@@ -1,4 +1,5 @@
 import './globals.css'
+import Tracker from './components/Tracker'
 
 export const metadata = {
   title: 'Andreea Berta — Salon EVOLIS Piatra Neamț',
@@ -8,7 +9,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ro">
-      <body>{children}</body>
+      <body>
+        <Tracker />
+        {children}
+      </body>
     </html>
   )
 }
