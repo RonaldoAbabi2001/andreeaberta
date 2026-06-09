@@ -67,6 +67,7 @@ export default function BookingFlow() {
   const [step, setStep] = useState(1)
   const [servicii, setServicii] = useState([])
   const [extrasDB, setExtrasDB] = useState([])
+  const [intervalMinim, setIntervalMinim] = useState(90)
   const [serviciu, setServiciu] = useState(null)
   const [extrasSelectate, setExtrasSelectate] = useState([])
   const [data, setData] = useState(null)
@@ -91,6 +92,7 @@ export default function BookingFlow() {
         const extrasDB   = Array.isArray(d) ? [] : (d.extras || [])
         setServicii(principale.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
         setExtrasDB(extrasDB.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
+        if (d.interval_minim) setIntervalMinim(Number(d.interval_minim))
       })
       .catch(() => {})
   }, [])
@@ -149,7 +151,8 @@ export default function BookingFlow() {
   const allDates = generateFutureDates(12)
   const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
   const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + e.durata, 0) : 0
-  const slots = (serviciu && orarZi && !orarZi.inchis) ? generateSlots(durataTotal, orarZi) : []
+  const durataEfectiva = Math.max(durataTotal, intervalMinim)
+  const slots = (serviciu && orarZi && !orarZi.inchis) ? generateSlots(durataEfectiva, orarZi) : []
 
   const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
 
@@ -162,7 +165,7 @@ export default function BookingFlow() {
   function isBlocked(slot) {
     if (!serviciu) return false
     const slotStart = timeToMin(slot)
-    const slotEnd = slotStart + durataTotal
+    const slotEnd = slotStart + durataEfectiva
     return ocupate.some(p => {
       if (!p.ora) return false
       const pStart = timeToMin(p.ora)

@@ -34,7 +34,15 @@ export async function GET() {
     const servicii = toate.filter(s => !s.tip || s.tip === 'principal')
     const extras = toate.filter(s => s.tip === 'extra')
     const galerie = await sql`SELECT * FROM servicii_galerie WHERE salon_id = 'evolis' ORDER BY serviciu_id, ordine ASC`
-    return NextResponse.json({ servicii, extras, galerie })
+
+    let interval_minim = 90
+    try {
+      await sql`CREATE TABLE IF NOT EXISTS salon_settings (cheie TEXT PRIMARY KEY, valoare TEXT, actualizat TIMESTAMPTZ DEFAULT NOW())`
+      const setting = await sql`SELECT valoare FROM salon_settings WHERE cheie = 'interval_minim' LIMIT 1`
+      if (setting.length > 0) interval_minim = parseInt(setting[0].valoare) || 90
+    } catch {}
+
+    return NextResponse.json({ servicii, extras, galerie, interval_minim })
   } catch (e) {
     return NextResponse.json({ servicii: [], extras: [], galerie: [], error: String(e) })
   }

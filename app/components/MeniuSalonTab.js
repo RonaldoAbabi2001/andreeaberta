@@ -72,7 +72,6 @@ const SECTIUNI = [
     desc: 'Parolă, date salon, configurații',
     color: '#F5576C',
     ready: true,
-    external: true,
   },
   {
     id: 'pachete',
@@ -711,6 +710,89 @@ function MesajeSection({ token, onBack }) {
   )
 }
 
+function SetariAdmin({ token, onBack }) {
+  const [settings, setSettings] = useState(null)
+  const [intervalMinim, setIntervalMinim] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/admin/setari', { headers: { 'x-admin-token': token } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.settings) {
+          setSettings(d.settings)
+          setIntervalMinim(d.settings.interval_minim || '90')
+        }
+      })
+  }, [])
+
+  async function save() {
+    setSaving(true)
+    setMsg(null)
+    const val = parseInt(intervalMinim)
+    if (isNaN(val) || val < 30 || val > 480) {
+      setMsg({ ok: false, text: 'Valoare invalidă (30–480 minute)' })
+      setSaving(false)
+      return
+    }
+    await fetch('/api/admin/setari', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ cheie: 'interval_minim', valoare: String(val) })
+    })
+    setMsg({ ok: true, text: '✅ Salvat cu succes' })
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={onBack} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
+        <span style={{ color: '#CCC' }}>/</span>
+        <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>⚙️ Setări Admin</span>
+      </div>
+
+      <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ maxWidth: '480px' }}>
+          <div style={{ background: 'white', borderRadius: '18px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', marginBottom: '20px' }}>
+            <h3 style={{ fontFamily: 'Georgia, serif', fontWeight: 'normal', fontSize: '18px', margin: '0 0 6px', color: s.text }}>Programări</h3>
+            <p style={{ fontSize: '13px', color: '#aaa', margin: '0 0 24px' }}>Configurează intervalele dintre programări</p>
+
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: s.text }}>
+              Interval minim între programări (minute)
+            </label>
+            <p style={{ fontSize: '12px', color: '#aaa', margin: '0 0 12px' }}>
+              Dacă o clientă se programează la 09:00, următoarea nu va putea alege un slot mai devreme de 09:00 + această valoare. Implicit: 90 min.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <input
+                type="number"
+                min="30"
+                max="480"
+                step="10"
+                value={intervalMinim}
+                onChange={e => setIntervalMinim(e.target.value)}
+                style={{ width: '100px', padding: '10px 14px', border: '1.5px solid #E8DDD0', borderRadius: '10px', fontSize: '16px', fontFamily: 'Georgia, serif', textAlign: 'center', outline: 'none' }}
+              />
+              <span style={{ fontSize: '14px', color: '#888' }}>minute</span>
+            </div>
+            {msg && (
+              <p style={{ marginTop: '12px', fontSize: '13px', color: msg.ok ? '#10B981' : '#EF4444' }}>{msg.text}</p>
+            )}
+            <button
+              onClick={save}
+              disabled={saving || settings === null}
+              style={{ marginTop: '20px', background: s.ruby, color: 'white', border: 'none', borderRadius: '10px', padding: '12px 28px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Georgia, serif', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Se salvează...' : 'Salvează'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
   const [sectiune, setSectiune] = useState(null)
 
@@ -745,6 +827,10 @@ export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
 
   if (sectiune === 'mesaje') {
     return <MesajeSection token={token} onBack={() => setSectiune(null)} />
+  }
+
+  if (sectiune === 'setari') {
+    return <SetariAdmin token={token} onBack={() => setSectiune(null)} />
   }
 
   return (
