@@ -121,6 +121,26 @@ function RoataAdmin({ token, onBack }) {
     setRows(r => r.map(x => x.cod === cod ? { ...x, folosit: true } : x))
   }
 
+  async function resetTelefon(telefon, nume) {
+    if (!confirm(`Resetezi roata pentru ${nume || telefon}?\nVa putea juca din nou imediat.`)) return
+    await fetch('/api/roata', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ telefon })
+    })
+    setRows(r => r.filter(x => x.telefon !== telefon))
+  }
+
+  async function resetAll() {
+    if (!confirm('Resetezi TOATE înregistrările din Roata Norocului?\nToți clienții vor putea juca din nou.')) return
+    await fetch('/api/roata', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ all: true })
+    })
+    setRows([])
+  }
+
   useState(() => { load() }, [])
 
   const filtered = (rows || []).filter(r =>
@@ -132,10 +152,16 @@ function RoataAdmin({ token, onBack }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <button onClick={onBack} style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', fontFamily: 'Georgia, serif' }}>← Meniu Salon</button>
         <span style={{ color: '#CCC' }}>/</span>
         <span style={{ fontSize: '14px', color: '#1C1C1C', fontFamily: 'Georgia, serif' }}>🎡 Roata Norocului</span>
+        <div style={{ marginLeft: 'auto' }}>
+          <button onClick={resetAll}
+            style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', color: '#DC2626', borderRadius: '10px', padding: '7px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+            🗑 Reset All
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '20px 24px', flex: 1, overflowY: 'auto' }}>
@@ -181,14 +207,20 @@ function RoataAdmin({ token, onBack }) {
                 </div>
                 <div style={{ minWidth: '100px', textAlign: 'right' }}>
                   <p style={{ fontSize: '11px', color: '#bbb', margin: '0 0 6px' }}>{new Date(r.creat).toLocaleDateString('ro-RO')}</p>
-                  {r.folosit ? (
-                    <span style={{ background: '#F3F4F6', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', color: '#aaa' }}>✓ Folosit</span>
-                  ) : (
-                    <button onClick={() => marcheazaFolosit(r.cod)}
-                      style={{ background: '#7C3AED', color: 'white', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
-                      Validează
+                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    {r.folosit ? (
+                      <span style={{ background: '#F3F4F6', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', color: '#aaa' }}>✓ Folosit</span>
+                    ) : (
+                      <button onClick={() => marcheazaFolosit(r.cod)}
+                        style={{ background: '#7C3AED', color: 'white', border: 'none', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Validează
+                      </button>
+                    )}
+                    <button onClick={() => resetTelefon(r.telefon, r.nume)}
+                      style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: '20px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+                      🔄 Reset
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}

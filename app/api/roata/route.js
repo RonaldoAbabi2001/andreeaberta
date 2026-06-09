@@ -90,6 +90,23 @@ export async function POST(request) {
   return NextResponse.json({ success: true, cod, premiu })
 }
 
+// DELETE — admin resetează un număr sau toate intrările
+export async function DELETE(request) {
+  if (request.headers.get('x-admin-token') !== SECRET)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { telefon, all } = await request.json()
+  const sql = await getDb()
+  if (all) {
+    await sql`DELETE FROM roata_norocului`
+    return NextResponse.json({ success: true, tip: 'all' })
+  }
+  if (telefon) {
+    await sql`DELETE FROM roata_norocului WHERE telefon = ${telefon}`
+    return NextResponse.json({ success: true, tip: 'single' })
+  }
+  return NextResponse.json({ error: 'Parametri lipsă' }, { status: 400 })
+}
+
 // PATCH — admin marchează codul ca folosit
 export async function PATCH(request) {
   if (request.headers.get('x-admin-token') !== SECRET)
