@@ -52,6 +52,20 @@ export async function POST(request) {
   const campaignId = `bulk_${Date.now()}`
   await sql`INSERT INTO sms_bulk_campaigns (id, mesaj, total) VALUES (${campaignId}, ${mesaj.trim()}, ${clienti.length})`
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS sms_inbox (
+      id TEXT PRIMARY KEY,
+      telefon TEXT,
+      mesaj TEXT,
+      directie TEXT DEFAULT 'IN',
+      creat TIMESTAMPTZ DEFAULT NOW(),
+      citit BOOLEAN DEFAULT FALSE,
+      status TEXT DEFAULT 'pending',
+      eroare TEXT,
+      sms_queue_id BIGINT
+    )
+  `
+
   let adaugate = 0
   const now = Date.now()
   for (let i = 0; i < clienti.length; i++) {
@@ -63,6 +77,12 @@ export async function POST(request) {
       INSERT INTO sms_queue (id, telefon, mesaj, tip, de_trimis_la, campaign_id)
       VALUES (${id}, ${telefon}, ${mesajPersonalizat}, 'bulk', NOW(), ${campaignId})
       ON CONFLICT DO NOTHING
+    `
+    const inboxId = `${telefon}_${id}`
+    await sql`
+      INSERT INTO sms_inbox (id, telefon, mesaj, directie, creat, status, sms_queue_id)
+      VALUES (${inboxId}, ${telefon}, ${mesajPersonalizat}, 'OUT', NOW(), 'pending', ${id})
+      ON CONFLICT (id) DO NOTHING
     `
     adaugate++
   }
