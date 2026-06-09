@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
 export async function POST(request) {
-  const { email, parola } = await request.json()
-  if (!email) return NextResponse.json({ error: 'Emailul este obligatoriu.' }, { status: 400 })
+  const { telefon, parola } = await request.json()
+  if (!telefon) return NextResponse.json({ error: 'Numărul de telefon este obligatoriu.' }, { status: 400 })
 
   const sql = neon(process.env.DATABASE_URL)
-  const rows = await sql`SELECT * FROM clienti WHERE LOWER(email) = LOWER(${email.trim()})`
+  const telNorm = telefon.trim().replace(/\s+/g, '').replace(/^\+40/, '0')
+  const rows = await sql`SELECT * FROM clienti WHERE REPLACE(REPLACE(telefon, ' ', ''), '+40', '0') = ${telNorm}`
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'Nu există un cont pentru acest email. Faceți o programare mai întâi.' }, { status: 404 })
+    return NextResponse.json({ error: 'Nu există un cont pentru acest număr. Faceți o programare mai întâi.' }, { status: 404 })
   }
 
   const client = rows[0]
