@@ -444,11 +444,18 @@ function SmsBulkSection({ token, onBack }) {
                 <p style={{ fontSize: '13px', color: '#444', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {c.mesaj}
                 </p>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                  <span style={{ color: '#10B981' }}>✓ {c.trimise} trimise</span>
-                  <span style={{ color: '#F59E0B' }}>⏳ {c.pending} în așteptare</span>
-                  {c.erori > 0 && <span style={{ color: '#EF4444' }}>✗ {c.erori} erori</span>}
-                  <span style={{ color: '#aaa' }}>Total: {c.total}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                    <span style={{ color: '#10B981' }}>✓ {c.trimise} trimise</span>
+                    <span style={{ color: '#F59E0B' }}>⏳ {c.pending} în așteptare</span>
+                    {c.erori > 0 && <span style={{ color: '#EF4444' }}>✗ {c.erori} erori</span>}
+                    <span style={{ color: '#aaa' }}>Total: {c.total}</span>
+                  </div>
+                  <button
+                    onClick={() => { setMesaj(c.mesaj); setStatus(null); setPreview(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                    style={{ padding: '5px 14px', background: '#F7EFE5', border: '1px solid #C9A84C', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: s.ruby, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    ↑ Refolosește
+                  </button>
                 </div>
               </div>
             )
