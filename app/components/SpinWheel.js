@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
+import { trackEvent } from './track'
 
 const PREMII = [
   { label: '5% Reducere', color: '#9B1B30', text: '#fff' },
@@ -353,6 +354,7 @@ export default function SpinWheel() {
   function doSpin() {
     if (step === 'spinning' || saving) return
     setStep('spinning')
+    trackEvent('roata_spin')
 
     const extraSpins = 5 + Math.random() * 5
     const winnerIdx = Math.floor(Math.random() * 8)
@@ -404,6 +406,7 @@ export default function SpinWheel() {
             localStorage.setItem('roata_nume', user.nume)
             setResult({ premiu, cod: data.cod || '—' })
             setStep('result')
+            trackEvent('roata_castig', { premiu })
           })
           .catch(() => { setSaving(false); setResult({ premiu, cod: '—' }); setStep('result') })
       }

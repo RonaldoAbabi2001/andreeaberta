@@ -2186,6 +2186,48 @@ export default function AdminDashboard() {
                           })}
                         </div>
                       )}
+
+                      {/* Funnel programări */}
+                      {vizitatori.funnel && (
+                        <div style={{ marginTop: '24px', borderTop: '1px solid #F0EAE0', paddingTop: '20px' }}>
+                          <p style={{ fontSize: '12px', color: '#AAA', marginBottom: '14px' }}>Funnel programări — ultimele 30 zile</p>
+                          {[
+                            { label: 'Au apăsat Rezervă', val: vizitatori.funnel.booking_start, color: '#3B82F6' },
+                            { label: 'Au ales serviciu', val: vizitatori.funnel.booking_serviciu, color: '#8B5CF6' },
+                            { label: 'Au ales data/ora', val: vizitatori.funnel.booking_data, color: '#F59E0B' },
+                            { label: 'Au finalizat programarea', val: vizitatori.funnel.booking_complet, color: '#10B981' },
+                          ].map((f, i) => {
+                            const max = vizitatori.funnel.booking_start || 1
+                            return (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '12px', color: '#555', width: '180px', flexShrink: 0 }}>{f.label}</span>
+                                <div style={{ flex: 1, background: '#F0EAE0', borderRadius: '4px', height: '10px' }}>
+                                  <div style={{ width: `${Math.round(((f.val || 0) / max) * 100)}%`, height: '100%', background: f.color, borderRadius: '4px', transition: 'width 0.6s' }} />
+                                </div>
+                                <span style={{ fontSize: '13px', fontWeight: 'bold', color: f.color, width: '30px', textAlign: 'right' }}>{f.val || 0}</span>
+                              </div>
+                            )
+                          })}
+                          <div style={{ display: 'flex', gap: '20px', marginTop: '12px', padding: '12px', background: '#FAFAFA', borderRadius: '10px' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ fontSize: '11px', color: '#AAA', margin: '0 0 2px' }}>Roata jucată</p>
+                              <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#7C3AED', margin: 0 }}>{vizitatori.funnel.roata_spin || 0}</p>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ fontSize: '11px', color: '#AAA', margin: '0 0 2px' }}>Premii câștigate</p>
+                              <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#10B981', margin: 0 }}>{vizitatori.funnel.roata_castig || 0}</p>
+                            </div>
+                            {vizitatori.funnel.booking_start > 0 && (
+                              <div style={{ textAlign: 'center' }}>
+                                <p style={{ fontSize: '11px', color: '#AAA', margin: '0 0 2px' }}>Rată conversie</p>
+                                <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#9B1B30', margin: 0 }}>
+                                  {Math.round(((vizitatori.funnel.booking_complet || 0) / vizitatori.funnel.booking_start) * 100)}%
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

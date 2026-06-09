@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { trackEvent } from './track'
 
 const SPECIALIST = {
   name: 'Andreea Berta',
@@ -277,6 +278,7 @@ export default function BookingFlow() {
       })
       if (res.ok) {
         setStatus('success')
+        trackEvent('booking_complet', { serviciu: serviciu?.name, pret: pretTotal })
       } else if (res.status === 409) {
         setStatus('conflict')
         await fetchOcupate(data)
@@ -323,7 +325,7 @@ export default function BookingFlow() {
         <div>
           <p style={{ color: style.ruby, fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Pasul 1</p>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți specialistul</h2>
-          <div onClick={() => setStep(2)}
+          <div onClick={() => { setStep(2); trackEvent('booking_start') }}
             style={{ background: style.white, borderRadius: '20px', padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', cursor: 'pointer', border: '2px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '20px' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = style.ruby}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
@@ -349,7 +351,7 @@ export default function BookingFlow() {
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 'normal', marginBottom: '24px' }}>Alegeți serviciul</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {servicii.map(s => (
-              <div key={s.name} onClick={() => { setServiciu(s); setExtrasSelectate([]); setStep(3) }}
+              <div key={s.name} onClick={() => { setServiciu(s); setExtrasSelectate([]); setStep(3); trackEvent('booking_serviciu', { serviciu: s.name, pret: s.pret }) }}
                 style={{ background: style.white, borderRadius: '14px', padding: '16px 20px', cursor: 'pointer', border: '1.5px solid #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = style.ruby; e.currentTarget.style.background = style.nude }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#EEE'; e.currentTarget.style.background = style.white }}
@@ -409,7 +411,7 @@ export default function BookingFlow() {
             </div>
           )}
 
-          <button onClick={() => setStep(4)}
+          <button onClick={() => { setStep(4); trackEvent('booking_extras', { extras: extrasSelectate.map(e => e.name) }) }}
             style={{ width: '100%', padding: '14px', borderRadius: '50px', background: 'linear-gradient(135deg, #F9E4A0 0%, #C9A84C 40%, #A8883A 65%, #F5D07A 100%)', color: '#3A2500', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '10px', boxShadow: '0 4px 20px rgba(201,168,76,0.5), 0 1px 0 rgba(255,255,255,0.6) inset, 0 -1px 0 rgba(0,0,0,0.15) inset', position: 'relative', overflow: 'hidden' }}>
             <span style={{ position: 'absolute', top: '3px', left: '18px', width: '40px', height: '6px', background: 'rgba(255,255,255,0.45)', borderRadius: '4px', transform: 'rotate(-20deg)', pointerEvents: 'none' }} />
             <span style={{ position: 'absolute', top: '5px', left: '60px', width: '20px', height: '4px', background: 'rgba(255,255,255,0.25)', borderRadius: '4px', transform: 'rotate(-20deg)', pointerEvents: 'none' }} />
@@ -481,7 +483,7 @@ export default function BookingFlow() {
                     {slots.filter(slot => !isBlocked(slot) && !isPast(slot)).map(slot => {
                       const selected = ora === slot
                       return (
-                        <div key={slot} onClick={() => setOra(slot)}
+                        <div key={slot} onClick={() => { setOra(slot); trackEvent('booking_data', { data: data?.toISOString().slice(0,10), ora: slot }) }}
                           style={{ padding: '10px 18px', borderRadius: '50px', cursor: 'pointer', background: selected ? style.ruby : style.white, color: selected ? 'white' : style.text, border: `1.5px solid ${selected ? style.ruby : '#DDD'}`, fontWeight: selected ? 'bold' : 'normal', fontSize: '14px', transition: 'all 0.2s', boxShadow: selected ? '0 4px 16px rgba(155,27,48,0.3)' : 'none' }}
                         >{slot}</div>
                       )
