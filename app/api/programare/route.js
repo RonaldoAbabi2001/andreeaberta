@@ -113,6 +113,63 @@ export async function POST(request) {
       `💰 Total: ${body.pret} lei`
     )
 
+    // SMS-uri automate
+    await sql`CREATE TABLE IF NOT EXISTS sms_queue (
+      id BIGINT PRIMARY KEY, telefon TEXT NOT NULL, mesaj TEXT NOT NULL,
+      tip TEXT DEFAULT 'confirmare', programare_id BIGINT,
+      de_trimis_la TIMESTAMPTZ DEFAULT NOW(), trimis BOOLEAN DEFAULT FALSE,
+      trimis_la TIMESTAMPTZ, eroare TEXT, creat TIMESTAMPTZ DEFAULT NOW()
+    )`
+    const numeClient = body.nume || 'client'
+    const dataF = body.data || ''
+    const oraF = body.ora || ''
+    const serviciu = body.serviciu || ''
+    const acum = new Date()
+
+    let programareInViitor = false
+    if (dataF && oraF) {
+      const [an, luna, zi] = dataF.split('-').map(Number)
+      const [h, m] = oraF.split(':').map(Number)
+      programareInViitor = new Date(an, luna - 1, zi, h || 0, m || 0) > acum
+    }
+    if (programareInViitor) {
+      const msgConf = `Buna ziua ${numeClient}! Programarea ta la EVOLIS a fost confirmata pentru ${dataF} ora ${oraF}. Serviciu: ${serviciu}. Te asteptam! :nail_care:`
+      await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
+        VALUES (${Date.now()},${body.telefon},${msgConf},'confirmare',${id},NOW())`
+    }
+
+    if (dataF && oraF) {
+      const [an, luna, zi] = dataF.split('-').map(Number)
+      const [h, m] = oraF.split(':').map(Number)
+      const dataApointment = new Date(an, luna - 1, zi, h || 0, m || 0)
+      const reminder24 = new Date(dataApointment.getTime() - 24 * 60 * 60 * 1000)
+      if (reminder24 > acum) {
+        const msgRem = `Reminder EVOLIS: maine la ${oraF} ai programare pentru ${serviciu}. Ne vedem! :nail_care:`
+        await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
+          VALUES (${Date.now()+1},${body.telefon},${msgRem},'reminder_24h',${id},${reminder24.toISOString()})`
+      }
+    }
+
+    if (dataF) {
+      const [an, luna, zi] = dataF.split('-').map(Number)
+      const dataFeedback = new Date(an, luna - 1, zi + 3, 10, 0)
+      if (dataFeedback > acum) {
+        const msgFeedback = `Buna ${numeClient}! Cum iti sunt unghiile dupa vizita de ${dataF}? Orice intrebare ne poti contacta. Multumim ca esti clienta noastra! :glowing_star:`
+        await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
+          VALUES (${Date.now()+2},${body.telefon},${msgFeedback},'feedback',${id},${dataFeedback.toISOString()})`
+      }
+    }
+
+    if (dataF) {
+      const [an, luna, zi] = dataF.split('-').map(Number)
+      const dataReprog = new Date(an, luna - 1, zi + 14, 10, 0)
+      if (dataReprog > acum) {
+        const msgReprog = `Buna ${numeClient}! A trecut cam 2 saptamani de la ultima vizita. Vrei sa-ti faci o noua programare? andreeaberta.com :nail_care:`
+        await sql`INSERT INTO sms_queue (id,telefon,mesaj,tip,programare_id,de_trimis_la)
+          VALUES (${Date.now()+3},${body.telefon},${msgReprog},'recontact',${id},${dataReprog.toISOString()})`
+      }
+    }
+
     return NextResponse.json({ success: true, id })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
