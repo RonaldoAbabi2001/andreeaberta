@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#0d0d0d"/>
+  <!-- Gold ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#c9a84c" stroke-width="8"/>
+  <!-- Crown shape -->
+  <g fill="#c9a84c">
+    <!-- Crown base band -->
+    <rect x="128" y="310" width="256" height="36" rx="6"/>
+    <!-- Crown points -->
+    <polygon points="128,310 128,200 176,260 256,170 336,260 384,200 384,310"/>
+    <!-- Crown jewel dots -->
+    <circle cx="256" cy="200" r="16"/>
+    <circle cx="164" cy="248" r="10"/>
+    <circle cx="348" cy="248" r="10"/>
+  </g>
+  <!-- E letter below crown -->
+  <text x="256" y="390" font-family="Georgia, serif" font-size="52" font-weight="bold" fill="#c9a84c" text-anchor="middle" letter-spacing="8">EVOLIS</text>
+</svg>
