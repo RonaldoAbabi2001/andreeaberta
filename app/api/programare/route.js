@@ -22,6 +22,7 @@ async function getDb() {
       status TEXT DEFAULT 'pending'
     )
   `
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS extra_servicii TEXT DEFAULT '[]'`
   return sql
 }
 
@@ -66,11 +67,12 @@ export async function POST(request) {
     }
 
     const id = Date.now()
+    const extraJson = JSON.stringify(body.extra_servicii || [])
 
     await sql`
-      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status)
+      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, extra_servicii)
       VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.serviciu}, ${body.pret || 0},
-              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''}, 'confirmed')
+              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''}, 'confirmed', ${extraJson})
     `
 
     // Auto-creare cont client

@@ -269,7 +269,7 @@ export default function BookingFlow() {
           serviciu: serviciu.name,
           pret: pretTotal,
           durata: durataTotal,
-          extra_servicii: extrasSelectate.map(e => e.name),
+          extra_servicii: extrasSelectate.map(e => ({ nume: e.name, pret: e.pret, durata: e.durata })),
           data: formatData(data),
           ora, plata,
           clientToken: clientToken || null,
