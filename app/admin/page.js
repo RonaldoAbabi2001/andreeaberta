@@ -1525,8 +1525,8 @@ export default function AdminDashboard() {
             {/* Header calendar */}
             <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', marginBottom: '20px', minHeight: '80px' }}>
 
-              {/* Stânga — Specialist + Orar */}
-              <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', flexDirection: 'column', gap: '8px', width: '160px' }}>
+              {/* Stânga — Specialist + Orar (desktop: carduri complete) */}
+              <div className="admin-tech-left-desktop" style={{ position: 'absolute', left: 0, top: 0, flexDirection: 'column', gap: '8px', width: '160px' }}>
 
                 {/* Card 1: selector specialist */}
                 <div style={{ position: 'relative' }}>
@@ -1574,6 +1574,61 @@ export default function AdminDashboard() {
                   </div>
                   {showScheduleOptions && (
                     <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0', padding: '6px' }}>
+                      {[
+                        { id: 'repetitiv', ico: <IcoRepetitiv active={false} size={26} />, label: 'Orar repetitiv' },
+                        { id: 'azi',       ico: <IcoAzi active={false} size={26} />, label: 'Orar azi' },
+                        { id: 'inchide',   ico: <IcoInchide active={false} size={26} />, label: 'Închide ziua', red: true },
+                        { id: 'concediu',  ico: <IcoConcediu active={false} size={26} />, label: 'Concediu / Zile libere' },
+                      ].map(opt => (
+                        <button key={opt.id} onClick={() => { setScheduleModal(opt.id); setShowScheduleOptions(false) }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'transparent', border: 'none', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '13px', color: opt.red ? '#EF4444' : '#333', textAlign: 'left' }}
+                          onMouseEnter={e => e.currentTarget.style.background = s.nude}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          {opt.ico} {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Stânga — Specialist + Orar (mobil: 2 cerculețe) */}
+              <div className="admin-tech-left-mobile" style={{ position: 'absolute', left: 0, top: 0, flexDirection: 'row', gap: '8px' }}>
+
+                {/* Cerculeț 1: selector specialist */}
+                <div style={{ position: 'relative' }}>
+                  <div onClick={() => { setShowSpecialistPicker(v => !v); setShowScheduleOptions(false) }}
+                    style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px', fontFamily: 'Georgia, serif', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', border: `2px solid ${showSpecialistPicker ? s.ruby : 'white'}` }}>A</div>
+                  {showSpecialistPicker && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, width: '220px', background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0' }}>
+                      <div style={{ padding: '8px 6px 4px', fontSize: '10px', color: '#AAA', letterSpacing: '1.5px', textTransform: 'uppercase', paddingLeft: '14px' }}>Selectează tehnicianul</div>
+                      {[{ initials: 'A', name: 'Andreea Berta', role: 'Tehnician' }].map(t => (
+                        <button key={t.name} onClick={() => setShowSpecialistPicker(false)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', background: '#F7EFE5', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                          <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `linear-gradient(135deg, ${s.ruby}, #6A1020)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', flexShrink: 0 }}>{t.initials}</div>
+                          <div>
+                            <p style={{ fontSize: '13px', fontWeight: 'bold', margin: 0 }}>{t.name}</p>
+                            <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>{t.role}</p>
+                          </div>
+                          <span style={{ marginLeft: 'auto', color: s.ruby, fontSize: '14px' }}>✓</span>
+                        </button>
+                      ))}
+                      <div style={{ padding: '8px 12px 10px', borderTop: '1px solid #F0EAE0' }}>
+                        <button style={{ fontSize: '12px', color: '#AAA', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ Adaugă tehnician</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cerculeț 2: orar lucru */}
+                <div style={{ position: 'relative' }}>
+                  <div onClick={() => { setShowScheduleOptions(v => !v); setShowSpecialistPicker(false) }}
+                    style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', border: `2px solid ${showScheduleOptions ? s.gold : '#F0EAE0'}` }}>
+                    <IcoAzi active={showScheduleOptions} size={18} />
+                  </div>
+                  {showScheduleOptions && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, width: '220px', background: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden', border: '1px solid #F0EAE0', padding: '6px' }}>
                       {[
                         { id: 'repetitiv', ico: <IcoRepetitiv active={false} size={26} />, label: 'Orar repetitiv' },
                         { id: 'azi',       ico: <IcoAzi active={false} size={26} />, label: 'Orar azi' },
