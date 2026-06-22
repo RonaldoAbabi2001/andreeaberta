@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../../lib/adminAuth'
 
-const SECRET = 'evolis2026secret'
 const LUNI = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 const ZILE_RO = ['Dum','Lun','Mar','Mie','Joi','Vin','Sâm']
 
@@ -17,7 +17,7 @@ function parseDateRO(str) {
 }
 
 export async function GET(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)

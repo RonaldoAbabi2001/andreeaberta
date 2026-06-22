@@ -1,10 +1,5 @@
 import { neon } from '@neondatabase/serverless'
-
-const AUTH = 'evolis2026secret'
-
-function auth(req) {
-  return req.headers.get('x-admin-token') === AUTH
-}
+import { checkAuth as auth } from '../../../lib/adminAuth'
 
 async function initTables(sql) {
   await sql`

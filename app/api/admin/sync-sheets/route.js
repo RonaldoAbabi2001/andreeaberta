@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../../lib/adminAuth'
 
-const SECRET = 'evolis2026secret'
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbkaHugNVWV0Bf4l-CYY6stGjO3qXGHzcRx3vLZBMXwKa6pLqRLdDlhFKm4AEnedElsAhXBg1hdCqE/pub?output=csv'
 const LUNI = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
@@ -54,7 +54,7 @@ function buildServiceName(row) {
 }
 
 export async function POST(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
-
-const SECRET = 'evolis2026secret'
 
 async function initTable(sql) {
   await sql`
@@ -24,7 +23,7 @@ async function initTable(sql) {
 
 // GET — Beelink cere SMS-urile pending, sau admin cere SMS-urile unei programari
 export async function GET(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sql = neon(process.env.DATABASE_URL)
   await initTable(sql)
@@ -48,7 +47,7 @@ export async function GET(request) {
 
 // POST — adauga SMS in coada
 export async function POST(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = neon(process.env.DATABASE_URL)
@@ -65,7 +64,7 @@ export async function POST(request) {
 
 // PATCH — marcheaza ca trimis sau eroare
 export async function PATCH(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = neon(process.env.DATABASE_URL)

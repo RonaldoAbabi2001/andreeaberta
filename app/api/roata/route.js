@@ -2,8 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../lib/adminAuth'
 
-const SECRET = 'evolis2026secret'
 const INTERVAL_ZILE = 14
 
 async function getDb() {
@@ -48,7 +48,7 @@ function calcExpirare(creat) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const telefon = searchParams.get('telefon')
-  const isAdmin = request.headers.get('x-admin-token') === SECRET
+  const isAdmin = checkAuth(request)
 
   const sql = await getDb()
 
@@ -94,7 +94,7 @@ export async function POST(request) {
 
 // DELETE — admin resetează un număr sau toate intrările
 export async function DELETE(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { telefon, all } = await request.json()
   const sql = await getDb()
@@ -111,7 +111,7 @@ export async function DELETE(request) {
 
 // PATCH — admin marchează codul ca folosit
 export async function PATCH(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { cod } = await request.json()
   const sql = await getDb()

@@ -3,11 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
-const SECRET = 'evolis2026secret'
-
-function checkAuth(request) {
-  return request.headers.get('x-admin-token') === SECRET
-}
+import { checkAuth } from '../../../lib/adminAuth'
 
 async function getDb() {
   return neon(process.env.DATABASE_URL)

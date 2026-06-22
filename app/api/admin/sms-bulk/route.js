@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
-
-const SECRET = 'evolis2026secret'
+import { checkAuth } from '../../../lib/adminAuth'
 
 export async function GET(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)
@@ -24,7 +23,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { mesaj, telefoane } = await request.json()

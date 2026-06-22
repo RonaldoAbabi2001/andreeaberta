@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,8 +59,7 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
-  const SECRET = 'evolis2026secret'
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)

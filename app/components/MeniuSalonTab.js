@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import ServiciiTab from './ServiciiTab'
 
-const SECRET = 'evolis2026secret'
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 
 const SECTIUNI = [

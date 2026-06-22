@@ -1,11 +1,10 @@
 import { neon } from '@neondatabase/serverless'
-
-const MASTER_TOKEN = 'evolis2026secret'
+import { checkAuth as checkSessionAuth } from '../../../lib/adminAuth'
 
 async function checkAuth(req) {
   const token = req.headers.get('x-admin-token')
   if (!token) return false
-  if (token === MASTER_TOKEN) return true
+  if (checkSessionAuth(req)) return true
   try {
     const sql = neon(process.env.DATABASE_URL)
     const rows = await sql`SELECT valoare FROM salon_settings WHERE cheie = 'admin_password' LIMIT 1`

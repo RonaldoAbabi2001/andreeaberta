@@ -1,7 +1,7 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 
-const TOKEN = 'evolis2026secret'
+function getAdminToken() { return typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || '') : '' }
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 
 function GaleriePanel({ serviciu, onClose }) {
@@ -11,7 +11,7 @@ function GaleriePanel({ serviciu, onClose }) {
   const [adding, setAdding] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/admin/servicii-galerie?serviciu_id=${serviciu.id}`, { headers: { 'x-admin-token': TOKEN } })
+    fetch(`/api/admin/servicii-galerie?serviciu_id=${serviciu.id}`, { headers: { 'x-admin-token': getAdminToken() } })
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setPhotos(d); setLoading(false) })
   }, [serviciu.id])
 
@@ -19,7 +19,7 @@ function GaleriePanel({ serviciu, onClose }) {
     if (!url.trim()) return
     setAdding(true)
     const res = await fetch('/api/admin/servicii-galerie', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
       body: JSON.stringify({ serviciu_id: serviciu.id, url: url.trim() })
     })
     const data = await res.json()
@@ -30,7 +30,7 @@ function GaleriePanel({ serviciu, onClose }) {
 
   async function deletePhoto(id) {
     await fetch('/api/admin/servicii-galerie', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
       body: JSON.stringify({ id })
     })
     setPhotos(prev => prev.filter(p => p.id !== id))
@@ -49,25 +49,25 @@ function GaleriePanel({ serviciu, onClose }) {
             <div style={{ fontSize: '10px', opacity: 0.7, letterSpacing: '1.5px', marginBottom: '2px' }}>GALERIE EXEMPLE</div>
             <div style={{ fontSize: '16px', fontFamily: 'Georgia, serif' }}>{serviciu.nume}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: 'white', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: 'white', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>âœ•</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
           {/* Add URL */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', color: '#AAA', display: 'block', marginBottom: '6px' }}>ADAUGĂ IMAGINE (URL)</label>
+            <label style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', color: '#AAA', display: 'block', marginBottom: '6px' }}>ADAUGÄ‚ IMAGINE (URL)</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPhoto()}
-                placeholder="https://... (link imagine publică)" style={{ ...inp, flex: 1 }} />
+                placeholder="https://... (link imagine publicÄƒ)" style={{ ...inp, flex: 1 }} />
               <button onClick={addPhoto} disabled={adding || !url.trim()}
                 style={{ background: adding ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 18px', cursor: adding ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                {adding ? '...' : '+ Adaugă'}
+                {adding ? '...' : '+ AdaugÄƒ'}
               </button>
             </div>
-            <p style={{ fontSize: '11px', color: '#BBB', marginTop: '5px' }}>Poți folosi link-uri de pe Google Drive, Instagram, orice URL public.</p>
+            <p style={{ fontSize: '11px', color: '#BBB', marginTop: '5px' }}>PoÈ›i folosi link-uri de pe Google Drive, Instagram, orice URL public.</p>
           </div>
 
-          {/* Preview URL în timp real */}
+          {/* Preview URL Ã®n timp real */}
           {url.trim() && (
             <div style={{ marginBottom: '16px', borderRadius: '12px', overflow: 'hidden', maxHeight: '200px' }}>
               <img src={url.trim()} alt="preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }}
@@ -77,11 +77,11 @@ function GaleriePanel({ serviciu, onClose }) {
 
           {/* Grid poze existente */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: '#AAA' }}>Se încarcă...</div>
+            <div style={{ textAlign: 'center', padding: '30px', color: '#AAA' }}>Se Ã®ncarcÄƒ...</div>
           ) : photos.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#CCC' }}>
-              <div style={{ fontSize: '36px', marginBottom: '10px' }}>📷</div>
-              <div style={{ fontSize: '13px' }}>Nicio imagine adăugată încă.</div>
+              <div style={{ fontSize: '36px', marginBottom: '10px' }}>ðŸ“·</div>
+              <div style={{ fontSize: '13px' }}>Nicio imagine adÄƒugatÄƒ Ã®ncÄƒ.</div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
@@ -89,7 +89,7 @@ function GaleriePanel({ serviciu, onClose }) {
                 <div key={ph.id} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
                   <img src={ph.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   <button onClick={() => deletePhoto(ph.id)}
-                    style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', color: 'white', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', color: 'white', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>âœ•</button>
                 </div>
               ))}
             </div>
@@ -113,7 +113,7 @@ function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' })
     setSaving(true)
     const res = await fetch('/api/admin/servicii', {
       method: isNew ? 'POST' : 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
       body: JSON.stringify(isNew ? form : { ...form, id: serviciu.id }),
     })
     const data = await res.json()
@@ -131,23 +131,23 @@ function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' })
         <div style={{ background: `linear-gradient(135deg, ${s.ruby}, #7A1525)`, padding: '18px 22px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: '11px', opacity: 0.7, letterSpacing: '1px' }}>{isNew ? 'SERVICIU NOU' : 'EDITARE SERVICIU'}</div>
-            <div style={{ fontSize: '17px', marginTop: '2px' }}>{form.nume || 'Fără nume'}</div>
+            <div style={{ fontSize: '17px', marginTop: '2px' }}>{form.nume || 'FÄƒrÄƒ nume'}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: 'white', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: 'white', fontSize: '17px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>âœ•</button>
         </div>
 
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label style={lbl}>DENUMIRE SERVICIU *</label>
-            <input value={form.nume} onChange={e => set('nume', e.target.value)} placeholder="ex: Construcție Gel/Polygel 1-2" style={{ ...inp, borderColor: form.nume ? '#E0D0C0' : s.ruby }} autoFocus />
+            <input value={form.nume} onChange={e => set('nume', e.target.value)} placeholder="ex: ConstrucÈ›ie Gel/Polygel 1-2" style={{ ...inp, borderColor: form.nume ? '#E0D0C0' : s.ruby }} autoFocus />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={lbl}>PREȚ (RON)</label>
+              <label style={lbl}>PREÈš (RON)</label>
               <input value={form.pret} onChange={e => set('pret', e.target.value)} placeholder="ex: 165" type="number" min="0" style={inp} />
             </div>
             <div>
-              <label style={lbl}>DURATĂ (minute)</label>
+              <label style={lbl}>DURATÄ‚ (minute)</label>
               <input value={form.durata} onChange={e => set('durata', e.target.value)} placeholder="ex: 90" type="number" min="5" style={inp} />
             </div>
           </div>
@@ -180,9 +180,9 @@ function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' })
         </div>
 
         <div style={{ padding: '0 20px 20px', display: 'flex', gap: '10px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: '10px', border: '1.5px solid #E0D0C0', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#888' }}>Anulează</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: '10px', border: '1.5px solid #E0D0C0', background: 'white', cursor: 'pointer', fontSize: '14px', color: '#888' }}>AnuleazÄƒ</button>
           <button onClick={save} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', background: saving ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
-            {saving ? 'Se salvează...' : isNew ? 'Adaugă serviciu' : 'Salvează'}
+            {saving ? 'Se salveazÄƒ...' : isNew ? 'AdaugÄƒ serviciu' : 'SalveazÄƒ'}
           </button>
         </div>
       </div>
@@ -200,7 +200,7 @@ export default function ServiciiTab() {
   const [showModalTip, setShowModalTip] = useState('principal')
 
   async function load() {
-    const res = await fetch('/api/admin/servicii', { headers: { 'x-admin-token': TOKEN } })
+    const res = await fetch('/api/admin/servicii', { headers: { 'x-admin-token': getAdminToken() } })
     const data = await res.json()
     setServicii(Array.isArray(data) ? data : [])
     setLoading(false)
@@ -209,7 +209,7 @@ export default function ServiciiTab() {
   useEffect(() => { load() }, [])
 
   async function deleteServiciu(id) {
-    await fetch('/api/admin/servicii', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN }, body: JSON.stringify({ id }) })
+    await fetch('/api/admin/servicii', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() }, body: JSON.stringify({ id }) })
     setConfirmDelete(null)
     load()
   }
@@ -226,15 +226,15 @@ export default function ServiciiTab() {
     return (
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '8px 20px', background: '#FAFAF8', borderBottom: '1px solid #F0EAE0' }}>
-          {['DENUMIRE SERVICIU', 'PREȚ', 'DURATĂ', ''].map(h => (
+          {['DENUMIRE SERVICIU', 'PREÈš', 'DURATÄ‚', ''].map(h => (
             <div key={h} style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '0.8px', padding: '4px 0' }}>{h}</div>
           ))}
         </div>
 
         {list.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px', color: '#AAA' }}>
-            <div style={{ fontSize: '32px', marginBottom: '10px' }}>💅</div>
-            <div>Niciun serviciu în această categorie.</div>
+            <div style={{ fontSize: '32px', marginBottom: '10px' }}>ðŸ’…</div>
+            <div>Niciun serviciu Ã®n aceastÄƒ categorie.</div>
           </div>
         ) : list.map((serv, i) => (
           <div key={serv.id}
@@ -256,16 +256,16 @@ export default function ServiciiTab() {
 
             <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setGalerieServiciu(serv)}
-                style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#4F46E5' }} title="Galerie exemple">📷</button>
+                style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#4F46E5' }} title="Galerie exemple">ðŸ“·</button>
               <button onClick={() => { setEditServiciu(serv); setShowModal(true) }}
-                style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>✏️</button>
+                style={{ background: s.nude, border: `1px solid ${s.gold}`, borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: s.ruby }}>âœï¸</button>
               {confirmDelete === serv.id ? (
                 <>
                   <button onClick={() => deleteServiciu(serv.id)} style={{ background: '#EF4444', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', fontSize: '11px', color: 'white', fontWeight: 'bold' }}>Da</button>
                   <button onClick={() => setConfirmDelete(null)} style={{ background: '#EEE', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', fontSize: '11px', color: '#666' }}>Nu</button>
                 </>
               ) : (
-                <button onClick={() => setConfirmDelete(serv.id)} style={{ background: '#FFF2F2', border: '1px solid #FFCDD2', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#EF4444' }}>🗑️</button>
+                <button onClick={() => setConfirmDelete(serv.id)} style={{ background: '#FFF2F2', border: '1px solid #FFCDD2', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#EF4444' }}>ðŸ—‘ï¸</button>
               )}
             </div>
           </div>
@@ -273,7 +273,7 @@ export default function ServiciiTab() {
 
         {list.length > 0 && (
           <div style={{ padding: '10px 20px', background: '#FAFAF8', borderTop: '1px solid #F0EAE0', fontSize: '12px', color: '#AAA' }}>
-            {list.length} servicii active · Prețurile se aplică automat la adăugarea programărilor
+            {list.length} servicii active Â· PreÈ›urile se aplicÄƒ automat la adÄƒugarea programÄƒrilor
           </div>
         )}
       </div>
@@ -285,15 +285,15 @@ export default function ServiciiTab() {
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0, color: s.text }}>Servicii</h2>
-        <p style={{ fontSize: '12px', color: '#999', margin: '3px 0 0' }}>Listă servicii salon EVOLIS · {servicii.length} servicii active</p>
+        <p style={{ fontSize: '12px', color: '#999', margin: '3px 0 0' }}>ListÄƒ servicii salon EVOLIS Â· {servicii.length} servicii active</p>
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '28px' }}>
         {[
           { label: 'Servicii active', value: servicii.length, color: s.ruby },
-          { label: 'Preț mediu', value: servicii.length ? `${Math.round(totalVenit / servicii.length)} RON` : '—', color: '#065F46' },
-          { label: 'Durată medie', value: `${durataMedie} min`, color: '#0369A1' },
+          { label: 'PreÈ› mediu', value: servicii.length ? `${Math.round(totalVenit / servicii.length)} RON` : 'â€”', color: '#065F46' },
+          { label: 'DuratÄƒ medie', value: `${durataMedie} min`, color: '#0369A1' },
         ].map(stat => (
           <div key={stat.label} style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${stat.color}` }}>
             <div style={{ fontSize: '11px', color: '#999', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 'bold' }}>{stat.label.toUpperCase()}</div>
@@ -302,31 +302,31 @@ export default function ServiciiTab() {
         ))}
       </div>
 
-      {/* Secțiunea Principale */}
+      {/* SecÈ›iunea Principale */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
           <div>
             <h3 style={{ fontSize:'16px', fontWeight:'bold', color:s.ruby, margin:0 }}>Servicii Principale</h3>
-            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 2 în rezervare</p>
+            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 2 Ã®n rezervare</p>
           </div>
           <button onClick={() => { setShowModalTip('principal'); setEditServiciu(null); setShowModal(true) }}
             style={{ background:`linear-gradient(135deg,${s.ruby},#7A1525)`, color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
-            + Adaugă
+            + AdaugÄƒ
           </button>
         </div>
         {renderTabel(principale)}
       </div>
 
-      {/* Secțiunea Extra/Design */}
+      {/* SecÈ›iunea Extra/Design */}
       <div>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
           <div>
             <h3 style={{ fontSize:'16px', fontWeight:'bold', color:'#7C3AED', margin:0 }}>Servicii Extra / Design</h3>
-            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 3 în rezervare (opțional)</p>
+            <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 3 Ã®n rezervare (opÈ›ional)</p>
           </div>
           <button onClick={() => { setShowModalTip('extra'); setEditServiciu(null); setShowModal(true) }}
             style={{ background:'linear-gradient(135deg,#7C3AED,#5B21B6)', color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
-            + Adaugă Extra
+            + AdaugÄƒ Extra
           </button>
         </div>
         {renderTabel(extraList, '#7C3AED')}

@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
-
-const SECRET = 'evolis2026secret'
-
-function checkAuth(request) {
-  const token = request.headers.get('x-admin-token')
-  return token === SECRET
-}
+import { checkAuth } from '../../../lib/adminAuth'
 
 async function getDb() {
   const sql = neon(process.env.DATABASE_URL)

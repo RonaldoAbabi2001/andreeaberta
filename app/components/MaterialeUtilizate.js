@@ -1,7 +1,7 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 
-const TOKEN = 'evolis2026secret'
+function getAdminToken() { return typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || '') : '' }
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 const inp = { width: '100%', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', background: 'white', fontFamily: 'Georgia, serif', color: s.text, boxSizing: 'border-box' }
 
@@ -15,7 +15,7 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
 
   useEffect(() => {
     if (!isDraft) {
-      fetch(`/api/admin/materiale?programare_id=${programareId}`, { headers: { 'x-admin-token': TOKEN } })
+      fetch(`/api/admin/materiale?programare_id=${programareId}`, { headers: { 'x-admin-token': getAdminToken() } })
         .then(r => r.json()).then(d => { if (Array.isArray(d)) setMateriale(d) })
     }
   }, [programareId])
@@ -37,7 +37,7 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
       setMateriale(prev => [...prev, { ...item, id: Date.now() + Math.random() }])
     } else {
       const res = await fetch('/api/admin/materiale', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
         body: JSON.stringify({ programare_id: programareId, ...item })
       })
       const data = await res.json()
@@ -49,7 +49,7 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
   async function remove(id) {
     if (!isDraft) {
       await fetch('/api/admin/materiale', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+        method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
         body: JSON.stringify({ id })
       })
     }
@@ -60,7 +60,7 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
     if (!nou.nume.trim()) return
     setSavingNou(true)
     const res = await fetch('/api/admin/produse', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
       body: JSON.stringify({ nume: nou.nume, marca: nou.marca, categorie: nou.categorie, stoc_bucati: 0, stoc_minim: 3 })
     })
     const data = await res.json()
@@ -69,7 +69,7 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
       setMateriale(prev => [...prev, { ...item, id: Date.now() + Math.random() }])
     } else {
       const res2 = await fetch('/api/admin/materiale', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
         body: JSON.stringify({ programare_id: programareId, ...item })
       })
       const d2 = await res2.json()
@@ -86,12 +86,12 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
         Materiale utilizate
       </label>
 
-      {/* Căutare din stoc */}
+      {/* CÄƒutare din stoc */}
       <div style={{ position: 'relative', marginBottom: '8px' }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Caută produs din stoc..."
+          placeholder="CautÄƒ produs din stoc..."
           style={{ ...inp }}
         />
         {results.length > 0 && (
@@ -105,14 +105,14 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
                   <span style={{ fontSize: '13px', color: s.text }}>{p.nume}</span>
                   {p.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '6px' }}>{p.marca}</span>}
                 </div>
-                <span style={{ fontSize: '11px', color: '#BBB' }}>stoc: {p.stoc_bucati ?? '—'}</span>
+                <span style={{ fontSize: '11px', color: '#BBB' }}>stoc: {p.stoc_bucati ?? 'â€”'}</span>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Lista materiale adăugate */}
+      {/* Lista materiale adÄƒugate */}
       {materiale.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
           {materiale.map(m => (
@@ -122,17 +122,17 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
                 {m.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '6px' }}>{m.marca}</span>}
               </div>
               <button type="button" onClick={() => remove(m.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}>✕</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}>âœ•</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Adaugă produs nou */}
+      {/* AdaugÄƒ produs nou */}
       {!showNou ? (
         <button type="button" onClick={() => setShowNou(true)}
           style={{ background: 'none', border: `1.5px dashed #D0C0B0`, borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', color: '#AAA', width: '100%', fontFamily: 'Georgia, serif' }}>
-          + Adaugă produs nou în baza de date
+          + AdaugÄƒ produs nou Ã®n baza de date
         </button>
       ) : (
         <div style={{ background: '#FDF8F4', border: '1.5px solid #E8DDD0', borderRadius: '12px', padding: '14px' }}>
@@ -140,17 +140,17 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <input value={nou.nume} onChange={e => setNou({ ...nou, nume: e.target.value })} placeholder="Denumire produs *" style={{ ...inp, borderColor: nou.nume ? '#E8DDD0' : s.ruby }} autoFocus />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <input value={nou.marca} onChange={e => setNou({ ...nou, marca: e.target.value })} placeholder="Marcă" style={inp} />
+              <input value={nou.marca} onChange={e => setNou({ ...nou, marca: e.target.value })} placeholder="MarcÄƒ" style={inp} />
               <input value={nou.categorie} onChange={e => setNou({ ...nou, categorie: e.target.value })} placeholder="Categorie" style={inp} />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button type="button" onClick={salveazaProdusNou} disabled={savingNou || !nou.nume.trim()}
                 style={{ flex: 2, background: savingNou ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '9px', cursor: savingNou ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                {savingNou ? 'Se salvează...' : 'Salvează și adaugă'}
+                {savingNou ? 'Se salveazÄƒ...' : 'SalveazÄƒ È™i adaugÄƒ'}
               </button>
               <button type="button" onClick={() => { setShowNou(false); setNou({ nume: '', marca: '', categorie: '' }) }}
                 style={{ flex: 1, background: 'white', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px', cursor: 'pointer', fontSize: '13px', color: '#888' }}>
-                Renunță
+                RenunÈ›Äƒ
               </button>
             </div>
           </div>

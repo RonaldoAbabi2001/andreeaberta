@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
+import { checkAuth } from '../../../lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
-
-const SECRET = 'evolis2026secret'
 
 function normTel(t) {
   if (!t) return t
@@ -13,7 +12,7 @@ function normTel(t) {
 }
 
 export async function GET(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sql = neon(process.env.DATABASE_URL)
@@ -68,7 +67,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
@@ -109,7 +108,7 @@ export async function POST(request) {
 
 // PATCH — worker actualizeaza statusul unui mesaj OUT
 export async function PATCH(request) {
-  if (request.headers.get('x-admin-token') !== SECRET)
+  if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { sms_queue_id, status, eroare } = await request.json()
