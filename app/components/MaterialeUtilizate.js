@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect } from 'react'
 
 function getAdminToken() { return typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || '') : '' }
@@ -86,12 +86,12 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
         Materiale utilizate
       </label>
 
-      {/* CÄƒutare din stoc */}
+      {/* Căutare din stoc */}
       <div style={{ position: 'relative', marginBottom: '8px' }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="CautÄƒ produs din stoc..."
+          placeholder="Caută produs din stoc..."
           style={{ ...inp }}
         />
         {results.length > 0 && (
@@ -105,14 +105,14 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
                   <span style={{ fontSize: '13px', color: s.text }}>{p.nume}</span>
                   {p.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '6px' }}>{p.marca}</span>}
                 </div>
-                <span style={{ fontSize: '11px', color: '#BBB' }}>stoc: {p.stoc_bucati ?? 'â€”'}</span>
+                <span style={{ fontSize: '11px', color: '#BBB' }}>stoc: {p.stoc_bucati ?? '—'}</span>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Lista materiale adÄƒugate */}
+      {/* Lista materiale adăugate */}
       {materiale.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
           {materiale.map(m => (
@@ -122,17 +122,17 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
                 {m.marca && <span style={{ fontSize: '11px', color: '#AAA', marginLeft: '6px' }}>{m.marca}</span>}
               </div>
               <button type="button" onClick={() => remove(m.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}>âœ•</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}>✕</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* AdaugÄƒ produs nou */}
+      {/* Adaugă produs nou */}
       {!showNou ? (
         <button type="button" onClick={() => setShowNou(true)}
           style={{ background: 'none', border: `1.5px dashed #D0C0B0`, borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontSize: '12px', color: '#AAA', width: '100%', fontFamily: 'Georgia, serif' }}>
-          + AdaugÄƒ produs nou Ã®n baza de date
+          + Adaugă produs nou în baza de date
         </button>
       ) : (
         <div style={{ background: '#FDF8F4', border: '1.5px solid #E8DDD0', borderRadius: '12px', padding: '14px' }}>
@@ -140,17 +140,17 @@ export default function MaterialeUtilizate({ programareId, produse = [], onChang
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <input value={nou.nume} onChange={e => setNou({ ...nou, nume: e.target.value })} placeholder="Denumire produs *" style={{ ...inp, borderColor: nou.nume ? '#E8DDD0' : s.ruby }} autoFocus />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <input value={nou.marca} onChange={e => setNou({ ...nou, marca: e.target.value })} placeholder="MarcÄƒ" style={inp} />
+              <input value={nou.marca} onChange={e => setNou({ ...nou, marca: e.target.value })} placeholder="Marcă" style={inp} />
               <input value={nou.categorie} onChange={e => setNou({ ...nou, categorie: e.target.value })} placeholder="Categorie" style={inp} />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button type="button" onClick={salveazaProdusNou} disabled={savingNou || !nou.nume.trim()}
                 style={{ flex: 2, background: savingNou ? '#ccc' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', border: 'none', borderRadius: '10px', padding: '9px', cursor: savingNou ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                {savingNou ? 'Se salveazÄƒ...' : 'SalveazÄƒ È™i adaugÄƒ'}
+                {savingNou ? 'Se salvează...' : 'Salvează și adaugă'}
               </button>
               <button type="button" onClick={() => { setShowNou(false); setNou({ nume: '', marca: '', categorie: '' }) }}
                 style={{ flex: 1, background: 'white', border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px', cursor: 'pointer', fontSize: '13px', color: '#888' }}>
-                RenunÈ›Äƒ
+                Renunță
               </button>
             </div>
           </div>
