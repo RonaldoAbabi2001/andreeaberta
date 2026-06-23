@@ -48,6 +48,7 @@ const STATUS_COLORS = {
   cancelled: '#EF4444',
   noshow: '#6B7280',
 }
+const FINALIZAT_COLOR = '#0E7C66'
 
 const PX_PER_MIN = 1.2
 const GRID_START_HOUR = 7
@@ -1088,6 +1089,12 @@ export default function AdminDashboard() {
   const [clienti, setClienti] = useState([])
   const [viewDate, setViewDate] = useState(new Date())
   const [viewMode, setViewMode] = useState('day')
+  const [nowMin, setNowMin] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes() })
+
+  useEffect(() => {
+    const id = setInterval(() => { const d = new Date(); setNowMin(d.getHours() * 60 + d.getMinutes()) }, 30000)
+    return () => clearInterval(id)
+  }, [])
   const [showAddForm, setShowAddForm] = useState(false)
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showMonthOverview, setShowMonthOverview] = useState(false)
@@ -1761,13 +1768,19 @@ export default function AdminDashboard() {
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'} />
                           )
                         })}
+                        {/* Linia orei curente */}
+                        {isToday && nowMin >= GRID_START_HOUR * 60 && nowMin <= GRID_END_HOUR * 60 && (
+                          <div style={{ position: 'absolute', top: `${(nowMin - GRID_START_HOUR * 60) * PX_PER_MIN}px`, left: 0, right: 0, height: '2px', background: s.ruby, opacity: 0.75, zIndex: 15, pointerEvents: 'none' }} />
+                        )}
+
                         {/* Programări */}
                         {progZi.map(p => {
                           const startMin = p.ora ? timeToMin(p.ora) : 9 * 60
                           const dur = Number(p.durata) || 60
                           const topPx = (startMin - GRID_START_HOUR * 60) * PX_PER_MIN
                           const heightPx = Math.max(dur * PX_PER_MIN, 20)
-                          const color = STATUS_COLORS[p.status] || STATUS_COLORS.confirmed
+                          const autoFinalizat = isToday && nowMin >= startMin + dur && p.status === 'confirmed'
+                          const color = autoFinalizat ? FINALIZAT_COLOR : (STATUS_COLORS[p.status] || STATUS_COLORS.confirmed)
                           return (
                             <div key={p.id} onClick={() => {
                               const found = clienti.find(c => c.telefon === p.telefon)
@@ -1884,13 +1897,27 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
+                {/* Linia orei curente — ca un ac de ceas, trece prin programări */}
+                {viewDate.toDateString() === new Date().toDateString() && nowMin >= GRID_START_HOUR * 60 && nowMin <= GRID_END_HOUR * 60 && (
+                  <div style={{
+                    position: 'absolute', top: `${(nowMin - GRID_START_HOUR * 60) * PX_PER_MIN}px`,
+                    left: 0, right: 0, zIndex: 15, pointerEvents: 'none',
+                    display: 'flex', alignItems: 'center',
+                  }}>
+                    <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: s.ruby, flexShrink: 0, marginLeft: '-4px', boxShadow: '0 0 0 3px rgba(155,27,48,0.15)' }} />
+                    <div style={{ flex: 1, height: '2px', background: s.ruby, opacity: 0.75 }} />
+                  </div>
+                )}
+
                 {/* Booking blocks */}
                 {progAzi.map((p, idx) => {
                   const startMin = p.ora ? timeToMin(p.ora) : 9 * 60
                   const dur = Number(p.durata) || 60
                   const topPx = (startMin - GRID_START_HOUR * 60) * PX_PER_MIN
                   const heightPx = Math.max(dur * PX_PER_MIN, 40)
-                  const color = STATUS_COLORS[p.status] || STATUS_COLORS.confirmed
+                  const esteAzi = viewDate.toDateString() === new Date().toDateString()
+                  const autoFinalizat = esteAzi && nowMin >= startMin + dur && p.status === 'confirmed'
+                  const color = autoFinalizat ? FINALIZAT_COLOR : (STATUS_COLORS[p.status] || STATUS_COLORS.confirmed)
                   const noTime = !p.ora
 
                   if (topPx < 0 || topPx > gridHeight) return null
@@ -1943,7 +1970,10 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', height: '100%' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{noTime ? '📋 ' : p.ora + ' · '}{p.nume}</p>
-                            <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.serviciu} · {dur}min</p>
+                            <p style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {p.serviciu} · {dur}min
+                              {autoFinalizat && <span style={{ color: FINALIZAT_COLOR, fontWeight: 'bold' }}> · ✓ Finalizată</span>}
+                            </p>
                             {heightPx > 55 && <p style={{ fontSize: '11px', color: '#888' }}>{p.telefon}</p>}
                             {heightPx > 75 && (
                               <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
