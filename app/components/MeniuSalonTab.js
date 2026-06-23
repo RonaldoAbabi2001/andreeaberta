@@ -106,7 +106,8 @@ function RoataAdmin({ token, onBack }) {
   async function load() {
     setLoading(true)
     const res = await fetch('/api/roata', { headers: { 'x-admin-token': token } })
-    setRows(await res.json())
+    const data = await res.json()
+    setRows(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

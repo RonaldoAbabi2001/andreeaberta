@@ -1144,6 +1144,20 @@ export default function AdminDashboard() {
     const t = localStorage.getItem('admin_token')
     if (!t) { router.push('/admin/login'); return }
     setToken(t)
+
+    // Daca token-ul salvat e invalid/expirat, orice fetch admin/roata/sms primeste 401 —
+    // redirectioneaza automat la login in loc sa lase paginile sa arate goale sau sa crape.
+    const originalFetch = window.fetch
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args)
+      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || ''
+      if (res.status === 401 && (url.includes('/api/admin') || url.includes('/api/roata') || url.includes('/api/sms-queue'))) {
+        localStorage.removeItem('admin_token')
+        router.push('/admin/login')
+      }
+      return res
+    }
+    return () => { window.fetch = originalFetch }
   }, [])
 
   function fetchServicii() {
