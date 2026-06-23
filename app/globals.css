@@ -143,6 +143,16 @@ input, textarea {
   .admin-fab-desktop { display: none !important; }
   .admin-tech-left-desktop { display: none !important; }
   .admin-tech-left-mobile { display: flex !important; }
+
+  /* Header calendar — pe mobil cercurile + toggle-ul stau pe un rand, data centrata pe randul de sub */
+  .calendar-header-row {
+    flex-wrap: wrap;
+    justify-content: space-between !important;
+    row-gap: 12px;
+  }
+  .admin-tech-left-mobile { position: static !important; order: 1; }
+  .calendar-header-right { position: static !important; order: 2; }
+  .calendar-header-center { order: 3; flex-basis: 100%; width: 100%; }
 }
 
 /* Servicii — tabel desktop / carduri mobil */

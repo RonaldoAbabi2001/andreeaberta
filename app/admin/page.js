@@ -1537,7 +1537,7 @@ export default function AdminDashboard() {
         {tab === 'calendar' && (
           <div style={{ padding: '24px' }}>
             {/* Header calendar */}
-            <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', marginBottom: '20px', minHeight: '80px' }}>
+            <div className="calendar-header-row" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', marginBottom: '20px', minHeight: '80px' }}>
 
               {/* Stânga — Specialist + Orar (desktop: carduri complete) */}
               <div className="admin-tech-left-desktop" style={{ position: 'absolute', left: 0, top: 0, flexDirection: 'column', gap: '8px', width: '160px' }}>
@@ -1663,7 +1663,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Centru — ‹ dată/săptămână › */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div className="calendar-header-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button onClick={() => { const d = new Date(viewDate); d.setDate(d.getDate() - (viewMode === 'week' ? 7 : 1)); setViewDate(d) }}
                     style={{ background: 'white', border: '1px solid #DDD', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
@@ -1689,7 +1689,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Dreapta — toggle Zilnic / Săptămânal */}
-              <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+              <div className="calendar-header-right" style={{ position: 'absolute', right: 0, top: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
                 <div style={{ background: 'white', borderRadius: '12px', padding: '4px', display: 'flex', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                   {[{ id: 'day', label: 'Zilnic' }, { id: 'week', label: 'Săptămânal' }].map(v => (
                     <button key={v.id} onClick={() => setViewMode(v.id)}
