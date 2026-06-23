@@ -225,7 +225,7 @@ export default function ServiciiTab() {
   function renderTabel(list, accentColor = s.ruby) {
     return (
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '8px 20px', background: '#FAFAF8', borderBottom: '1px solid #F0EAE0' }}>
+        <div className="servicii-table-header" style={{ padding: '8px 20px', background: '#FAFAF8', borderBottom: '1px solid #F0EAE0' }}>
           {['DENUMIRE SERVICIU', 'PREȚ', 'DURATĂ', ''].map(h => (
             <div key={h} style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '0.8px', padding: '4px 0' }}>{h}</div>
           ))}
@@ -237,24 +237,24 @@ export default function ServiciiTab() {
             <div>Niciun serviciu în această categorie.</div>
           </div>
         ) : list.map((serv, i) => (
-          <div key={serv.id}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '0 20px', borderBottom: i < list.length - 1 ? '1px solid #F7F2EC' : 'none', transition: 'background 0.15s' }}
+          <div key={serv.id} className="servicii-row"
+            style={{ padding: '0 20px', borderBottom: i < list.length - 1 ? '1px solid #F7F2EC' : 'none', transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#FDF8F3'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
-            <div style={{ padding: '14px 0', fontSize: '14px', color: s.text }}>{serv.nume}</div>
+            <div className="sv-nume" style={{ padding: '14px 0', fontSize: '14px', color: s.text }}>{serv.nume}</div>
 
-            <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
+            <div className="sv-pret" style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
               <span style={{ fontSize: '15px', fontWeight: 'bold', color: accentColor }}>{serv.pret}</span>
               <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>RON</span>
             </div>
 
-            <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
+            <div className="sv-durata" style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', color: '#555' }}>{serv.durata}</span>
               <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>min</span>
             </div>
 
-            <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <div className="sv-actions" style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <button onClick={() => setGalerieServiciu(serv)}
                 style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#4F46E5' }} title="Galerie exemple">📷</button>
               <button onClick={() => { setEditServiciu(serv); setShowModal(true) }}
@@ -281,7 +281,7 @@ export default function ServiciiTab() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="servicii-page" style={{ padding: '24px' }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', fontWeight: 'normal', margin: 0, color: s.text }}>Servicii</h2>
@@ -289,28 +289,28 @@ export default function ServiciiTab() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '28px' }}>
+      <div className="servicii-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '28px' }}>
         {[
           { label: 'Servicii active', value: servicii.length, color: s.ruby },
           { label: 'Preț mediu', value: servicii.length ? `${Math.round(totalVenit / servicii.length)} RON` : '—', color: '#065F46' },
           { label: 'Durată medie', value: `${durataMedie} min`, color: '#0369A1' },
         ].map(stat => (
-          <div key={stat.label} style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${stat.color}` }}>
+          <div key={stat.label} className="servicii-stat-card" style={{ background: 'white', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderTop: `3px solid ${stat.color}` }}>
             <div style={{ fontSize: '11px', color: '#999', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 'bold' }}>{stat.label.toUpperCase()}</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: stat.color }}>{stat.value}</div>
+            <div className="servicii-stat-value" style={{ fontSize: '24px', fontWeight: '500', color: stat.color }}>{stat.value}</div>
           </div>
         ))}
       </div>
 
       {/* Secțiunea Principale */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+        <div className="servicii-section-head" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 style={{ fontSize:'16px', fontWeight:'bold', color:s.ruby, margin:0 }}>Servicii Principale</h3>
             <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 2 în rezervare</p>
           </div>
           <button onClick={() => { setShowModalTip('principal'); setEditServiciu(null); setShowModal(true) }}
-            style={{ background:`linear-gradient(135deg,${s.ruby},#7A1525)`, color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
+            style={{ background:`linear-gradient(135deg,${s.ruby},#7A1525)`, color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold', whiteSpace: 'nowrap' }}>
             + Adaugă
           </button>
         </div>
@@ -319,13 +319,13 @@ export default function ServiciiTab() {
 
       {/* Secțiunea Extra/Design */}
       <div>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+        <div className="servicii-section-head" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 style={{ fontSize:'16px', fontWeight:'bold', color:'#7C3AED', margin:0 }}>Servicii Extra / Design</h3>
             <p style={{ fontSize:'11px', color:'#AAA', margin:'2px 0 0' }}>Apar la pasul 3 în rezervare (opțional)</p>
           </div>
           <button onClick={() => { setShowModalTip('extra'); setEditServiciu(null); setShowModal(true) }}
-            style={{ background:'linear-gradient(135deg,#7C3AED,#5B21B6)', color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold' }}>
+            style={{ background:'linear-gradient(135deg,#7C3AED,#5B21B6)', color:'white', border:'none', borderRadius:'10px', padding:'8px 16px', cursor:'pointer', fontSize:'12px', fontWeight:'bold', whiteSpace: 'nowrap' }}>
             + Adaugă Extra
           </button>
         </div>

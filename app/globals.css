@@ -144,3 +144,36 @@ input, textarea {
   .admin-tech-left-desktop { display: none !important; }
   .admin-tech-left-mobile { display: flex !important; }
 }
+
+/* Servicii — tabel desktop / carduri mobil */
+.servicii-table-header,
+.servicii-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px 100px;
+}
+
+@media (max-width: 768px) {
+  .servicii-page { padding: 14px !important; }
+
+  .servicii-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  .servicii-stat-card { padding: 10px 8px !important; }
+  .servicii-stat-value { font-size: 17px !important; }
+
+  .servicii-section-head { gap: 8px !important; }
+
+  .servicii-table-header { display: none; }
+
+  .servicii-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "nume nume"
+      "pret durata"
+      "actions actions";
+    row-gap: 2px;
+    padding: 12px 14px !important;
+  }
+  .sv-nume { grid-area: nume; padding: 0 0 6px !important; font-weight: bold; }
+  .sv-pret { grid-area: pret; padding: 0 !important; }
+  .sv-durata { grid-area: durata; padding: 0 !important; justify-content: flex-end; }
+  .sv-actions { grid-area: actions; padding: 10px 0 0 !important; justify-content: flex-start; border-top: 1px solid #F7F2EC; margin-top: 8px; }
+}
