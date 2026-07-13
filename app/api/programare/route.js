@@ -47,6 +47,57 @@ export async function POST(request) {
   try {
     const sql = await getDb()
 
+    // Verifica daca ziua e blocata (zi_libera / concediu fara ora specifica)
+    // Atat programari.data cat si worker_time_off.data sunt in format roman "8 Iulie 2026"
+    const LUNI_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+    const dataRo = data
+    const worker = await sql`SELECT id FROM workers WHERE salon_id = 'evolis' AND activ = true ORDER BY id LIMIT 1`
+    if (worker.length > 0) {
+      const timeOff = await sql`
+        SELECT tip FROM worker_time_off
+        WHERE worker_id = ${worker[0].id} AND data = ${dataRo}
+        AND (tip = 'zi_libera' OR tip = 'concediu')
+        AND ora_start IS NULL
+      `
+      if (timeOff.length > 0) {
+        return NextResponse.json({ error: 'Ziua selectată nu este disponibilă pentru programări.' }, { status: 409 })
+      }
+    }
+
+    // Verifica limita zilnica de programari acceptate (Programari acceptate)
+    if (worker.length > 0 && body.data) {
+      function roToIso(ro) {
+        const parts = String(ro).trim().split(' ')
+        if (parts.length !== 3) return null
+        const d = parseInt(parts[0])
+        const mi = LUNI_RO.indexOf(parts[1])
+        const y = parseInt(parts[2])
+        if (mi === -1 || isNaN(d) || isNaN(y)) return null
+        const pad = n => String(n).padStart(2, '0')
+        return `${y}-${pad(mi + 1)}-${pad(d)}`
+      }
+      const iso = roToIso(body.data)
+      if (iso) {
+        const limits = await sql`
+          SELECT max_pe_zi FROM daily_limits
+          WHERE worker_id = ${worker[0].id}
+            AND data_start <= ${iso}
+            AND (data_end IS NULL OR data_end >= ${iso})
+          ORDER BY creat DESC LIMIT 1
+        `
+        if (limits.length > 0) {
+          const max = Number(limits[0].max_pe_zi)
+          const cnt = await sql`
+            SELECT COUNT(*)::int AS n FROM programari
+            WHERE data = ${body.data} AND status != 'cancelled'
+          `
+          if ((cnt[0]?.n || 0) >= max) {
+            return NextResponse.json({ error: 'Ziua selectată este completă — s-a atins numărul maxim de programări.' }, { status: 409 })
+          }
+        }
+      }
+    }
+
     // Verifica suprapuneri inainte de INSERT
     if (body.ora && body.data) {
       const existente = await sql`

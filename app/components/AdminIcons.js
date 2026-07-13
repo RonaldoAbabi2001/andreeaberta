@@ -2,7 +2,7 @@
 import {
   CalendarDays, Users, Package, Sparkles, TrendingUp,
   FileText, Upload, Scissors, RefreshCw, CalendarPlus,
-  Lock, Umbrella, Settings2, MessageSquare
+  Lock, Umbrella, Settings2, MessageSquare, Gauge
 } from 'lucide-react'
 
 // Gradiente unice per icon — look premium iOS
@@ -21,6 +21,7 @@ const GRADIENTS = {
   concediu:  ['#43E97B', '#38F9D7'],
   setari:    ['#F093FB', '#F5576C'],
   sms:       ['#FF9A9E', '#FECFEF'],
+  limita:    ['#F6D365', '#FDA085'],
 }
 
 const ACTIVE = ['#9B1B30', '#C9A84C']
@@ -92,4 +93,7 @@ export function IcoSetari({ active, size = 32 }) {
 }
 export function IcoSms({ active, size = 32 }) {
   return <IconBox id="sms" active={active} size={size}>{s => <MessageSquare size={s} color="white" strokeWidth={1.8} />}</IconBox>
+}
+export function IcoLimita({ active, size = 32 }) {
+  return <IconBox id="limita" active={active} size={size}>{s => <Gauge size={s} color="white" strokeWidth={1.8} />}</IconBox>
 }

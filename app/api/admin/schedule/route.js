@@ -34,6 +34,16 @@ async function initTables(sql) {
       creat TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS daily_limits (
+      id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+      worker_id BIGINT,
+      data_start TEXT,
+      data_end TEXT,
+      max_pe_zi INTEGER,
+      creat TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
 }
 
 function defaultSchedule() {
@@ -101,11 +111,22 @@ export async function GET(req) {
         nota: r.nota,
       }))
 
+      const limitRows = await sql`
+        SELECT * FROM daily_limits WHERE worker_id = ${w.id} ORDER BY creat DESC
+      `
+      const daily_limits = limitRows.map(r => ({
+        id: Number(r.id),
+        data_start: r.data_start,
+        data_end: r.data_end,
+        max_pe_zi: Number(r.max_pe_zi),
+      }))
+
       return {
         id: Number(w.id),
         nume: w.nume,
         schedule,
         time_off,
+        daily_limits,
       }
     }))
 
@@ -146,6 +167,19 @@ export async function POST(req) {
       return Response.json({ ok: true, id: Number(res[0].id) })
     }
 
+    if (body.type === 'daily_limit') {
+      const { worker_id, data_start, data_end, max_pe_zi } = body
+      if (!worker_id || !data_start || !(max_pe_zi >= 0)) {
+        return Response.json({ error: 'Date invalide' }, { status: 400 })
+      }
+      const res = await sql`
+        INSERT INTO daily_limits (worker_id, data_start, data_end, max_pe_zi)
+        VALUES (${worker_id}, ${data_start}, ${data_end || null}, ${Number(max_pe_zi)})
+        RETURNING id
+      `
+      return Response.json({ ok: true, id: Number(res[0].id) })
+    }
+
     if (body.type === 'worker') {
       const res = await sql`
         INSERT INTO workers (salon_id, nume, activ) VALUES ('evolis', ${body.nume}, true) RETURNING id
@@ -169,6 +203,11 @@ export async function DELETE(req) {
 
     if (body.type === 'time_off') {
       await sql`DELETE FROM worker_time_off WHERE id = ${body.id}`
+      return Response.json({ ok: true })
+    }
+
+    if (body.type === 'daily_limit') {
+      await sql`DELETE FROM daily_limits WHERE id = ${body.id}`
       return Response.json({ ok: true })
     }
 

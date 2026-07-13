@@ -6,7 +6,7 @@ import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
 import MaterialeUtilizate from '../components/MaterialeUtilizate'
 import ExtraServicii from '../components/ExtraServicii'
-import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu, IcoSetari, IcoSms } from '../components/AdminIcons'
+import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu, IcoSetari, IcoSms, IcoLimita } from '../components/AdminIcons'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 const ZILE_FULL = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă']
@@ -1109,6 +1109,8 @@ export default function AdminDashboard() {
   const [savingSchedule, setSavingSchedule] = useState(false)
   const [scheduleTimeOff, setScheduleTimeOff] = useState([])
   const [newTimeOff, setNewTimeOff] = useState({ data: '', tip: 'zi_libera', ora_start: '', ora_sfarsit: '', nota: '' })
+  const [dailyLimits, setDailyLimits] = useState([])
+  const [newLimit, setNewLimit] = useState({ max_pe_zi: '', data_start: '', data_end: '' })
   const [showSpecialistPicker, setShowSpecialistPicker] = useState(false)
   const [showScheduleOptions, setShowScheduleOptions] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -1229,6 +1231,7 @@ export default function AdminDashboard() {
           setScheduleWorker(w.id)
           setScheduleWeek(w.schedule)
           setScheduleTimeOff(w.time_off || [])
+          setDailyLimits(w.daily_limits || [])
         }
       })
       .catch(() => {})
@@ -1600,6 +1603,7 @@ export default function AdminDashboard() {
                         { id: 'azi',       ico: <IcoAzi active={false} size={26} />, label: 'Orar azi' },
                         { id: 'inchide',   ico: <IcoInchide active={false} size={26} />, label: 'Închide ziua', red: true },
                         { id: 'concediu',  ico: <IcoConcediu active={false} size={26} />, label: 'Concediu / Zile libere' },
+                        { id: 'limita',    ico: <IcoLimita active={false} size={26} />, label: 'Programări acceptate' },
                       ].map(opt => (
                         <button key={opt.id} onClick={() => { setScheduleModal(opt.id); setShowScheduleOptions(false) }}
                           style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'transparent', border: 'none', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '13px', color: opt.red ? '#EF4444' : '#333', textAlign: 'left' }}
@@ -1655,6 +1659,7 @@ export default function AdminDashboard() {
                         { id: 'azi',       ico: <IcoAzi active={false} size={26} />, label: 'Orar azi' },
                         { id: 'inchide',   ico: <IcoInchide active={false} size={26} />, label: 'Închide ziua', red: true },
                         { id: 'concediu',  ico: <IcoConcediu active={false} size={26} />, label: 'Concediu / Zile libere' },
+                        { id: 'limita',    ico: <IcoLimita active={false} size={26} />, label: 'Programări acceptate' },
                       ].map(opt => (
                         <button key={opt.id} onClick={() => { setScheduleModal(opt.id); setShowScheduleOptions(false) }}
                           style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', background: 'transparent', border: 'none', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '13px', color: opt.red ? '#EF4444' : '#333', textAlign: 'left' }}
@@ -3012,6 +3017,7 @@ export default function AdminDashboard() {
                 {scheduleModal === 'azi' && '📋 Orar pentru azi'}
                 {scheduleModal === 'inchide' && '🔒 Închide ziua de lucru'}
                 {scheduleModal === 'concediu' && '🏖️ Concediu / Zile libere'}
+                {scheduleModal === 'limita' && '📊 Programări acceptate / zi'}
               </h3>
               <button onClick={() => setScheduleModal(null)} style={{ background: '#F0EAE0', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
@@ -3309,6 +3315,105 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <p style={{ color: '#AAA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>Nu există zile libere / concediu salvate.</p>
+                )}
+              </div>
+            )}
+
+            {/* ---- PROGRAMARI ACCEPTATE / ZI ---- */}
+            {scheduleModal === 'limita' && (
+              <div>
+                <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+                  Stabilește câte programări accepți pe zi într-o perioadă. După ce se ating, ziua devine <strong>completă</strong> și clientele nu mai pot rezerva. Se sincronizează automat cu programările existente.
+                </p>
+
+                {/* Form adaugare */}
+                <div style={{ background: '#FAFAFA', borderRadius: '12px', padding: '16px', marginBottom: '16px', border: '1px solid #EEE' }}>
+                  <p style={{ fontSize: '12px', color: '#888', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Regulă nouă</p>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Programări acceptate pe zi</label>
+                    <input type="number" min="0" inputMode="numeric"
+                      value={newLimit.max_pe_zi}
+                      onChange={e => setNewLimit(prev => ({ ...prev, max_pe_zi: e.target.value }))}
+                      placeholder="ex: 2"
+                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '15px', fontFamily: 'Georgia, serif', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '6px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>De la data</label>
+                      <input type="date"
+                        value={newLimit.data_start || ''}
+                        onChange={e => setNewLimit(prev => ({ ...prev, data_start: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#888', letterSpacing: '1px', marginBottom: '6px', textTransform: 'uppercase' }}>Până la data</label>
+                      <input type="date"
+                        value={newLimit.data_end || ''}
+                        onChange={e => setNewLimit(prev => ({ ...prev, data_end: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#AAA', margin: '0 0 12px' }}>Lași „Până la” gol → regula se aplică permanent, din data de start încolo.</p>
+                  <button
+                    disabled={savingSchedule || newLimit.max_pe_zi === '' || !newLimit.data_start}
+                    onClick={async () => {
+                      if (!scheduleWorker || newLimit.max_pe_zi === '' || !newLimit.data_start) return
+                      setSavingSchedule(true)
+                      const res = await fetch('/api/admin/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                        body: JSON.stringify({
+                          type: 'daily_limit',
+                          worker_id: scheduleWorker,
+                          data_start: newLimit.data_start,
+                          data_end: newLimit.data_end || null,
+                          max_pe_zi: Number(newLimit.max_pe_zi),
+                        })
+                      })
+                      const r = await res.json()
+                      if (r.id) {
+                        setDailyLimits(prev => [{ id: r.id, data_start: newLimit.data_start, data_end: newLimit.data_end || null, max_pe_zi: Number(newLimit.max_pe_zi) }, ...prev])
+                      }
+                      setNewLimit({ max_pe_zi: '', data_start: '', data_end: '' })
+                      setSavingSchedule(false)
+                    }}
+                    style={{ width: '100%', padding: '11px', borderRadius: '50px', border: 'none', background: savingSchedule || newLimit.max_pe_zi === '' || !newLimit.data_start ? '#DDD' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`, color: 'white', cursor: savingSchedule || newLimit.max_pe_zi === '' || !newLimit.data_start ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    {savingSchedule ? 'Se salvează...' : '+ ADAUGĂ REGULĂ'}
+                  </button>
+                </div>
+
+                {/* Lista existenta */}
+                {dailyLimits.length > 0 ? (
+                  <div>
+                    <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Reguli active</p>
+                    {dailyLimits.map(lim => (
+                      <div key={lim.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#FFF8F0', borderRadius: '10px', marginBottom: '6px', border: `1px solid ${s.gold}40` }}>
+                        <div>
+                          <span style={{ fontSize: '14px', fontWeight: '600', color: s.ruby }}>{lim.max_pe_zi} progr./zi</span>
+                          <p style={{ fontSize: '12px', color: '#888', margin: '2px 0 0' }}>
+                            {lim.data_start} {lim.data_end ? `→ ${lim.data_end}` : '→ permanent'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/admin/schedule', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                              body: JSON.stringify({ id: lim.id, type: 'daily_limit' })
+                            })
+                            setDailyLimits(prev => prev.filter(x => x.id !== lim.id))
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: '16px', padding: '4px 8px', borderRadius: '6px', flexShrink: 0 }}>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: '#AAA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>Nu există limite setate — programări nelimitate pe zi.</p>
                 )}
               </div>
             )}

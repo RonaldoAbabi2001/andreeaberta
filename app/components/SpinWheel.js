@@ -357,7 +357,8 @@ export default function SpinWheel() {
     trackEvent('roata_spin')
 
     const extraSpins = 5 + Math.random() * 5
-    const winnerIdx = Math.floor(Math.random() * 8)
+    let winnerIdx
+    do { winnerIdx = Math.floor(Math.random() * 8) } while (winnerIdx === 4)
     const jitter = (Math.random() - 0.5) * SEG_VIZ * 0.6
     const targetPointerAngle = (winnerIdx + 0.5) * SEG_VIZ + jitter
     const targetNorm = ((7 * Math.PI / 2 - targetPointerAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
@@ -389,7 +390,7 @@ export default function SpinWheel() {
         const normFinal = ((totalRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
         const pAngle = (7 * Math.PI / 2 - normFinal + 2 * Math.PI) % (2 * Math.PI)
         const vizIdx = Math.floor(pAngle / SEG_VIZ) % N_VIZ
-        const finalIdx = vizIdx < 8 ? vizIdx : winnerIdx
+        const finalIdx = (vizIdx < 8 && vizIdx !== 4) ? vizIdx : winnerIdx
         const premiu = PREMII[finalIdx].label
         playWin()
         setSaving(true)

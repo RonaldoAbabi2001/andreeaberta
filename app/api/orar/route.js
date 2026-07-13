@@ -50,6 +50,36 @@ export async function GET(req) {
 
     if (!worker) return Response.json(defaultForDay(zi))
 
+    // ISO date pentru comparatii de interval (data_start <= iso <= data_end)
+    const pad = n => String(n).padStart(2, '0')
+    const iso = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`
+
+    // Verifica limita zilnica de programari acceptate. Daca ziua e "plina" -> marcheaza plin.
+    async function aplicaLimita(schedObj) {
+      try {
+        const limits = await sql`
+          SELECT max_pe_zi FROM daily_limits
+          WHERE worker_id = ${worker.id}
+            AND data_start <= ${iso}
+            AND (data_end IS NULL OR data_end >= ${iso})
+          ORDER BY creat DESC LIMIT 1
+        `
+        if (limits.length === 0) return schedObj
+        const max = Number(limits[0].max_pe_zi)
+        const cnt = await sql`
+          SELECT COUNT(*)::int AS n FROM programari
+          WHERE data = ${dataStr} AND status != 'cancelled'
+        `
+        const n = cnt[0]?.n || 0
+        if (n >= max) {
+          return { ...schedObj, plin: true, max_pe_zi: max, programari_azi: n }
+        }
+        return { ...schedObj, max_pe_zi: max, programari_azi: n }
+      } catch {
+        return schedObj
+      }
+    }
+
     // Check time_off for this exact date
     const timeOff = await sql`
       SELECT * FROM worker_time_off WHERE worker_id = ${worker.id} AND data = ${dataStr}
@@ -64,13 +94,13 @@ export async function GET(req) {
     // Check for custom orar override
     const orarCustom = timeOff.find(t => t.tip === 'orar_zi')
     if (orarCustom) {
-      return Response.json({
+      return Response.json(await aplicaLimita({
         inchis: false,
         ora_start: orarCustom.ora_start || '09:00',
         ora_sfarsit: orarCustom.ora_sfarsit || '19:00',
         pauza_start: null,
         pauza_sfarsit: null,
-      })
+      }))
     }
 
     // Get worker schedule for this day
@@ -100,7 +130,7 @@ export async function GET(req) {
       sched.pauza_sfarsit = pauzaEntry.ora_sfarsit
     }
 
-    return Response.json(sched)
+    return Response.json(await aplicaLimita(sched))
   } catch (err) {
     // If any DB error (tables not exist, etc), return defaults
     return Response.json(defaultForDay(zi))

@@ -153,7 +153,7 @@ export default function BookingFlow() {
   const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
   const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + e.durata, 0) : 0
   const durataEfectiva = Math.max(durataTotal, intervalMinim)
-  const slots = (serviciu && orarZi && !orarZi.inchis) ? generateSlots(durataEfectiva, orarZi) : []
+  const slots = (serviciu && orarZi && !orarZi.inchis && !orarZi.plin) ? generateSlots(durataEfectiva, orarZi) : []
 
   const isFirstMonth = visibleMonth === todayDate.getMonth() && visibleYear === todayDate.getFullYear()
 
@@ -475,6 +475,10 @@ export default function BookingFlow() {
               {orarZi?.inchis ? (
                 <p style={{ color: style.ruby, fontSize: '14px', textAlign: 'center', padding: '20px', background: '#FFF0F2', borderRadius: '12px', marginBottom: '16px', border: `1px solid ${style.ruby}` }}>
                   Zi indisponibilă — alegeți o altă dată
+                </p>
+              ) : orarZi?.plin ? (
+                <p style={{ color: style.ruby, fontSize: '14px', textAlign: 'center', padding: '20px', background: '#FFF0F2', borderRadius: '12px', marginBottom: '16px', border: `1px solid ${style.ruby}` }}>
+                  Zi completă — nu mai sunt locuri disponibile. Vă rugăm alegeți o altă dată.
                 </p>
               ) : (
                 <>
