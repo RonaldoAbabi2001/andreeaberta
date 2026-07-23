@@ -1189,6 +1189,17 @@ export default function AdminDashboard() {
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
   }, [tab])
 
+  // Sincronizare live: reincarca programarile cat timp adminul sta pe calendar
+  // (ex. cand o clienta isi anuleaza singura programarea). Doar cand pagina e
+  // vizibila, ca sa menajam cota Neon (baza adoarme cand tab-ul e in fundal).
+  useEffect(() => {
+    if (!token || tab !== 'calendar') return
+    const poll = () => { if (document.visibilityState === 'visible') fetchProgramari() }
+    const id = setInterval(poll, 60000)
+    document.addEventListener('visibilitychange', poll)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', poll) }
+  }, [token, tab])
+
   useEffect(() => {
     if (tab !== 'analitica' || !token) return
     setAnalitica(null)
@@ -1407,7 +1418,7 @@ export default function AdminDashboard() {
 
   const dateStr = formatDateRO
   const weekDays = getWeekDays(viewDate)
-  const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim())
+  const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim() && p.status !== 'cancelled')
   const filteredClienti = clienti.filter(c =>
     c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
     c.telefon?.includes(clientSearch)
