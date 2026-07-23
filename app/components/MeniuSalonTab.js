@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import ServiciiTab from './ServiciiTab'
+import RemindereTab from './RemindereTab'
 
 const s = { ruby: '#9B1B30', gold: '#C9A84C', nude: '#F7EFE5', text: '#1C1C1C' }
 
@@ -35,6 +36,14 @@ const SECTIUNI = [
     label: 'SMS în masă',
     desc: 'Trimite un mesaj la toți clienții prin router',
     color: '#BE185D',
+    ready: true,
+  },
+  {
+    id: 'remindere',
+    icon: '🔔',
+    label: 'Remindere',
+    desc: 'Configurează mesajele automate și vezi ce s-a trimis',
+    color: '#C9A84C',
     ready: true,
   },
   {
@@ -826,6 +835,22 @@ export default function MeniuSalonTab({ token, clientiCount = 0, onNavigate }) {
 
   if (sectiune === 'roata') {
     return <RoataAdmin token={token} onBack={() => setSectiune(null)} />
+  }
+
+  if (sectiune === 'remindere') {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '12px 24px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => setSectiune(null)}
+            style={{ background: 'white', border: '1px solid #E8DDD0', borderRadius: '10px', padding: '7px 14px', cursor: 'pointer', fontSize: '13px', color: '#888', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Georgia, serif' }}>
+            ← Meniu Salon
+          </button>
+          <span style={{ color: '#CCC', fontSize: '14px' }}>/</span>
+          <span style={{ fontSize: '14px', color: s.text, fontFamily: 'Georgia, serif' }}>🔔 Remindere</span>
+        </div>
+        <RemindereTab token={token} />
+      </div>
+    )
   }
 
   if (sectiune === 'sms') {
