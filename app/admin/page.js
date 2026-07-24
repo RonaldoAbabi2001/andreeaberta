@@ -1179,6 +1179,7 @@ export default function AdminDashboard() {
     fetchProgramari()
     fetchClienti()
     fetchServicii()
+    fetchSchedule()
     fetch('/api/admin/produse', { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
   }, [token])
@@ -1260,6 +1261,20 @@ export default function AdminDashboard() {
     const res = await fetch('/api/admin/clienti', { headers: { 'x-admin-token': token } })
     const data = await res.json()
     setClienti(Array.isArray(data) ? data : [])
+  }
+
+  async function fetchSchedule() {
+    try {
+      const res = await fetch('/api/admin/schedule', { headers: { 'x-admin-token': token } })
+      const d = await res.json()
+      if (d.workers?.length) {
+        const w = d.workers[0]
+        setScheduleWorker(w.id)
+        setScheduleWeek(w.schedule)
+        setScheduleTimeOff(w.time_off || [])
+        setDailyLimits(w.daily_limits || [])
+      }
+    } catch {}
   }
 
   function openAddForm() {
@@ -1419,6 +1434,8 @@ export default function AdminDashboard() {
   const dateStr = formatDateRO
   const weekDays = getWeekDays(viewDate)
   const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim() && p.status !== 'cancelled')
+  // Zi inchisa complet (din "Inchide ziua" = zi_libera, sau concediu) — fara interval orar
+  const esteZiInchisa = (d) => scheduleTimeOff.some(t => t.data?.trim() === dateStr(d).trim() && (t.tip === 'zi_libera' || t.tip === 'concediu') && !t.ora_start)
   const filteredClienti = clienti.filter(c =>
     c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
     c.telefon?.includes(clientSearch)
@@ -1762,6 +1779,12 @@ export default function AdminDashboard() {
                     const isToday = d.toDateString() === new Date().toDateString()
                     return (
                       <div key={di} style={{ flex: 1, position: 'relative', height: `${gridHeight}px`, borderRight: di < 6 ? '1px solid #F0EAE0' : 'none', background: isToday ? 'rgba(155,27,48,0.015)' : 'transparent' }}>
+                        {/* Overlay zi inchisa (rosu semitransparent) */}
+                        {esteZiInchisa(d) && (
+                          <div style={{ position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none', background: 'rgba(239,68,68,0.16)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                            <div style={{ marginTop: '10px', background: 'rgba(239,68,68,0.92)', color: 'white', padding: '3px 10px', borderRadius: '14px', fontSize: '10px', fontWeight: 'bold' }}>🔒 Închis</div>
+                          </div>
+                        )}
                         {/* Linii ore */}
                         {Array.from({ length: GRID_HOURS }, (_, i) => i).map(i => (
                           <div key={i} style={{ position: 'absolute', top: `${i * 60 * PX_PER_MIN}px`, left: 0, right: 0, height: `${60 * PX_PER_MIN}px`, borderBottom: '1px solid #F0EAE0' }} />
@@ -1910,6 +1933,19 @@ export default function AdminDashboard() {
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       🔒 Blochează timp
                     </button>
+                  </div>
+                )}
+
+                {/* Overlay zi inchisa — rosu semitransparent peste toata ziua */}
+                {esteZiInchisa(viewDate) && (
+                  <div style={{
+                    position: 'absolute', inset: 0, zIndex: 18, pointerEvents: 'none',
+                    background: 'rgba(239,68,68,0.16)',
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                  }}>
+                    <div style={{ marginTop: '18px', background: 'rgba(239,68,68,0.92)', color: 'white', padding: '6px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', letterSpacing: '0.5px', boxShadow: '0 3px 10px rgba(239,68,68,0.35)' }}>
+                      🔒 Zi închisă
+                    </div>
                   </div>
                 )}
 
@@ -3215,6 +3251,12 @@ export default function AdminDashboard() {
                           nota: ''
                         })
                       })
+                      // Actualizare optimista — overlay rosu apare instant pe calendar
+                      const dataZi = formatDateRO(viewDate)
+                      setScheduleTimeOff(prev => [
+                        ...prev.filter(t => !(t.data?.trim() === dataZi.trim() && (t.tip === 'zi_libera' || t.tip === 'concediu') && !t.ora_start)),
+                        { id: Date.now(), data: dataZi, tip: 'zi_libera', ora_start: null, ora_sfarsit: null, nota: '' },
+                      ])
                       setSavingSchedule(false)
                       setScheduleModal(null)
                     }}
