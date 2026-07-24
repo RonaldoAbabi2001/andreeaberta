@@ -1190,15 +1190,16 @@ export default function AdminDashboard() {
       .then(r => r.json()).then(d => { if (Array.isArray(d)) setProduseDB(d) })
   }, [tab])
 
-  // Sincronizare live: reincarca programarile cat timp adminul sta pe calendar
-  // (ex. cand o clienta isi anuleaza singura programarea). Doar cand pagina e
-  // vizibila, ca sa menajam cota Neon (baza adoarme cand tab-ul e in fundal).
+  // Sincronizare programari cat timp adminul sta pe calendar. Reimprospatare
+  // instanta cand revii la fereastra (visibilitychange) + fallback la 10 min.
+  // Interval mare intentionat: baza Neon adoarme intre verificari (menajam cota).
+  // Anularile clientelor vin oricum instant pe Telegram, deci nu e nevoie de polling des.
   useEffect(() => {
     if (!token || tab !== 'calendar') return
-    const poll = () => { if (document.visibilityState === 'visible') fetchProgramari() }
-    const id = setInterval(poll, 60000)
-    document.addEventListener('visibilitychange', poll)
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', poll) }
+    const refresh = () => { if (document.visibilityState === 'visible') fetchProgramari() }
+    const id = setInterval(refresh, 600000)
+    document.addEventListener('visibilitychange', refresh)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
   }, [token, tab])
 
   useEffect(() => {

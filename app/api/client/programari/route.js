@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
+const BOT_TOKEN = '8465613425:AAEawrbtzjSTyIpmtAtgYQEeOBCjc2T3iAE'
+const CHAT_ID = '645634084'
+
+async function sendTelegram(text) {
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' })
+    })
+  } catch {}
+}
+
 const LUNI = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 
 function parseDateRO(str) {
@@ -70,5 +83,16 @@ export async function PATCH(request) {
   }
 
   await sql`UPDATE programari SET status = 'cancelled' WHERE id = ${id}`
+
+  // Notificare Telegram — clienta si-a anulat singura programarea
+  await sendTelegram(
+    `❌ <b>Anulare programare</b>\n\n` +
+    `👤 <b>${p.nume || client.nume || 'Client'}</b>\n` +
+    `📞 ${p.telefon}\n` +
+    `💅 ${p.serviciu || '—'}\n` +
+    `📅 ${p.data}${p.ora ? ' · ' + p.ora : ''}\n\n` +
+    `<i>Anulată de clientă din contul propriu.</i>`
+  )
+
   return NextResponse.json({ success: true })
 }
