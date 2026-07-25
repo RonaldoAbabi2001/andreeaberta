@@ -65,6 +65,32 @@ function formatDateRO(d) {
   return `${d.getDate()} ${LUNI[d.getMonth()]} ${d.getFullYear()}`
 }
 
+// Doar cifrele dintr-un text (pentru potrivire telefon indiferent de spatii)
+const digits = s => String(s || '').replace(/\D/g, '')
+
+// Tari pentru selectorul de prefix WhatsApp
+const TARI_PREFIX = [
+  { cod: '40', flag: '🇷🇴', nume: 'România' },
+  { cod: '39', flag: '🇮🇹', nume: 'Italia' },
+  { cod: '34', flag: '🇪🇸', nume: 'Spania' },
+  { cod: '44', flag: '🇬🇧', nume: 'Marea Britanie' },
+  { cod: '49', flag: '🇩🇪', nume: 'Germania' },
+  { cod: '33', flag: '🇫🇷', nume: 'Franța' },
+  { cod: '43', flag: '🇦🇹', nume: 'Austria' },
+  { cod: '32', flag: '🇧🇪', nume: 'Belgia' },
+  { cod: '31', flag: '🇳🇱', nume: 'Olanda' },
+  { cod: '373', flag: '🇲🇩', nume: 'Moldova' },
+  { cod: '1', flag: '🇺🇸', nume: 'SUA' },
+]
+
+// Link WhatsApp in format international. Numarul local RO (incepe cu 0) -> prefixTara + rest.
+// Numarul care are deja cod de tara -> folosit ca atare.
+function waLink(telefon, prefixTara = '40') {
+  const d = digits(telefon)
+  const international = d.startsWith('0') ? prefixTara + d.slice(1) : d
+  return `https://wa.me/${international}`
+}
+
 function parseDateRO(str) {
   if (!str) return null
   const parts = str.trim().split(' ')
@@ -141,6 +167,7 @@ function DatePickerPopup({ value, onChange, onClose }) {
 
 function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB = [], serviciiDBProp = [] }) {
   const [form, setForm] = useState({ ...client })
+  const [waPrefix, setWaPrefix] = useState('40')
   const [saving, setSaving] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
   const [editProg, setEditProg] = useState(null)
@@ -427,12 +454,20 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={saveClient} disabled={saving}
                 style={{ background: s.ruby, color: 'white', border: 'none', borderRadius: '50px', padding: '10px 24px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
                 {saving ? 'Se salvează...' : savedOk ? '✓ Salvat!' : 'SALVEAZĂ DATELE'}
               </button>
-              <a href={`https://wa.me/${form.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+              {/* Prefix tara — implicit Romania; schimba doar pentru cliente din strainatate */}
+              <select value={waPrefix} onChange={e => setWaPrefix(e.target.value)}
+                title="Prefixul tarii pentru WhatsApp"
+                style={{ border: '1px solid #E5E7EB', borderRadius: '50px', padding: '10px 12px', fontSize: '13px', background: 'white', cursor: 'pointer', outline: 'none' }}>
+                {TARI_PREFIX.map(t => (
+                  <option key={t.cod} value={t.cod}>{t.flag} +{t.cod}</option>
+                ))}
+              </select>
+              <a href={waLink(form.telefon, waPrefix)} target="_blank" rel="noreferrer"
                 style={{ background: '#25D366', color: 'white', borderRadius: '50px', padding: '10px 18px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold' }}>
                 WhatsApp
               </a>
@@ -1437,10 +1472,11 @@ export default function AdminDashboard() {
   const progAzi = programari.filter(p => p.data?.trim() === dateStr(viewDate).trim() && p.status !== 'cancelled')
   // Zi inchisa complet (din "Inchide ziua" = zi_libera, sau concediu) — fara interval orar
   const esteZiInchisa = (d) => scheduleTimeOff.some(t => t.data?.trim() === dateStr(d).trim() && (t.tip === 'zi_libera' || t.tip === 'concediu') && !t.ora_start)
-  const filteredClienti = clienti.filter(c =>
-    c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    c.telefon?.includes(clientSearch)
-  )
+  const filteredClienti = clienti.filter(c => {
+    const qd = digits(clientSearch)
+    return c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (qd && digits(c.telefon).includes(qd))
+  })
   const clientProgramari = (telefon) => programari.filter(p => p.telefon === telefon)
 
   const gridHeight = GRID_HOURS * 60 * PX_PER_MIN
@@ -2102,7 +2138,7 @@ export default function AdminDashboard() {
             {/* MODELE sub-tab */}
             {clientiSubTab === 'modele' && (() => {
               const modele = clienti.filter(c => c.tip_client === 'modela' &&
-                (c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) || c.telefon?.includes(clientSearch)))
+                (c.nume?.toLowerCase().includes(clientSearch.toLowerCase()) || (digits(clientSearch) && digits(c.telefon).includes(digits(clientSearch)))))
               return (
                 <div>
                   <div style={{ background: 'linear-gradient(135deg, #FDF8EC, #F5EDD0)', border: '1px solid #C9A84C33', borderRadius: '16px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2131,7 +2167,7 @@ export default function AdminDashboard() {
                               <p style={{ color: '#BBB', fontSize: '12px', margin: '6px 0 0' }}>{nrProg} programări{c.sursa ? ` · ${c.sursa}` : ''}</p>
                               {c.observatii && <p style={{ color: '#AAA', fontSize: '11px', marginTop: '6px', fontStyle: 'italic', lineHeight: 1.4 }}>{c.observatii}</p>}
                             </div>
-                            <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+                            <a href={waLink(c.telefon)} target="_blank"
                               onClick={e => e.stopPropagation()}
                               style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', textDecoration: 'none', flexShrink: 0, marginLeft: '10px' }}>
                               WA
@@ -2173,7 +2209,7 @@ export default function AdminDashboard() {
                         <p style={{ color: '#AAA', fontSize: '12px', marginTop: '3px' }}>{nrProg} programări · {nrConf} confirmate{c.sursa ? ` · ${c.sursa}` : ''}</p>
                       </div>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <a href={`https://wa.me/${c.telefon?.replace(/[^0-9]/g, '')}`} target="_blank"
+                        <a href={waLink(c.telefon)} target="_blank"
                           onClick={e => e.stopPropagation()}
                           style={{ background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>
                           WhatsApp
@@ -2873,9 +2909,10 @@ export default function AdminDashboard() {
                 <input type="tel" required value={newProg.telefon}
                   onChange={e => {
                     const v = e.target.value
+                    const vd = digits(v)
                     setNewProg({ ...newProg, telefon: v })
-                    if (v.length >= 3) {
-                      const matches = clienti.filter(c => c.telefon?.includes(v)).slice(0, 6)
+                    if (vd.length >= 3) {
+                      const matches = clienti.filter(c => digits(c.telefon).includes(vd)).slice(0, 6)
                       setAcSuggestions(matches); setAcField('telefon')
                     } else { setAcSuggestions([]); setAcField(null) }
                   }}
