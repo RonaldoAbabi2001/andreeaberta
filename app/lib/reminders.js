@@ -83,11 +83,31 @@ function applyPlaceholders(text, { nume, data, ora, serviciu }) {
     .replaceAll('{serviciu}', serviciu || '')
 }
 
+const LUNI_RO = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie']
+
+// Parsează data programării în {an, luna(1-12), zi}. Acceptă AMBELE formate:
+// - RO "30 August 2026" (folosit de booking public ȘI admin)
+// - ISO "2026-08-30" (fallback)
+function parseData(dataF) {
+  if (!dataF) return null
+  const s = String(dataF).trim()
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (iso) return { an: +iso[1], luna: +iso[2], zi: +iso[3] }
+  const parts = s.split(/\s+/)
+  if (parts.length === 3) {
+    const zi = parseInt(parts[0], 10)
+    const luna = LUNI_RO.indexOf(parts[1]) + 1
+    const an = parseInt(parts[2], 10)
+    if (zi && luna && an) return { an, luna, zi }
+  }
+  return null
+}
+
 // Calculează momentul de trimitere pentru un tip. Întoarce Date sau null (dacă e în trecut/invalid).
 function computeSendAt(cfg, { dataF, oraF }, now) {
-  if (!dataF) return null
-  const [an, luna, zi] = dataF.split('-').map(Number)
-  if (!an || !luna || !zi) return null
+  const parsed = parseData(dataF)
+  if (!parsed) return null
+  const { an, luna, zi } = parsed
 
   if (cfg.unit === 'imediat') {
     // Doar dacă programarea e în viitor (păstrează logica anterioară pentru confirmare)
