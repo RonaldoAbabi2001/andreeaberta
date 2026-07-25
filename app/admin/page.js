@@ -84,11 +84,12 @@ const TARI_PREFIX = [
 ]
 
 // Link WhatsApp in format international. Numarul local RO (incepe cu 0) -> prefixTara + rest.
-// Numarul care are deja cod de tara -> folosit ca atare.
-function waLink(telefon, prefixTara = '40') {
+// Numarul care are deja cod de tara -> folosit ca atare. Optional: mesaj pre-completat.
+function waLink(telefon, prefixTara = '40', text = '') {
   const d = digits(telefon)
   const international = d.startsWith('0') ? prefixTara + d.slice(1) : d
-  return `https://wa.me/${international}`
+  const q = text ? `?text=${encodeURIComponent(text)}` : ''
+  return `https://wa.me/${international}${q}`
 }
 
 function parseDateRO(str) {
@@ -215,6 +216,22 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
       if (!da || !db) return 0
       return db - da
     })
+
+  // Urmatoarea programare viitoare (pentru reminderul WhatsApp)
+  const proximaProg = clientProg
+    .filter(p => {
+      if (p.status === 'cancelled') return false
+      const d = parseDateRO(p.data)
+      if (!d) return false
+      if (p.ora) { const [h, m] = p.ora.split(':').map(Number); d.setHours(h || 0, m || 0) }
+      else d.setHours(23, 59)
+      return d.getTime() >= Date.now()
+    })
+    .sort((a, b) => (parseDateRO(a.data) - parseDateRO(b.data)))[0]
+
+  const reminderText = proximaProg
+    ? `Buna ziua ${form.nume || 'draga'}! Va reamintim programarea la EVOLIS: ${proximaProg.data}${proximaProg.ora ? ' ora ' + proximaProg.ora : ''}${proximaProg.serviciu ? ', ' + proximaProg.serviciu : ''}. Va asteptam! 💅`
+    : ''
 
   const authH = { 'Content-Type': 'application/json', 'x-admin-token': token }
 
@@ -471,6 +488,14 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                 style={{ background: '#25D366', color: 'white', borderRadius: '50px', padding: '10px 18px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold' }}>
                 WhatsApp
               </a>
+              {/* Reminder WhatsApp — deschide WhatsApp cu textul programarii viitoare deja scris */}
+              {proximaProg && (
+                <a href={waLink(form.telefon, waPrefix, reminderText)} target="_blank" rel="noreferrer"
+                  title={`Reminder pentru ${proximaProg.data}${proximaProg.ora ? ' ' + proximaProg.ora : ''}`}
+                  style={{ background: '#128C7E', color: 'white', borderRadius: '50px', padding: '10px 18px', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  🔔 Reminder WA
+                </a>
+              )}
             </div>
           </div>
 
