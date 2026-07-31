@@ -643,7 +643,7 @@ function MesajeSection({ token, onBack }) {
                 <span style={{ fontSize: '12px', color: '#aaa' }}>{new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
               {m.nume && <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 6px' }}>{m.telefon}</p>}
-              <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 6px' }}>{m.mesaj}</p>
+              <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 6px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{m.mesaj}</p>
               <p style={{ fontSize: '12px', color: '#DC2626', margin: 0 }}>✗ {m.eroare || 'Eroare trimitere'}</p>
             </div>
           ))}
@@ -684,19 +684,20 @@ function MesajeSection({ token, onBack }) {
                 {convActiva?.nume && <p style={{ margin: 0, fontSize: '12px', color: '#aaa' }}>{activa}</p>}
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px', background: '#F3ECE2' }}>
                 {mesaje.map(m => {
                   const esuat = m.status === 'esuat'
                   const pending = m.status === 'pending'
+                  const out = m.directie === 'OUT'
                   const bgOut = esuat ? '#FEE2E2' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`
                   const colorOut = esuat ? '#991B1B' : 'white'
                   return (
-                    <div key={m.id} style={{ display: 'flex', justifyContent: m.directie === 'OUT' ? 'flex-end' : 'flex-start' }}>
-                      <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: m.directie === 'OUT' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: m.directie === 'OUT' ? bgOut : '#F7EFE5', color: m.directie === 'OUT' ? colorOut : s.text, fontSize: '14px', lineHeight: 1.5, border: esuat ? '1px solid #FECACA' : 'none' }}>
-                        <p style={{ margin: 0 }}>{m.mesaj}</p>
-                        {esuat && <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#B91C1C' }}>✗ Nelivrat — {m.eroare || 'eroare trimitere'}</p>}
-                        <p style={{ margin: '4px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right' }}>
-                          {pending ? '⏳' : esuat ? '✗' : m.directie === 'OUT' ? '✓' : ''}
+                    <div key={m.id} style={{ display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start' }}>
+                      <div style={{ maxWidth: '80%', minWidth: '90px', padding: '8px 12px 6px', borderRadius: out ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: out ? bgOut : 'white', color: out ? colorOut : s.text, fontSize: '14px', lineHeight: 1.45, border: esuat ? '1px solid #FECACA' : 'none', boxShadow: '0 1px 1.5px rgba(0,0,0,0.12)' }}>
+                        <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{m.mesaj}</p>
+                        {esuat && <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#B91C1C', whiteSpace: 'pre-wrap' }}>✗ Nelivrat — {m.eroare || 'eroare trimitere'}</p>}
+                        <p style={{ margin: '2px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {pending ? '⏳' : esuat ? '✗' : out ? '✓' : ''}
                           {' '}{new Date(m.creat).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
