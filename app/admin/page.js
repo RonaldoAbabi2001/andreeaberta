@@ -274,6 +274,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setSavingOre(true)
     await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _oreOnly: true, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }) })
     setDetailProg(p => ({ ...p, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }))
+    onSaved()
     setSavingOre(false)
   }
 

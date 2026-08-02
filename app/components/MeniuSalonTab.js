@@ -488,6 +488,14 @@ function MesajeSection({ token, onBack }) {
   const [tabActiv, setTabActiv] = useState('conversatii')
   const [esuate, setEsuate] = useState(null)
   const [clientiSugestii, setClientiSugestii] = useState([])
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   async function loadConversatii() {
     const res = await fetch('/api/admin/sms-inbox', { headers: { 'x-admin-token': token } })
@@ -650,10 +658,10 @@ function MesajeSection({ token, onBack }) {
         </div>
       )}
 
-      {tabActiv === 'conversatii' && <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: '0 24px 24px' }}>
+      {tabActiv === 'conversatii' && <div style={{ display: 'flex', flex: 1, overflow: 'hidden', margin: isMobile ? '0 10px 12px' : '0 24px 24px' }}>
 
         {/* Lista conversatii */}
-        <div style={{ width: '260px', flexShrink: 0, borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'auto', background: '#FAFAFA' }}>
+        <div style={{ display: (isMobile && activa) ? 'none' : 'block', width: isMobile ? '100%' : '260px', flexShrink: 0, borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'auto', background: '#FAFAFA' }}>
           {conversatii === null && <p style={{ padding: '20px', color: '#aaa', fontSize: '13px' }}>Se încarcă...</p>}
           {conversatii?.length === 0 && <p style={{ padding: '20px', color: '#aaa', fontSize: '13px' }}>Niciun mesaj primit încă.</p>}
           {conversatii?.map(c => (
@@ -672,16 +680,22 @@ function MesajeSection({ token, onBack }) {
         </div>
 
         {/* Chat */}
-        <div style={{ flex: 1, marginLeft: '16px', display: 'flex', flexDirection: 'column', borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'hidden' }}>
+        <div style={{ display: (isMobile && !activa) ? 'none' : 'flex', flex: 1, marginLeft: isMobile ? 0 : '16px', flexDirection: 'column', borderRadius: '14px', border: '1px solid #F0E8DF', overflow: 'hidden' }}>
           {!activa ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: '14px' }}>
               Selectează o conversație
             </div>
           ) : (
             <>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #F0E8DF', background: '#FAFAFA' }}>
-                <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold' }}>{convActiva?.nume || activa}</p>
-                {convActiva?.nume && <p style={{ margin: 0, fontSize: '12px', color: '#aaa' }}>{activa}</p>}
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #F0E8DF', background: '#FAFAFA', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {isMobile && (
+                  <button onClick={() => setActiva(null)} aria-label="Înapoi la listă"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: s.ruby, padding: 0, lineHeight: 1 }}>←</button>
+                )}
+                <div>
+                  <p style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '15px', fontWeight: 'bold' }}>{convActiva?.nume || activa}</p>
+                  {convActiva?.nume && <p style={{ margin: 0, fontSize: '12px', color: '#aaa' }}>{activa}</p>}
+                </div>
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px', background: '#F3ECE2' }}>
