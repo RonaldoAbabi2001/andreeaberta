@@ -6,8 +6,10 @@ export const dynamic = 'force-dynamic'
 
 function normTel(t) {
   if (!t) return t
-  t = t.trim().replace(/\s+/g, '')
+  // scoate tot ce nu e cifra sau + (spatii, marcaje Unicode de directie, etc.)
+  t = String(t).replace(/[^0-9+]/g, '')
   if (t.startsWith('+40')) t = '0' + t.slice(3)
+  else if (t.startsWith('0040')) t = '0' + t.slice(4)
   return t
 }
 

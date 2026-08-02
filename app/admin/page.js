@@ -271,11 +271,18 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
 
   async function saveOre() {
     if (!detailProg) return
+    if (!detailOre.start) { alert('Pune o oră de început înainte să salvezi.'); return }
     setSavingOre(true)
-    await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _oreOnly: true, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }) })
-    setDetailProg(p => ({ ...p, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }))
-    onSaved()
-    setSavingOre(false)
+    try {
+      const res = await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _oreOnly: true, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }) })
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      setDetailProg(p => ({ ...p, ora: detailOre.start, ora_sfarsit: detailOre.sfarsit }))
+      onSaved()
+    } catch (e) {
+      alert('Nu s-a putut salva ora. Verifică internetul sau reintră în cont (sesiunea poate a expirat), apoi încearcă din nou.')
+    } finally {
+      setSavingOre(false)
+    }
   }
 
   async function updateMaterial(id, cantitate_inainte, cantitate_dupa) {
