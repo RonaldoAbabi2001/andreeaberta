@@ -64,6 +64,52 @@ const lockedStyle = {
 
 const STORAGE_KEY = 'booking_flow_state'
 
+function WaitlistBox({ data, serviciu, loggedInClient }) {
+  const [nume, setNume] = useState(loggedInClient?.nume || '')
+  const [tel, setTel] = useState(loggedInClient?.telefon || '')
+  const [mesaj, setMesaj] = useState('')
+  const [sending, setSending] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const inp = { width: '100%', boxSizing: 'border-box', padding: '11px 14px', marginBottom: '10px', borderRadius: '10px', border: '1.5px solid #E5D9C8', fontSize: '14px', outline: 'none', background: 'white' }
+
+  async function submit() {
+    const t = String(tel).replace(/\s+/g, '')
+    if (!nume.trim() || !/^0\d{9}$/.test(t)) { alert('Completează numele și un telefon valid (07...).'); return }
+    setSending(true)
+    try {
+      const res = await fetch('/api/lista-asteptare', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nume: nume.trim(), telefon: t, data: data ? formatData(data) : '', serviciu: serviciu?.name || '', mesaj: mesaj.trim() })
+      })
+      if (!res.ok) throw new Error()
+      setDone(true)
+      trackEvent('waitlist', { data: data ? formatData(data) : '' })
+    } catch { alert('Nu s-a putut trimite. Mai încearcă o dată.') }
+    finally { setSending(false) }
+  }
+
+  if (done) return (
+    <div style={{ background: '#F0F9F1', border: '1px solid #A7D7B0', borderRadius: '14px', padding: '18px', marginBottom: '16px', textAlign: 'center', color: '#1E7A38', fontSize: '14px' }}>
+      ✓ Cererea ta a fost trimisă! Dacă se eliberează un loc în ziua asta, te contactăm noi. 👑
+    </div>
+  )
+
+  return (
+    <div style={{ background: style.nude, border: `1px solid ${style.gold}`, borderRadius: '14px', padding: '18px', marginBottom: '16px' }}>
+      <p style={{ fontWeight: 'bold', color: style.ruby, margin: '0 0 4px', fontSize: '15px' }}>📝 Intră pe lista de așteptare</p>
+      <p style={{ fontSize: '13px', color: '#777', margin: '0 0 14px' }}>Ziua e plină, dar lasă-ți datele — dacă se eliberează un loc, te contactăm noi cu o oră disponibilă.</p>
+      <input value={nume} onChange={e => setNume(e.target.value)} placeholder="Numele tău" style={inp} />
+      <input value={tel} onChange={e => setTel(e.target.value)} placeholder="Telefon (07...)" style={inp} type="tel" />
+      <textarea value={mesaj} onChange={e => setMesaj(e.target.value)} placeholder="Mesaj (opțional) — ex. intervale care ți-ar conveni" style={{ ...inp, minHeight: '58px', resize: 'vertical', fontFamily: 'inherit' }} />
+      <button onClick={submit} disabled={sending}
+        style={{ width: '100%', padding: '13px', border: 'none', borderRadius: '10px', background: sending ? '#CCC' : `linear-gradient(135deg, ${style.ruby}, ${style.rubyDark})`, color: 'white', fontWeight: 'bold', fontSize: '14px', cursor: sending ? 'not-allowed' : 'pointer' }}>
+        {sending ? 'Se trimite...' : 'Trimite cererea →'}
+      </button>
+    </div>
+  )
+}
+
 export default function BookingFlow() {
   const [step, setStep] = useState(1)
   const [servicii, setServicii] = useState([])
@@ -477,9 +523,12 @@ export default function BookingFlow() {
                   Zi indisponibilă — alegeți o altă dată
                 </p>
               ) : orarZi?.plin ? (
-                <p style={{ color: style.ruby, fontSize: '14px', textAlign: 'center', padding: '20px', background: '#FFF0F2', borderRadius: '12px', marginBottom: '16px', border: `1px solid ${style.ruby}` }}>
-                  Zi completă — nu mai sunt locuri disponibile. Vă rugăm alegeți o altă dată.
-                </p>
+                <>
+                  <p style={{ color: style.ruby, fontSize: '14px', textAlign: 'center', padding: '20px', background: '#FFF0F2', borderRadius: '12px', marginBottom: '16px', border: `1px solid ${style.ruby}` }}>
+                    Zi completă — nu mai sunt locuri disponibile. Alege altă dată sau intră pe lista de așteptare 👇
+                  </p>
+                  <WaitlistBox data={data} serviciu={serviciu} loggedInClient={loggedInClient} />
+                </>
               ) : (
                 <>
                   <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Ore disponibile</p>
@@ -494,9 +543,12 @@ export default function BookingFlow() {
                     })}
                   </div>
                   {data && orarZi && !orarZi.inchis && slots.filter(s => !isBlocked(s) && !isPast(s)).length === 0 && (
-                    <p style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '16px', background: '#F9F9F9', borderRadius: '12px', marginBottom: '16px' }}>
-                      Nu mai sunt ore disponibile în această zi
-                    </p>
+                    <>
+                      <p style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '16px', background: '#F9F9F9', borderRadius: '12px', marginBottom: '16px' }}>
+                        Nu mai sunt ore disponibile în această zi — dar poți intra pe lista de așteptare 👇
+                      </p>
+                      <WaitlistBox data={data} serviciu={serviciu} loggedInClient={loggedInClient} />
+                    </>
                   )}
                 </>
               )}
