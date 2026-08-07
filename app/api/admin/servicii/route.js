@@ -65,6 +65,13 @@ export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
+  // Reordonare: primeste un array de id-uri in ordinea dorita -> seteaza ordine = pozitie
+  if (Array.isArray(body.reorder)) {
+    for (let i = 0; i < body.reorder.length; i++) {
+      await sql`UPDATE servicii SET ordine = ${i} WHERE id = ${body.reorder[i]} AND salon_id = 'evolis'`
+    }
+    return NextResponse.json({ success: true })
+  }
   await sql`UPDATE servicii SET nume = ${body.nume}, pret = ${body.pret || 0}, durata = ${body.durata || 60}, tip = ${body.tip || 'principal'} WHERE id = ${body.id}`
   return NextResponse.json({ success: true })
 }

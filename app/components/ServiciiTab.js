@@ -222,6 +222,26 @@ export default function ServiciiTab() {
   const principale = servicii.filter(s => (s.tip || 'principal') === 'principal')
   const extraList  = servicii.filter(s => s.tip === 'extra')
 
+  async function muta(list, i, dir) {
+    const j = i + dir
+    if (j < 0 || j >= list.length) return
+    const g = [...list]
+    const tmp = g[i]; g[i] = g[j]; g[j] = tmp
+    const isPrincipal = (g[0]?.tip || 'principal') === 'principal'
+    const allIds = [...(isPrincipal ? g : principale), ...(isPrincipal ? extraList : g)].map(x => x.id)
+    // update optimist local (fara flicker)
+    setServicii(prev => {
+      const byId = Object.fromEntries(prev.map(x => [x.id, x]))
+      return allIds.map((id, k) => ({ ...byId[id], ordine: k }))
+    })
+    await fetch('/api/admin/servicii', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
+      body: JSON.stringify({ reorder: allIds })
+    })
+    load()
+  }
+
   function renderTabel(list, accentColor = s.ruby) {
     return (
       <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
@@ -255,6 +275,12 @@ export default function ServiciiTab() {
             </div>
 
             <div className="sv-actions" style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '2px' }}>
+                <button onClick={() => muta(list, i, -1)} disabled={i === 0} title="Mută sus"
+                  style={{ background: '#F5F5F5', border: '1px solid #E5E5E5', borderRadius: '5px', padding: '0 7px', cursor: i === 0 ? 'default' : 'pointer', fontSize: '10px', color: i === 0 ? '#CCC' : '#666', lineHeight: '15px' }}>▲</button>
+                <button onClick={() => muta(list, i, 1)} disabled={i === list.length - 1} title="Mută jos"
+                  style={{ background: '#F5F5F5', border: '1px solid #E5E5E5', borderRadius: '5px', padding: '0 7px', cursor: i === list.length - 1 ? 'default' : 'pointer', fontSize: '10px', color: i === list.length - 1 ? '#CCC' : '#666', lineHeight: '15px' }}>▼</button>
+              </div>
               <button onClick={() => setGalerieServiciu(serv)}
                 style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', color: '#4F46E5' }} title="Galerie exemple">📷</button>
               <button onClick={() => { setEditServiciu(serv); setShowModal(true) }}
