@@ -1359,7 +1359,13 @@ export default function AdminDashboard() {
   async function addProgramare(e, forceOverlap = false) {
     if (e && e.preventDefault) e.preventDefault()
     const serv = serviciiDB.find(s => s.nume === newProg.serviciu)
-    const durataNoua = serv?.durata || 0
+    const isBlock = newProg.serviciu === 'Timp blocat'
+    if (isBlock && (!newProg.ora || !newProg.ora_sfarsit || timeToMin(newProg.ora_sfarsit) <= timeToMin(newProg.ora))) {
+      alert('Pune ora de început și de sfârșit (sfârșitul trebuie să fie după început).'); return
+    }
+    const durataNoua = isBlock
+      ? Math.max(0, timeToMin(newProg.ora_sfarsit) - timeToMin(newProg.ora))
+      : (serv?.durata || 0)
 
     if (!forceOverlap && newProg.ora && durataNoua) {
       const minNoua = timeToMin(newProg.ora)
@@ -1382,12 +1388,12 @@ export default function AdminDashboard() {
     }
 
     const pretExtras = extraServiciiNou.reduce((sum, e) => sum + Number(e.pret || 0), 0)
-    const pretFinal = pretManualNou !== '' ? Number(pretManualNou) : (Number(serv?.pret || 0) + pretExtras)
+    const pretFinal = isBlock ? 0 : (pretManualNou !== '' ? Number(pretManualNou) : (Number(serv?.pret || 0) + pretExtras))
     const durataExtras = extraServiciiNou.reduce((sum, e) => sum + Number(e.durata || 0), 0)
     const progRes = await fetch('/api/admin/programari', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ ...newProg, pret: pretFinal, durata: (serv?.durata || 0) + durataExtras, extra_servicii: extraServiciiNou })
+      body: JSON.stringify({ ...newProg, pret: pretFinal, durata: isBlock ? durataNoua : ((serv?.durata || 0) + durataExtras), extra_servicii: isBlock ? [] : extraServiciiNou })
     })
     const progData = await progRes.json()
     for (const mat of materialeNou) {
@@ -2985,17 +2991,26 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Ora */}
+              {/* Ora (inceput) */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Ora *</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>{newProg.serviciu === 'Timp blocat' ? 'Început *' : 'Ora *'}</label>
                 <input type="time" required value={newProg.ora} onChange={e => setNewProg({ ...newProg, ora: e.target.value })} className="input-field" />
               </div>
 
+              {/* Sfarsit — doar la Timp blocat */}
+              {newProg.serviciu === 'Timp blocat' && (
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Sfârșit *</label>
+                  <input type="time" required value={newProg.ora_sfarsit || ''} onChange={e => setNewProg({ ...newProg, ora_sfarsit: e.target.value })} className="input-field" />
+                </div>
+              )}
+
               {/* Serviciu */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>Serviciu *</label>
-                <select required value={newProg.serviciu} onChange={e => { setNewProg({ ...newProg, serviciu: e.target.value }); setPretManualNou('') }} className="input-field">
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px', color: '#555' }}>{newProg.serviciu === 'Timp blocat' ? 'Tip' : 'Serviciu *'}</label>
+                <select required={newProg.serviciu !== 'Timp blocat'} value={newProg.serviciu} onChange={e => { setNewProg({ ...newProg, serviciu: e.target.value }); setPretManualNou('') }} className="input-field">
                   <option value="">Alege serviciul</option>
+                  <option value="Timp blocat">🔒 Timp blocat (indisponibil)</option>
                   {serviciiDB.map(sv => <option key={sv.id} value={sv.nume}>{sv.nume} — {sv.pret} lei ({sv.durata} min)</option>)}
                 </select>
               </div>
