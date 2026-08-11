@@ -64,6 +64,50 @@ const lockedStyle = {
 
 const STORAGE_KEY = 'booking_flow_state'
 
+const PREFIXE = [
+  ['🇷🇴','+40','România'],['🇮🇹','+39','Italia'],['🇪🇸','+34','Spania'],
+  ['🇩🇪','+49','Germania'],['🇬🇧','+44','Marea Britanie'],['🇫🇷','+33','Franța'],
+  ['🇦🇹','+43','Austria'],['🇧🇪','+32','Belgia'],['🇳🇱','+31','Olanda'],
+  ['🇮🇪','+353','Irlanda'],['🇵🇹','+351','Portugalia'],['🇨🇭','+41','Elveția'],
+  ['🇩🇰','+45','Danemarca'],['🇸🇪','+46','Suedia'],['🇬🇷','+30','Grecia'],
+  ['🇭🇺','+36','Ungaria'],['🇲🇩','+373','Moldova'],['🇺🇸','+1','SUA']
+]
+
+function PrefixSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('click', h)
+    return () => document.removeEventListener('click', h)
+  }, [])
+  const cur = PREFIXE.find(p => p[1] === value) || PREFIXE[0]
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: '0 0 auto' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '100%', boxSizing: 'border-box', padding: '0 11px', borderRadius: '12px', border: '1.5px solid #E5D9C8', background: 'white', color: style.text, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '17px', lineHeight: 1 }}>{cur[0]}</span>
+        <span style={{ fontWeight: 600 }}>{cur[1]}</span>
+        <span style={{ color: style.gold, fontSize: '9px' }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20, width: '230px', maxHeight: '240px', overflowY: 'auto', background: 'white', border: `1px solid ${style.gold}`, borderRadius: '12px', boxShadow: '0 14px 34px rgba(0,0,0,0.15)', padding: '5px' }}>
+          {PREFIXE.map(p => (
+            <div key={p[1]} onClick={() => { onChange(p[1]); setOpen(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: style.text }}
+              onMouseEnter={e => e.currentTarget.style.background = style.nude}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span style={{ fontSize: '16px' }}>{p[0]}</span>
+              <span style={{ flex: 1 }}>{p[2]}</span>
+              <span style={{ color: style.ruby, fontWeight: 600 }}>{p[1]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function WaitlistBox({ data, serviciu, loggedInClient }) {
   const [nume, setNume] = useState(loggedInClient?.nume || '')
   const [tel, setTel] = useState(loggedInClient?.telefon || '')
@@ -121,6 +165,13 @@ export default function BookingFlow() {
   const [ora, setOra] = useState(null)
   const [plata, setPlata] = useState(null)
   const [form, setForm] = useState({ prenume: '', nume: '', telefon: '', email: '' })
+  const [prefixTel, setPrefixTel] = useState('+40')
+  const telefonComplet = () => {
+    let num = (form.telefon || '').replace(/\D/g, '')
+    if (prefixTel === '+40') return num.charAt(0) === '0' ? num : '0' + num
+    if (num.charAt(0) === '0') num = num.slice(1)
+    return prefixTel + num
+  }
   const [status, setStatus] = useState(null)
   const [clientExistent, setClientExistent] = useState(null)
   const [loggedInClient, setLoggedInClient] = useState(null)
@@ -310,7 +361,7 @@ export default function BookingFlow() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nume: numeComplet,
-          telefon: form.telefon,
+          telefon: telefonComplet(),
           email: form.email,
           serviciu: serviciu.name,
           pret: pretTotal,
@@ -345,7 +396,7 @@ export default function BookingFlow() {
         </h3>
         <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
           Programarea dumneavoastră a fost confirmată.<br />
-          Vă contactăm la <strong>{form.telefon}</strong> pentru orice detalii.
+          Vă contactăm la <strong>{telefonComplet()}</strong> pentru orice detalii.
         </p>
         <div style={{ marginTop: '32px', background: style.nude, borderRadius: '16px', padding: '24px', maxWidth: '360px', margin: '32px auto 0' }}>
           <p style={{ color: style.ruby, fontWeight: 'bold', marginBottom: '8px' }}>{serviciu.name}</p>
@@ -633,13 +684,16 @@ export default function BookingFlow() {
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px', color: '#555' }}>
               Telefon *
             </label>
-            <input type="tel" required value={form.telefon}
-              onChange={e => {
-                setForm({ ...form, telefon: e.target.value })
-                checkTelefon(e.target.value)
-              }}
-              className="input-field" placeholder="07XX XXX XXX"
-            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <PrefixSelect value={prefixTel} onChange={setPrefixTel} />
+              <input type="tel" required value={form.telefon}
+                onChange={e => {
+                  setForm({ ...form, telefon: e.target.value })
+                  checkTelefon(e.target.value)
+                }}
+                className="input-field" placeholder="7XX XXX XXX" style={{ flex: 1, minWidth: 0 }}
+              />
+            </div>
             {telefonSchimbat && (
               <p style={{ fontSize: '11px', color: style.gold, marginTop: '6px' }}>
                 📱 Numărul nou va fi salvat ca număr secundar în fișa ta.
