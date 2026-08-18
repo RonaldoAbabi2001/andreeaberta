@@ -3,9 +3,41 @@ import SpinWheel from './components/SpinWheel'
 import ClientHeaderButton from './components/ClientHeaderButton'
 import GalerieGrid from './components/GalerieGrid'
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'NailSalon',
+  name: 'EVOLIS MANI — Andreea Berta',
+  image: 'https://www.andreeaberta.com/icon-512.png',
+  url: 'https://www.andreeaberta.com',
+  telephone: '+40793234142',
+  priceRange: '$$',
+  currenciesAccepted: 'RON',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'B-dul Dacia nr. 6, Bloc E1',
+    addressLocality: 'Piatra Neamț',
+    addressRegion: 'Neamț',
+    postalCode: '610019',
+    addressCountry: 'RO',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: 46.9294, longitude: 26.3706 },
+  areaServed: { '@type': 'City', name: 'Piatra Neamț' },
+  openingHoursSpecification: [{
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    opens: '09:00', closes: '19:00',
+  }],
+  sameAs: [
+    'https://www.instagram.com/andreeaberta.ro',
+    'https://www.tiktok.com/@andreeaberta.ro',
+  ],
+  description: 'Salon de unghii premium în Piatra Neamț — manichiură, unghii cu gel, semipermanent și nail art. Andreea Berta, tehnician onicolog certificat. Programează online.',
+}
+
 export default function Home() {
   return (
     <main style={{ background: '#fff', minHeight: '100vh' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Header */}
       <header style={{
@@ -37,7 +69,7 @@ export default function Home() {
         textAlign: 'center'
       }}>
         <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '20px' }}>
-          ✦ Salon de unghii premium ✦
+          ✦ Salon de unghii premium în Piatra Neamț ✦
         </p>
         <h2 style={{
           fontSize: '48px',
@@ -129,8 +161,9 @@ export default function Home() {
 
       {/* Footer */}
       <footer style={{ padding: '40px', textAlign: 'center', color: '#999', fontSize: '14px', borderTop: '1px solid #F0E8DF' }}>
-        <p style={{ color: '#9B1B30', fontFamily: 'Georgia, serif', fontSize: '18px', marginBottom: '8px' }}>ANDREEA BERTA</p>
-        <p>Salon EVOLIS · Piatra Neamț · Instagram: @andreeaberta.ro</p>
+        <p style={{ color: '#9B1B30', fontFamily: 'Georgia, serif', fontSize: '18px', marginBottom: '8px' }}>ANDREEA BERTA — Salon de unghii Piatra Neamț</p>
+        <p>Salon EVOLIS MANI · B-dul Dacia nr. 6, Bloc E1, Piatra Neamț, jud. Neamț</p>
+        <p style={{ marginTop: '4px' }}>Telefon: <a href="tel:+40793234142" style={{ color: '#9B1B30' }}>0793 234 142</a> · Instagram: @andreeaberta.ro</p>
         <p style={{ marginTop: '8px', fontStyle: 'italic', color: '#bbb' }}>„Clienta nu își amintește cât a costat, ci cum s-a simțit."</p>
         <p style={{ marginTop: '8px' }}>© 2026 Toate drepturile rezervate</p>
       </footer>
