@@ -164,7 +164,8 @@ export async function POST(request) {
       folosit_la TIMESTAMPTZ, programare_id BIGINT
     )`
     let reducereLine = ''
-    const telDigits = String(body.telefon || '').replace(/\D/g, '')
+    let telDigits = String(body.telefon || '').replace(/\D/g, '')
+    if (telDigits.length === 11 && telDigits.startsWith('40')) telDigits = '0' + telDigits.slice(2) // +40... -> 0...
     if (telDigits) {
       const red = await sql`
         SELECT id, procent, motiv FROM reduceri_client
