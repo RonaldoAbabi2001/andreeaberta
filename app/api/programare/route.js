@@ -157,6 +157,30 @@ export async function POST(request) {
       `
     }
 
+    // Reducere pending pentru acest client (ex. câștig la roată) — se aplică o singură dată
+    await sql`CREATE TABLE IF NOT EXISTS reduceri_client (
+      id BIGSERIAL PRIMARY KEY, telefon TEXT, procent INT, motiv TEXT,
+      activ BOOLEAN DEFAULT TRUE, creat TIMESTAMPTZ DEFAULT NOW(),
+      folosit_la TIMESTAMPTZ, programare_id BIGINT
+    )`
+    let reducereLine = ''
+    const telDigits = String(body.telefon || '').replace(/\D/g, '')
+    if (telDigits) {
+      const red = await sql`
+        SELECT id, procent, motiv FROM reduceri_client
+        WHERE activ = true AND regexp_replace(telefon, '[^0-9]', '', 'g') = ${telDigits}
+        ORDER BY creat ASC LIMIT 1
+      `
+      if (red.length > 0) {
+        const r = red[0]
+        const pret = Number(body.pret) || 0
+        const pretRedus = Math.round(pret * (100 - Number(r.procent)) / 100)
+        reducereLine = `\n\n🎁 <b>REDUCERE ${r.procent}%</b> (${r.motiv}) — o singură dată!\n💵 De încasat: <b>${pretRedus} lei</b> (în loc de ${pret})`
+        await sql`UPDATE reduceri_client SET activ = false, folosit_la = NOW(), programare_id = ${id} WHERE id = ${r.id}`
+        await sql`UPDATE programari SET observatii = COALESCE(observatii, '') || ${' | REDUCERE ' + r.procent + '% (' + r.motiv + ')'} WHERE id = ${id}`
+      }
+    }
+
     await sendTelegram(
       `🔔 <b>Programare nouă!</b>\n\n` +
       `👤 <b>${body.nume}</b>\n` +
@@ -164,7 +188,8 @@ export async function POST(request) {
       `💅 ${body.serviciu}\n` +
       `📅 ${body.data} · ${body.ora}\n` +
       `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
-      `💰 Total: ${body.pret} lei`
+      `💰 Total: ${body.pret} lei` +
+      reducereLine
     )
 
     // SMS-uri automate
