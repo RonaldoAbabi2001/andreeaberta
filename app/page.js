@@ -66,7 +66,7 @@ export default function Home() {
       {/* Hero */}
       <section style={{
         background: 'linear-gradient(160deg, #F7EFE5 0%, #EDE0D0 100%)',
-        padding: '80px 40px',
+        padding: '80px 40px 40px',
         textAlign: 'center'
       }}>
         <p style={{ color: '#9B1B30', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '20px' }}>

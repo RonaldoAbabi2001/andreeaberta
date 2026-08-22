@@ -199,8 +199,8 @@ input, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: 1px solid rgba(155, 27, 48, 0.25);
   color: var(--ruby);
