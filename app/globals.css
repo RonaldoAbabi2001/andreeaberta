@@ -187,3 +187,40 @@ input, textarea {
   .sv-durata { grid-area: durata; padding: 0 !important; justify-content: flex-end; }
   .sv-actions { grid-area: actions; padding: 10px 0 0 !important; justify-content: flex-start; border-top: 1px solid #F7F2EC; margin-top: 8px; }
 }
+
+/* Iconite social (Instagram / TikTok) */
+.social-row {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(155, 27, 48, 0.25);
+  color: var(--ruby);
+  background: transparent;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  border-color: var(--ruby);
+  background: rgba(155, 27, 48, 0.06);
+  transform: translateY(-2px);
+}
+
+.social-link--gold {
+  border-color: rgba(201, 168, 76, 0.35);
+  color: var(--gold);
+}
+
+.social-link--gold:hover {
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.08);
+}

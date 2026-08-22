@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import SpinWheel from './components/SpinWheel'
 import ClientHeaderButton from './components/ClientHeaderButton'
+import SocialIcons from './components/SocialIcons'
 import GalerieGrid from './components/GalerieGrid'
 
 const jsonLd = {
@@ -88,6 +89,7 @@ export default function Home() {
         <Link href="/programare" className="btn-primary" style={{ fontSize: '14px' }}>
           REZERVAȚI O ȘEDINȚĂ
         </Link>
+        <SocialIcons marginTop="24px" />
       </section>
 
       {/* Ce oferim */}
@@ -165,31 +167,7 @@ export default function Home() {
         <p>Salon EVOLIS MANI · B-dul Dacia nr. 6, Bloc E1, Piatra Neamț, jud. Neamț</p>
         <p style={{ marginTop: '4px' }}>Telefon: <a href="tel:+40793234142" style={{ color: '#9B1B30' }}>0793 234 142</a> · Instagram: @andreeaberta.ro</p>
 
-        {/* Social — Instagram + TikTok */}
-        <style>{`
-          .social-link {
-            display: flex; align-items: center; justify-content: center;
-            width: 40px; height: 40px; border-radius: 50%;
-            border: 1px solid rgba(155,27,48,0.25);
-            color: #9B1B30; background: transparent;
-            transition: border-color .25s ease, background .25s ease;
-          }
-          .social-link:hover { border-color: #9B1B30; background: rgba(155,27,48,0.06); }
-        `}</style>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '16px' }}>
-          <a className="social-link" href="https://www.instagram.com/andreeaberta.ro" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
-            </svg>
-          </a>
-          <a className="social-link" href="https://www.tiktok.com/@andreeaberta.ro" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16.7 2h-2.9v13.4a2.4 2.4 0 1 1-2.1-2.4v-2.9a5.3 5.3 0 1 0 5 5.3V8.9a7.4 7.4 0 0 0 4.3 1.4V7.4a4.5 4.5 0 0 1-4.3-4.5z" />
-            </svg>
-          </a>
-        </div>
+        <SocialIcons marginTop="16px" />
         <p style={{ marginTop: '8px', fontStyle: 'italic', color: '#bbb' }}>„Clienta nu își amintește cât a costat, ci cum s-a simțit."</p>
         <p style={{ marginTop: '8px' }}>© 2026 Toate drepturile rezervate</p>
       </footer>
