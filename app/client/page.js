@@ -268,10 +268,55 @@ export default function ClientPage() {
           color: 'white', fontSize: '13px', fontWeight: '600',
           textDecoration: 'none', letterSpacing: '0.5px',
           boxShadow: '0 4px 14px rgba(201,168,76,0.35)',
-          marginBottom: '40px',
+          marginBottom: '18px',
         }}>
           + Rezervă o nouă ședință
         </Link>
+
+        {/* Social — Instagram + TikTok */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginBottom: '40px' }}>
+          {[
+            {
+              nume: 'Instagram',
+              href: 'https://www.instagram.com/andreeaberta.ro',
+              icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+                </svg>
+              ),
+            },
+            {
+              nume: 'TikTok',
+              href: 'https://www.tiktok.com/@andreeaberta.ro',
+              icon: (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.7 2h-2.9v13.4a2.4 2.4 0 1 1-2.1-2.4v-2.9a5.3 5.3 0 1 0 5 5.3V8.9a7.4 7.4 0 0 0 4.3 1.4V7.4a4.5 4.5 0 0 1-4.3-4.5z" />
+                </svg>
+              ),
+            },
+          ].map(s => (
+            <a key={s.nume} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.nume}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '40px', height: '40px', borderRadius: '50%',
+                border: '1px solid rgba(201,168,76,0.35)', color: '#C9A84C',
+                background: 'transparent', textDecoration: 'none',
+                transition: 'all 0.25s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = '#C9A84C'
+                e.currentTarget.style.background = 'rgba(201,168,76,0.08)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'
+                e.currentTarget.style.background = 'transparent'
+              }}>
+              {s.icon}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Istoric */}
