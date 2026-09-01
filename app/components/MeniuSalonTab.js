@@ -705,9 +705,11 @@ function MesajeSection({ token, onBack }) {
                   const out = m.directie === 'OUT'
                   const bgOut = esuat ? '#FEE2E2' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`
                   const colorOut = esuat ? '#991B1B' : 'white'
+                  const tipLabel = { confirmare: 'Confirmare', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Revenire' }[m.tip]
                   return (
                     <div key={m.id} style={{ display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: '80%', minWidth: '90px', padding: '8px 12px 6px', borderRadius: out ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: out ? bgOut : 'white', color: out ? colorOut : s.text, fontSize: '14px', lineHeight: 1.45, border: esuat ? '1px solid #FECACA' : 'none', boxShadow: '0 1px 1.5px rgba(0,0,0,0.12)' }}>
+                        {tipLabel && <p style={{ margin: '0 0 4px', fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.5px', textTransform: 'uppercase', opacity: 0.75 }}>⚙ Automat · {tipLabel}</p>}
                         <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{m.mesaj}</p>
                         {esuat && <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#B91C1C', whiteSpace: 'pre-wrap' }}>✗ Nelivrat — {m.eroare || 'eroare trimitere'}</p>}
                         <p style={{ margin: '2px 0 0', fontSize: '10px', opacity: 0.6, textAlign: 'right', whiteSpace: 'nowrap' }}>

@@ -36,8 +36,22 @@ export async function GET(request) {
   }
 
   if (telefon) {
+    // Firul conversatiei = mesaje manuale (sms_inbox) + mesaje automate (sms_queue)
+    // Automatele (confirmare/reminder/feedback/recontact) traiesc doar in sms_queue,
+    // deci le adaugam aici ca sa apara in conversatie. Bulk-ul si reply-urile sunt deja
+    // oglindite in sms_inbox -> le excludem prin sms_queue_id ca sa nu se dubleze.
     const mesaje = await sql`
-      SELECT * FROM sms_inbox WHERE telefon = ${telefon}
+      SELECT id, telefon, mesaj, directie, creat, status, eroare, citit, NULL::text AS tip
+      FROM sms_inbox WHERE telefon = ${telefon}
+      UNION ALL
+      SELECT 'q_' || q.id::text AS id, q.telefon, q.mesaj, 'OUT' AS directie,
+             COALESCE(q.trimis_la, q.de_trimis_la) AS creat,
+             CASE WHEN q.trimis THEN 'trimis' WHEN q.eroare IS NOT NULL THEN 'esuat' ELSE 'pending' END AS status,
+             q.eroare, true AS citit, q.tip
+      FROM sms_queue q
+      WHERE q.telefon = ${telefon}
+        AND q.tip IN ('confirmare', 'reminder_24h', 'feedback', 'recontact')
+        AND q.id NOT IN (SELECT sms_queue_id FROM sms_inbox WHERE sms_queue_id IS NOT NULL)
       ORDER BY creat ASC
     `
     await sql`UPDATE sms_inbox SET citit = true WHERE telefon = ${telefon} AND directie = 'IN'`
@@ -94,6 +108,8 @@ export async function POST(request) {
     `
   }
 
+  // Upsert: daca vine o versiune mai LUNGA a aceluiasi mesaj (id = telefon_timestamp),
+  // o actualizam. Asa se vindeca automat mesajele care intrasera trunchiate de router.
   await sql`
     INSERT INTO sms_inbox (id, telefon, mesaj, directie, creat, status, sms_queue_id)
     VALUES (
@@ -102,7 +118,9 @@ export async function POST(request) {
       ${directie === 'OUT' ? 'pending' : 'trimis'},
       ${queueId}
     )
-    ON CONFLICT (id) DO NOTHING
+    ON CONFLICT (id) DO UPDATE
+      SET mesaj = EXCLUDED.mesaj
+      WHERE LENGTH(EXCLUDED.mesaj) > LENGTH(sms_inbox.mesaj)
   `
 
   return NextResponse.json({ success: true, id })
