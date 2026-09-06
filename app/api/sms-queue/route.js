@@ -36,10 +36,34 @@ export async function GET(request) {
     `
     return NextResponse.json(rows)
   }
+  // Mesajul "recontact" (vino sa te programezi) NU se trimite daca intre timp
+  // clienta a revenit sau are deja o programare. Se verifica AICI, la momentul
+  // trimiterii, pentru ca situatia se poate schimba dupa ce a fost pus in coada.
+  //   A) exista un recontact MAI NOU pt acelasi telefon -> a mai fost intre timp
+  //   B) are un reminder/feedback nefinalizat in viitor -> are programare viitoare
   const rows = await sql`
-    SELECT * FROM sms_queue
-    WHERE trimis = false AND de_trimis_la <= NOW()
-    ORDER BY de_trimis_la ASC
+    SELECT * FROM sms_queue q
+    WHERE q.trimis = false
+      AND q.de_trimis_la <= NOW()
+      AND (
+        q.tip <> 'recontact'
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM sms_queue b
+            WHERE b.telefon = q.telefon
+              AND b.tip = 'recontact'
+              AND b.de_trimis_la > q.de_trimis_la
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM sms_queue v
+            WHERE v.telefon = q.telefon
+              AND v.tip IN ('reminder_24h', 'feedback')
+              AND v.trimis = false
+              AND v.de_trimis_la > NOW()
+          )
+        )
+      )
+    ORDER BY q.de_trimis_la ASC
     LIMIT 10
   `
   return NextResponse.json(rows)
