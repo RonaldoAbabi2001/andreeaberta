@@ -138,15 +138,29 @@ function computeSendAt(cfg, { dataF, oraF }, now) {
 
 // Inserează în sms_queue toate reminderele active pentru o programare.
 // params: { programareId, telefon, numeClient, dataF (YYYY-MM-DD), oraF (HH:MM), serviciu }
+// Un telefon e valid doar daca are cifre reale (min 9). Asa excludem
+// intrarile de tip "Timp blocat", care au telefon "—" sau gol.
+function telefonValid(t) {
+  if (!t) return false
+  const cifre = String(t).replace(/\D/g, '')
+  return cifre.length >= 9
+}
+
 export async function enqueueReminders(sql, params) {
   const { programareId, telefon, numeClient, dataF, oraF, serviciu } = params
-  if (!telefon) return { inserted: 0 }
+
+  // FIX 1: nu trimite SMS pentru timp blocat / intrari fara telefon real
+  if (!telefonValid(telefon)) return { inserted: 0, skipped: 'telefon invalid' }
+  if (serviciu === 'Timp blocat' || numeClient === 'Blocat') {
+    return { inserted: 0, skipped: 'timp blocat' }
+  }
 
   const settings = await getReminderSettings(sql)
   const now = new Date()
   const base = Date.now()
   let i = 0
   let inserted = 0
+  let skipped = 0
 
   for (const tip of REMINDER_TYPES) {
     const cfg = settings[tip]
@@ -154,6 +168,18 @@ export async function enqueueReminders(sql, params) {
 
     const when = computeSendAt(cfg, { dataF, oraF }, now)
     if (!when) continue
+
+    // FIX 2: daca acelasi client are deja un SMS de acelasi tip programat
+    // in ACEEASI ZI, nu mai adaugam unul. Altfel, un client cu 2 programari
+    // in aceeasi zi primea totul de doua ori.
+    const existent = await sql`
+      SELECT 1 FROM sms_queue
+      WHERE telefon = ${telefon}
+        AND tip = ${tip}
+        AND DATE(de_trimis_la) = DATE(${when.toISOString()}::timestamptz)
+      LIMIT 1
+    `
+    if (existent.length > 0) { skipped++; continue }
 
     const mesaj = applyPlaceholders(cfg.text, {
       nume: numeClient, data: dataF, ora: oraF, serviciu,
@@ -168,5 +194,5 @@ export async function enqueueReminders(sql, params) {
     inserted++
   }
 
-  return { inserted }
+  return { inserted, skipped }
 }
