@@ -775,7 +775,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                         const trimisLa = sms.trimis_la ? new Date(sms.trimis_la) : null
                         const deTrimisLa = sms.de_trimis_la ? new Date(sms.de_trimis_la) : null
                         const formatData = d => d ? `${d.getDate()} ${['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : ''
-                        const tipLabel = { confirmare: 'Confirmare', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
+                        const tipLabel = { confirmare: 'Confirmare', modificare: 'Programare mutată', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
                         let icon, statusText, statusColor
                         if (sms.trimis) { icon = '✅'; statusText = `trimis ${formatData(trimisLa)}`; statusColor = '#1D9E75' }
                         else if (sms.eroare) { icon = '❌'; statusText = `eroare: ${sms.eroare}`; statusColor = '#9B1B30' }

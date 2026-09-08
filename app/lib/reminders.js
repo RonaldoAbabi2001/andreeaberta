@@ -3,7 +3,7 @@
 // Setările se citesc din salon_settings (cheia 'reminder_settings'); dacă lipsesc,
 // se folosesc DEFAULT_REMINDERS, identice cu comportamentul hardcodat anterior (zero regresie).
 
-export const REMINDER_TYPES = ['confirmare', 'reminder_24h', 'feedback', 'recontact']
+export const REMINDER_TYPES = ['confirmare', 'modificare', 'reminder_24h', 'feedback', 'recontact']
 
 // Placeholdere disponibile în textul mesajelor
 export const PLACEHOLDERS = ['{nume}', '{data}', '{ora}', '{serviciu}']
@@ -15,6 +15,14 @@ export const DEFAULT_REMINDERS = {
     unit: 'imediat',
     offset: 0,
     text: 'Buna ziua {nume}! Programarea ta la EVOLIS a fost confirmata pentru {data} ora {ora}. Serviciu: {serviciu}. Te asteptam! 💅',
+  },
+  // Se trimite DOAR cand data sau ora unei programari se schimba din admin.
+  // Fara el, clienta ramane cu ora veche in telefon.
+  modificare: {
+    activ: true,
+    unit: 'imediat',
+    offset: 0,
+    text: 'Buna {nume}! Programarea ta la EVOLIS MANI s-a mutat pe {data}, ora {ora}. Daca nu iti convine, scrie-ne. Te asteptam!💅🏼',
   },
   reminder_24h: {
     activ: true,
@@ -39,6 +47,7 @@ export const DEFAULT_REMINDERS = {
 // Etichete lizibile pentru UI
 export const REMINDER_LABELS = {
   confirmare: 'Confirmare (imediat)',
+  modificare: 'Programare mutata (la schimbarea datei/orei)',
   reminder_24h: 'Reminder (înainte de programare)',
   feedback: 'Feedback (după vizită)',
   recontact: 'Recontact (după vizită)',
@@ -146,8 +155,33 @@ function telefonValid(t) {
   return cifre.length >= 9
 }
 
+// Sterge din coada SMS-urile NETRIMISE ale unei programari.
+// Se apeleaza cand programarea se modifica, se anuleaza sau se sterge —
+// altfel pleaca mesaje cu ora veche sau catre cliente care au anulat.
+export async function stergeRemindere(sql, programareId) {
+  if (!programareId) return { deleted: 0 }
+  const r = await sql`
+    DELETE FROM sms_queue
+    WHERE programare_id = ${programareId} AND trimis = false
+    RETURNING id
+  `
+  return { deleted: r.length }
+}
+
+// Resincronizeaza reminderele dupa o modificare de programare:
+// sterge ce nu a plecat inca, apoi pune la loc cu datele NOI.
+// Tipurile care AU FOST DEJA TRIMISE nu se recreeaza — altfel clienta ar primi
+// inca o confirmare la fiecare editare (confirmarea pleaca "imediat").
+export async function resyncReminders(sql, params) {
+  if (!params.programareId) return { inserted: 0 }
+  await stergeRemindere(sql, params.programareId)
+  return enqueueReminders(sql, params)
+}
+
 export async function enqueueReminders(sql, params) {
   const { programareId, telefon, numeClient, dataF, oraF, serviciu } = params
+  // 'modificare' NU face parte din fluxul normal: pleaca doar cand data/ora s-au schimbat.
+  const notificaModificare = params.notificaModificare === true
 
   // FIX 1: nu trimite SMS pentru timp blocat / intrari fara telefon real
   if (!telefonValid(telefon)) return { inserted: 0, skipped: 'telefon invalid' }
@@ -165,18 +199,32 @@ export async function enqueueReminders(sql, params) {
   for (const tip of REMINDER_TYPES) {
     const cfg = settings[tip]
     if (!cfg || !cfg.activ) continue
+    if (tip === 'modificare' && !notificaModificare) continue
 
     const when = computeSendAt(cfg, { dataF, oraF }, now)
     if (!when) continue
 
+    // FIX 3: confirmarea pleaca O SINGURA DATA pe programare.
+    // Fara asta, fiecare modificare din admin ar trimite clientei inca o confirmare.
+    // (mesajul de mutare, in schimb, se poate repeta — se muta de mai multe ori)
+    if (tip === 'confirmare' && programareId) {
+      const dejaTrimis = await sql`
+        SELECT 1 FROM sms_queue
+        WHERE programare_id = ${programareId} AND tip = ${tip} AND trimis = true
+        LIMIT 1
+      `
+      if (dejaTrimis.length > 0) { skipped++; continue }
+    }
+
     // FIX 2: daca acelasi client are deja un SMS de acelasi tip programat
     // in ACEEASI ZI, nu mai adaugam unul. Altfel, un client cu 2 programari
     // in aceeasi zi primea totul de doua ori.
-    const existent = await sql`
+    const existent = tip === 'modificare' ? [] : await sql`
       SELECT 1 FROM sms_queue
       WHERE telefon = ${telefon}
         AND tip = ${tip}
         AND DATE(de_trimis_la) = DATE(${when.toISOString()}::timestamptz)
+        AND programare_id IS DISTINCT FROM ${programareId || null}
       LIMIT 1
     `
     if (existent.length > 0) { skipped++; continue }

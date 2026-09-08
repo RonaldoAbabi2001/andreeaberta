@@ -50,7 +50,7 @@ export async function GET(request) {
              q.eroare, true AS citit, q.tip
       FROM sms_queue q
       WHERE q.telefon = ${telefon}
-        AND q.tip IN ('confirmare', 'reminder_24h', 'feedback', 'recontact')
+        AND q.tip IN ('confirmare', 'modificare', 'reminder_24h', 'feedback', 'recontact')
         AND q.id NOT IN (SELECT sms_queue_id FROM sms_inbox WHERE sms_queue_id IS NOT NULL)
       ORDER BY creat ASC
     `

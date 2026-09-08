@@ -41,10 +41,21 @@ export async function GET(request) {
   // trimiterii, pentru ca situatia se poate schimba dupa ce a fost pus in coada.
   //   A) exista un recontact MAI NOU pt acelasi telefon -> a mai fost intre timp
   //   B) are un reminder/feedback nefinalizat in viitor -> are programare viitoare
+  // PLASA DE SIGURANTA (verificata in MOMENTUL trimiterii):
+  // daca intre timp programarea a fost anulata, marcata neprezentare sau
+  // stearsa, mesajul NU mai pleaca — chiar daca a ramas in coada.
   const rows = await sql`
     SELECT * FROM sms_queue q
     WHERE q.trimis = false
       AND q.de_trimis_la <= NOW()
+      AND (
+        q.programare_id IS NULL
+        OR EXISTS (
+          SELECT 1 FROM programari p
+          WHERE p.id = q.programare_id
+            AND p.status NOT IN ('cancelled', 'noshow')
+        )
+      )
       AND (
         q.tip <> 'recontact'
         OR (
