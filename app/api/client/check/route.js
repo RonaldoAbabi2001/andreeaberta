@@ -7,6 +7,11 @@ export async function GET(request) {
   if (!telefon) return NextResponse.json({ exists: false })
 
   const sql = neon(process.env.DATABASE_URL)
-  const rows = await sql`SELECT id, nume FROM clienti WHERE telefon = ${telefon.trim()}`
-  return NextResponse.json({ exists: rows.length > 0, nume: rows[0]?.nume || null })
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
+  const rows = await sql`SELECT id, nume, avans_obligatoriu FROM clienti WHERE telefon = ${telefon.trim()}`
+  return NextResponse.json({
+    exists: rows.length > 0,
+    nume: rows[0]?.nume || null,
+    avans: !!rows[0]?.avans_obligatoriu,
+  })
 }

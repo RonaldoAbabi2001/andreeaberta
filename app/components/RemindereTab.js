@@ -8,6 +8,7 @@ const TEXT = '#3A2E2E'
 
 const TIPURI = [
   { id: 'confirmare', label: 'Confirmare', desc: 'Trimis imediat la crearea programării', emoji: '✅' },
+  { id: 'avans', label: 'Cerere avans', desc: 'Înlocuiește confirmarea la clientele marcate cu avans', emoji: '💰' },
   { id: 'modificare', label: 'Programare mutată', desc: 'Trimis când schimbi data sau ora unei programări', emoji: '🔄' },
   { id: 'reminder_24h', label: 'Reminder', desc: 'Reamintire înainte de programare', emoji: '⏰' },
   { id: 'feedback', label: 'Feedback', desc: 'Mesaj după vizită', emoji: '🌟' },
@@ -17,7 +18,7 @@ const TIPURI = [
 const PLACEHOLDERS = ['{nume}', '{data}', '{ora}', '{serviciu}']
 
 const TIP_LABEL = {
-  confirmare: 'Confirmare', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Recontact',
+  confirmare: 'Confirmare', avans: 'Avans', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Recontact',
 }
 
 function formatData(iso) {

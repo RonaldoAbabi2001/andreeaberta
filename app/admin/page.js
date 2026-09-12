@@ -454,6 +454,38 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                 style={{ width: '100%', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontFamily: 'Georgia, serif', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
 
+            {/* Avans obligatoriu — pentru cliente care nu se prezinta sau anuleaza pe ultima suta de metri */}
+            <div
+              onClick={() => setForm({ ...form, avans_obligatoriu: !form.avans_obligatoriu })}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
+                border: `1px solid ${form.avans_obligatoriu ? '#F59E0B' : '#E5E7EB'}`,
+                background: form.avans_obligatoriu ? '#FFFBEB' : 'white',
+                borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', transition: 'all .15s'
+              }}>
+              <div style={{
+                width: '44px', height: '24px', borderRadius: '50px', flexShrink: 0,
+                background: form.avans_obligatoriu ? '#F59E0B' : '#D1D5DB',
+                position: 'relative', transition: 'background .15s'
+              }}>
+                <div style={{
+                  width: '18px', height: '18px', borderRadius: '50%', background: 'white', position: 'absolute',
+                  top: '3px', left: form.avans_obligatoriu ? '23px' : '3px', transition: 'left .15s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                }} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: form.avans_obligatoriu ? '#92400E' : '#374151' }}>
+                  {form.avans_obligatoriu ? 'Se percepe AVANS' : 'Nu se percepe avans'}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9CA3AF', lineHeight: 1.4 }}>
+                  {form.avans_obligatoriu
+                    ? 'Când se programează pe site, i se cere să sune și să achite avansul.'
+                    : 'Activează pentru clientele care nu se prezintă sau anulează în ultimul moment.'}
+                </p>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase', color: '#888', marginBottom: '4px' }}>De unde vine</label>
@@ -775,7 +807,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                         const trimisLa = sms.trimis_la ? new Date(sms.trimis_la) : null
                         const deTrimisLa = sms.de_trimis_la ? new Date(sms.de_trimis_la) : null
                         const formatData = d => d ? `${d.getDate()} ${['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : ''
-                        const tipLabel = { confirmare: 'Confirmare', modificare: 'Programare mutată', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
+                        const tipLabel = { confirmare: 'Confirmare', avans: 'Cerere avans', modificare: 'Programare mutată', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
                         let icon, statusText, statusColor
                         if (sms.trimis) { icon = '✅'; statusText = `trimis ${formatData(trimisLa)}`; statusColor = '#1D9E75' }
                         else if (sms.eroare) { icon = '❌'; statusText = `eroare: ${sms.eroare}`; statusColor = '#9B1B30' }
@@ -2234,11 +2266,12 @@ export default function AdminDashboard() {
                   const isFidela = c.tip_client === 'fidela'
                   return (
                     <div key={c.id} onClick={() => setSelectedClient(c)}
-                      style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s', borderLeft: isFidela ? '3px solid #10B981' : '3px solid transparent' }}>
+                      style={{ background: 'white', borderRadius: '14px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s', borderLeft: c.avans_obligatoriu ? '3px solid #F59E0B' : isFidela ? '3px solid #10B981' : '3px solid transparent' }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                           <p style={{ fontWeight: 'bold', fontSize: '16px', margin: 0 }}>{c.nume}</p>
                           {isFidela && <span style={{ background: '#ECFDF5', color: '#10B981', fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.5px' }}>FIDELĂ</span>}
+                          {c.avans_obligatoriu && <span title="Programarea devine fermă doar după achitarea avansului" style={{ background: '#FEF3C7', color: '#92400E', fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.5px' }}>AVANS</span>}
                           {c.tip_client && c.tip_client !== 'fidela' && c.tip_client !== 'modela' && (
                             <span style={{ background: '#F3F4F6', color: '#6B7280', fontSize: '10px', padding: '2px 8px', borderRadius: '20px' }}>{c.tip_client}</span>
                           )}

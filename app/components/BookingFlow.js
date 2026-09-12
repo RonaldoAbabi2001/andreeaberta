@@ -174,6 +174,8 @@ export default function BookingFlow() {
   }
   const [status, setStatus] = useState(null)
   const [clientExistent, setClientExistent] = useState(null)
+  // Clienta marcata in admin cu avans obligatoriu (nu s-a prezentat / a anulat tarziu)
+  const [cereAvans, setCereAvans] = useState(false)
   const [loggedInClient, setLoggedInClient] = useState(null)
   const [visibleMonth, setVisibleMonth] = useState(() => new Date().getMonth())
   const [visibleYear, setVisibleYear] = useState(() => new Date().getFullYear())
@@ -339,10 +341,11 @@ export default function BookingFlow() {
   async function checkTelefon(telefon) {
     if (loggedInClient) return
     const digits = telefon.replace(/\D/g, '')
-    if (digits.length < 10) { setClientExistent(null); return }
+    if (digits.length < 10) { setClientExistent(null); setCereAvans(false); return }
     const res = await fetch(`/api/client/check?telefon=${encodeURIComponent(telefon.trim())}`)
     const d = await res.json()
     setClientExistent(d.exists)
+    setCereAvans(!!d.avans)
   }
 
   const telefonSchimbat = loggedInClient && form.telefon.trim() !== loggedInClient.telefon.trim()
@@ -374,6 +377,8 @@ export default function BookingFlow() {
         })
       })
       if (res.ok) {
+        const d = await res.json().catch(() => ({}))
+        if (d && d.avans) setCereAvans(true)
         setStatus('success')
         trackEvent('booking_complet', { serviciu: serviciu?.name, pret: pretTotal })
       } else if (res.status === 409) {
@@ -394,10 +399,27 @@ export default function BookingFlow() {
         <h3 style={{ fontFamily: 'Georgia, serif', color: style.ruby, fontSize: '28px', fontWeight: 'normal', marginBottom: '12px' }}>
           Vă mulțumim, {form.prenume}!
         </h3>
-        <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
-          Programarea dumneavoastră a fost confirmată.<br />
-          Vă contactăm la <strong>{telefonComplet()}</strong> pentru orice detalii.
-        </p>
+        {cereAvans ? (
+          <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
+            Am înregistrat cererea dumneavoastră.<br />
+            <strong style={{ color: '#92400E' }}>Programarea va fi finalizată după achitarea avansului.</strong>
+          </p>
+        ) : (
+          <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
+            Programarea dumneavoastră a fost confirmată.<br />
+            Vă contactăm la <strong>{telefonComplet()}</strong> pentru orice detalii.
+          </p>
+        )}
+        {cereAvans && (
+          <div style={{ marginTop: '24px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '16px', padding: '22px', maxWidth: '360px', margin: '24px auto 0' }}>
+            <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#92400E', lineHeight: 1.6 }}>
+              Sunați la salon pentru a achita avansul:
+            </p>
+            <a href="tel:+40793234142" style={{ display: 'block', fontSize: '26px', fontWeight: 'bold', color: '#92400E', textDecoration: 'none', letterSpacing: '1px' }}>
+              0793 234 142
+            </a>
+          </div>
+        )}
         <div style={{ marginTop: '32px', background: style.nude, borderRadius: '16px', padding: '24px', maxWidth: '360px', margin: '32px auto 0' }}>
           <p style={{ color: style.ruby, fontWeight: 'bold', marginBottom: '8px' }}>{serviciu.name}</p>
           <p style={{ color: '#555' }}>{formatData(data)} · {ora}</p>
@@ -699,8 +721,19 @@ export default function BookingFlow() {
                 📱 Numărul nou va fi salvat ca număr secundar în fișa ta.
               </p>
             )}
-            {!loggedInClient && clientExistent === true && (
+            {!loggedInClient && clientExistent === true && !cereAvans && (
               <p style={{ fontSize: '12px', color: '#10B981', marginTop: '6px' }}>✓ Client existent — cont activ</p>
+            )}
+            {cereAvans && (
+              <div style={{ marginTop: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '12px 14px' }}>
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: '#92400E' }}>
+                  Pentru acest număr se percepe avans
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#92400E', lineHeight: 1.5 }}>
+                  Programarea va fi finalizată după achitarea avansului.
+                  Te rugăm să ne suni la <a href="tel:+40793234142" style={{ color: '#92400E', fontWeight: 'bold' }}>0793 234 142</a>.
+                </p>
+              </div>
             )}
           </div>
 

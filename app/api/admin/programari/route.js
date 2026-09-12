@@ -20,6 +20,7 @@ export async function GET(request) {
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS tips NUMERIC DEFAULT 0`
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS detalii_tehnice TEXT`
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS despre_client TEXT`
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
   const rows = await sql`SELECT * FROM programari ORDER BY data ASC, ora ASC`
   return NextResponse.json(rows)
 }

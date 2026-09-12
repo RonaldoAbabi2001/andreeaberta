@@ -121,10 +121,17 @@ export async function POST(request) {
     const id = Date.now()
     const extraJson = JSON.stringify(body.extra_servicii || [])
 
+    // Clienta marcata cu avans obligatoriu: programarea se retine, dar nu e ferma
+    // pana nu achita. Nu primeste confirmare, ci cererea de avans.
+    await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
+    const cl = await sql`SELECT avans_obligatoriu FROM clienti WHERE telefon = ${body.telefon} LIMIT 1`
+    const cereAvans = !!cl[0]?.avans_obligatoriu
+
     await sql`
-      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, extra_servicii)
+      INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, extra_servicii, avans_necesar)
       VALUES (${id}, ${body.nume}, ${body.telefon}, ${body.serviciu}, ${body.pret || 0},
-              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''}, 'confirmed', ${extraJson})
+              ${body.durata || 0}, ${body.data}, ${body.ora || ''}, ${body.plata || ''}, ${body.observatii || ''}, 'confirmed', ${extraJson}, ${cereAvans})
     `
 
     // Auto-creare cont client
@@ -207,9 +214,10 @@ export async function POST(request) {
       dataF: body.data || '',
       oraF: body.ora || '',
       serviciu: body.serviciu || '',
+      cereAvans,
     })
 
-    return NextResponse.json({ success: true, id })
+    return NextResponse.json({ success: true, id, avans: cereAvans })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

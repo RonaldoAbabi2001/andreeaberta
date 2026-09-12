@@ -705,7 +705,7 @@ function MesajeSection({ token, onBack }) {
                   const out = m.directie === 'OUT'
                   const bgOut = esuat ? '#FEE2E2' : `linear-gradient(135deg, ${s.ruby}, #7A1525)`
                   const colorOut = esuat ? '#991B1B' : 'white'
-                  const tipLabel = { confirmare: 'Confirmare', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Revenire' }[m.tip]
+                  const tipLabel = { confirmare: 'Confirmare', avans: 'Avans', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Revenire' }[m.tip]
                   return (
                     <div key={m.id} style={{ display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: '80%', minWidth: '90px', padding: '8px 12px 6px', borderRadius: out ? '14px 14px 4px 14px' : '14px 14px 14px 4px', background: out ? bgOut : 'white', color: out ? colorOut : s.text, fontSize: '14px', lineHeight: 1.45, border: esuat ? '1px solid #FECACA' : 'none', boxShadow: '0 1px 1.5px rgba(0,0,0,0.12)' }}>

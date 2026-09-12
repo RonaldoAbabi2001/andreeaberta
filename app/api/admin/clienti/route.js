@@ -15,6 +15,9 @@ async function getDb() {
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS provenienta TEXT`
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS puncte INTEGER DEFAULT 0`
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS vizite_total INTEGER DEFAULT 0`
+  // Clienta care nu se prezinta / anuleaza pe ultima suta de metri -> programarea
+  // devine ferma doar dupa achitarea avansului.
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
   return sql
 }
 
@@ -30,6 +33,14 @@ export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
+  await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
+
+  // Comutarea rapida a avansului, din lista sau din fisa clientei
+  if (body._avansOnly) {
+    await sql`UPDATE clienti SET avans_obligatoriu = ${!!body.avans_obligatoriu} WHERE id = ${body.id}`
+    return NextResponse.json({ success: true, avans_obligatoriu: !!body.avans_obligatoriu })
+  }
+
   await sql`
     UPDATE clienti SET
       nume = ${body.nume || ''},
@@ -38,7 +49,8 @@ export async function PATCH(request) {
       data_nastere = ${body.data_nastere || ''},
       observatii = ${body.observatii || ''},
       sursa = ${body.sursa || ''},
-      provenienta = ${body.provenienta || ''}
+      provenienta = ${body.provenienta || ''},
+      avans_obligatoriu = ${!!body.avans_obligatoriu}
     WHERE id = ${body.id}
   `
   return NextResponse.json({ success: true })

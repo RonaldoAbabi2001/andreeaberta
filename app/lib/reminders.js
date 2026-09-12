@@ -3,7 +3,7 @@
 // Setările se citesc din salon_settings (cheia 'reminder_settings'); dacă lipsesc,
 // se folosesc DEFAULT_REMINDERS, identice cu comportamentul hardcodat anterior (zero regresie).
 
-export const REMINDER_TYPES = ['confirmare', 'modificare', 'reminder_24h', 'feedback', 'recontact']
+export const REMINDER_TYPES = ['confirmare', 'avans', 'modificare', 'reminder_24h', 'feedback', 'recontact']
 
 // Placeholdere disponibile în textul mesajelor
 export const PLACEHOLDERS = ['{nume}', '{data}', '{ora}', '{serviciu}']
@@ -15,6 +15,14 @@ export const DEFAULT_REMINDERS = {
     unit: 'imediat',
     offset: 0,
     text: 'Buna ziua {nume}! Programarea ta la EVOLIS a fost confirmata pentru {data} ora {ora}. Serviciu: {serviciu}. Te asteptam! 💅',
+  },
+  // Se trimite in locul confirmarii, cand clienta e marcata cu "avans obligatoriu".
+  // Programarea NU e ferma pana nu suna si achita avansul.
+  avans: {
+    activ: true,
+    unit: 'imediat',
+    offset: 0,
+    text: 'Buna {nume}! Am inregistrat cererea ta pentru {data}, ora {ora}. Programarea devine ferma dupa achitarea avansului. Te rugam sa ne suni la 0793 234 142. Multumim!',
   },
   // Se trimite DOAR cand data sau ora unei programari se schimba din admin.
   // Fara el, clienta ramane cu ora veche in telefon.
@@ -47,6 +55,7 @@ export const DEFAULT_REMINDERS = {
 // Etichete lizibile pentru UI
 export const REMINDER_LABELS = {
   confirmare: 'Confirmare (imediat)',
+  avans: 'Cerere avans (in loc de confirmare)',
   modificare: 'Programare mutata (la schimbarea datei/orei)',
   reminder_24h: 'Reminder (înainte de programare)',
   feedback: 'Feedback (după vizită)',
@@ -182,6 +191,8 @@ export async function enqueueReminders(sql, params) {
   const { programareId, telefon, numeClient, dataF, oraF, serviciu } = params
   // 'modificare' NU face parte din fluxul normal: pleaca doar cand data/ora s-au schimbat.
   const notificaModificare = params.notificaModificare === true
+  // 'avans' inlocuieste confirmarea pentru clientele care trebuie sa achite avans.
+  const cereAvans = params.cereAvans === true
 
   // FIX 1: nu trimite SMS pentru timp blocat / intrari fara telefon real
   if (!telefonValid(telefon)) return { inserted: 0, skipped: 'telefon invalid' }
@@ -200,6 +211,8 @@ export async function enqueueReminders(sql, params) {
     const cfg = settings[tip]
     if (!cfg || !cfg.activ) continue
     if (tip === 'modificare' && !notificaModificare) continue
+    if (tip === 'avans' && !cereAvans) continue
+    if (tip === 'confirmare' && cereAvans) continue   // una sau alta, niciodata amandoua
 
     const when = computeSendAt(cfg, { dataF, oraF }, now)
     if (!when) continue
@@ -207,7 +220,7 @@ export async function enqueueReminders(sql, params) {
     // FIX 3: confirmarea pleaca O SINGURA DATA pe programare.
     // Fara asta, fiecare modificare din admin ar trimite clientei inca o confirmare.
     // (mesajul de mutare, in schimb, se poate repeta — se muta de mai multe ori)
-    if (tip === 'confirmare' && programareId) {
+    if ((tip === 'confirmare' || tip === 'avans') && programareId) {
       const dejaTrimis = await sql`
         SELECT 1 FROM sms_queue
         WHERE programare_id = ${programareId} AND tip = ${tip} AND trimis = true
