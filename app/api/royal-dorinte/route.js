@@ -33,6 +33,7 @@ export async function POST(req) {
     const dorinta = String(body.dorinta || '').trim().slice(0, 500)
     const email = String(body.email || '').trim().toLowerCase().slice(0, 160)
     const pagina = String(body.pagina || '').trim().slice(0, 300)
+    const forma = String(body.forma || '').trim().slice(0, 40)
 
     // singurul camp obligatoriu e dorinta; emailul e optional, ca sa nu descurajam
     if (dorinta.length < 2) {
@@ -47,10 +48,12 @@ export async function POST(req) {
       pagina text,
       creat timestamptz DEFAULT now()
     )`
+    // forma a fost adaugata dupa primele raspunsuri - de aceea separat
+    await sql`ALTER TABLE royalnails_dorinte ADD COLUMN IF NOT EXISTS forma text`
 
     const id = crypto.randomUUID()
-    await sql`INSERT INTO royalnails_dorinte (id, dorinta, email, pagina)
-              VALUES (${id}, ${dorinta}, ${email || null}, ${pagina || null})`
+    await sql`INSERT INTO royalnails_dorinte (id, dorinta, email, pagina, forma)
+              VALUES (${id}, ${dorinta}, ${email || null}, ${pagina || null}, ${forma || null})`
 
     return NextResponse.json({ ok: true }, { headers })
   } catch (e) {
