@@ -22,7 +22,7 @@ export const DEFAULT_REMINDERS = {
     activ: true,
     unit: 'imediat',
     offset: 0,
-    text: 'Buna {nume}! Am inregistrat cererea ta pentru {data}, ora {ora}. Programarea devine ferma dupa achitarea avansului. Te rugam sa ne suni la 0793 234 142. Multumim!',
+    text: 'Buna {nume}! Am inregistrat cererea ta pentru {data}, ora {ora}. Programarea devine ferma dupa achitarea avansului de 50%, numerar la salon sau cu cardul online. Te rugam sa ne suni la 0793 234 142. Multumim!',
   },
   // Se trimite DOAR cand data sau ora unei programari se schimba din admin.
   // Fara el, clienta ramane cu ora veche in telefon.

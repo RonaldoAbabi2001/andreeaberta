@@ -125,8 +125,10 @@ export async function POST(request) {
     // pana nu achita. Nu primeste confirmare, ci cererea de avans.
     await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
     await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
+    // Avans 50% si pentru clientele noi (numar necunoscut) si pentru orice programare din decembrie.
     const cl = await sql`SELECT avans_obligatoriu FROM clienti WHERE telefon = ${body.telefon} LIMIT 1`
-    const cereAvans = !!cl[0]?.avans_obligatoriu
+    const esteDecembrie = / Decembrie /.test(` ${body.data || ''} `)
+    const cereAvans = !!cl[0]?.avans_obligatoriu || cl.length === 0 || esteDecembrie
 
     await sql`
       INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, extra_servicii, avans_necesar)
