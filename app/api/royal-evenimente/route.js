@@ -12,6 +12,8 @@ const EVENIMENTE = new Set([
   'product_added_to_cart', 'product_removed_from_cart', 'cart_viewed',
   'checkout_started', 'checkout_contact_info_submitted', 'checkout_address_info_submitted',
   'checkout_shipping_info_submitted', 'payment_info_submitted', 'checkout_completed',
+  // evenimente DOM + erori din checkout: pe ce apasa, ce camp atinge, ce eroare vede
+  'clicked', 'input_focused', 'form_submitted', 'alert_displayed',
 ])
 
 const headers = {
@@ -48,11 +50,16 @@ export async function POST(req) {
       sursa text,
       device text
     )`
+    // element = pe ce a apasat / ce camp (tag#id[name] «text»), pozitie = ecranul pe care era (1 = primul)
+    await sql`ALTER TABLE royalnails_evenimente ADD COLUMN IF NOT EXISTS element text,
+      ADD COLUMN IF NOT EXISTS pozitie numeric, ADD COLUMN IF NOT EXISTS detaliu text`
     await sql`INSERT INTO royalnails_evenimente
-      (vizitator, eveniment, pagina, produs, varianta, cantitate, valoare, cautare, sursa, device)
+      (vizitator, eveniment, pagina, produs, varianta, cantitate, valoare, cautare, sursa, device,
+       element, pozitie, detaliu)
       VALUES (${txt(b.v, 64)}, ${b.e}, ${txt(b.p, 300)}, ${txt(b.pr, 160)}, ${txt(b.va, 160)},
               ${Number.isFinite(+b.q) ? Math.round(+b.q) : null}, ${Number.isFinite(+b.val) ? +b.val : null},
-              ${txt(b.s, 160)}, ${txt(b.src, 200)}, ${txt(b.d, 20)})`
+              ${txt(b.s, 160)}, ${txt(b.src, 200)}, ${txt(b.d, 20)},
+              ${txt(b.el, 200)}, ${Number.isFinite(+b.y) ? Math.round(+b.y * 10) / 10 : null}, ${txt(b.det, 300)})`
 
     return new NextResponse(null, { status: 204, headers })
   } catch (e) {
