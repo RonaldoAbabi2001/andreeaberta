@@ -106,7 +106,7 @@ const LUNI_RO = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', '
 // Parsează data programării în {an, luna(1-12), zi}. Acceptă AMBELE formate:
 // - RO "30 August 2026" (folosit de booking public ȘI admin)
 // - ISO "2026-08-30" (fallback)
-function parseData(dataF) {
+export function parseData(dataF) {
   if (!dataF) return null
   const s = String(dataF).trim()
   const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
@@ -172,6 +172,18 @@ export async function stergeRemindere(sql, programareId) {
   const r = await sql`
     DELETE FROM sms_queue
     WHERE programare_id = ${programareId} AND trimis = false
+    RETURNING id
+  `
+  return { deleted: r.length }
+}
+
+// Avansul a fost achitat -> clienta nu mai primeste SMS-ul de avans
+// (doar cel netrimis inca; ce a plecat deja ramane in istoric).
+export async function stergeSmsAvans(sql, programareId) {
+  if (!programareId) return { deleted: 0 }
+  const r = await sql`
+    DELETE FROM sms_queue
+    WHERE programare_id = ${programareId} AND tip = 'avans' AND trimis = false
     RETURNING id
   `
   return { deleted: r.length }

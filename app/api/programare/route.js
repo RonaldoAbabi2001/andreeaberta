@@ -27,7 +27,8 @@ async function getDb() {
   return sql
 }
 
-async function sendTelegram(text) {
+// Exportata si pentru /api/cron/avans-neachitat, ca tokenul sa stea intr-un singur loc.
+export async function sendTelegram(text) {
   try {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
@@ -199,6 +200,7 @@ export async function POST(request) {
       `📅 ${body.data} · ${body.ora}\n` +
       `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
       `💰 Total: ${body.pret} lei` +
+      (cereAvans ? `\n⏳ <b>Avans 50% neachitat</b> (${Math.ceil((Number(body.pret) || 0) / 2)} lei). Bifează „Avans achitat” în admin când îl primești.` : '') +
       reducereLine
     )
 

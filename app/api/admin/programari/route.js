@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
 import { checkAuth } from '../../../lib/adminAuth'
-import { enqueueReminders, resyncReminders, stergeRemindere } from '../../../lib/reminders'
+import { enqueueReminders, resyncReminders, stergeRemindere, stergeSmsAvans } from '../../../lib/reminders'
 
 async function getDb() {
   return neon(process.env.DATABASE_URL)
@@ -21,6 +21,8 @@ export async function GET(request) {
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS detalii_tehnice TEXT`
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS despre_client TEXT`
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat_la TIMESTAMPTZ`
   const rows = await sql`SELECT * FROM programari ORDER BY data ASC, ora ASC`
   return NextResponse.json(rows)
 }
@@ -75,6 +77,22 @@ export async function PATCH(request) {
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS despre_client TEXT`
   if (body._fotosOnly) {
     await sql`UPDATE programari SET before_foto = ${body.before_foto || ''}, after_foto = ${body.after_foto || ''} WHERE id = ${body.id}`
+  } else if (body._avansOnly) {
+    // Bifa „Avans achitat” din fisa programarii.
+    // Achitat -> nu mai pleaca SMS-ul de avans si nu mai apare in alerta Telegram.
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat BOOLEAN DEFAULT FALSE`
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat_la TIMESTAMPTZ`
+    const achitat = !!body.avans_achitat
+    if (achitat) {
+      await sql`UPDATE programari SET avans_achitat = true, avans_achitat_la = NOW() WHERE id = ${body.id}`
+      await stergeSmsAvans(sql, body.id)
+    } else {
+      await sql`UPDATE programari SET avans_achitat = false, avans_achitat_la = NULL WHERE id = ${body.id}`
+    }
+    if (body.avans_necesar !== undefined) {
+      await sql`UPDATE programari SET avans_necesar = ${!!body.avans_necesar} WHERE id = ${body.id}`
+    }
   } else if (body._plataOnly) {
     await sql`UPDATE programari SET plata = ${body.plata} WHERE id = ${body.id}`
   } else if (body._oreOnly) {

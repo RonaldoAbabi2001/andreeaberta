@@ -252,6 +252,21 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
     setSavingFotos(false)
   }
 
+  // Avans: 'fara' | 'neachitat' | 'achitat'. Achitat -> nu mai pleaca SMS de avans
+  // si dispare din alerta zilnica de pe Telegram.
+  async function saveAvans(stare) {
+    if (!detailProg) return
+    const avans_necesar = stare !== 'fara'
+    const avans_achitat = stare === 'achitat'
+    const prev = detailProg
+    setDetailProg(p => ({ ...p, avans_necesar, avans_achitat }))
+    const res = await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _avansOnly: true, avans_necesar, avans_achitat }) })
+    if (!res.ok) { setDetailProg(prev); alert('Nu s-a salvat avansul. Încearcă din nou.'); return }
+    fetch(`/api/sms-queue?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
+      .then(r => r.json()).then(d => Array.isArray(d) && setSmsProgramare(d)).catch(() => {})
+    onSaved && onSaved()
+  }
+
   async function savePlata(plata) {
     if (!detailProg) return
     await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _plataOnly: true, plata }) })
@@ -796,6 +811,41 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                       ))}
                     </div>
                   </div>
+
+                  {/* Avans 50% */}
+                  {(() => {
+                    const stareAvans = !detailProg.avans_necesar ? 'fara' : detailProg.avans_achitat ? 'achitat' : 'neachitat'
+                    const sumaAvans = Math.ceil((Number(detailProg.pret) || 0) / 2)
+                    const opt = [
+                      { id: 'fara', label: 'Fără avans', bg: '#1C1C1C' },
+                      { id: 'neachitat', label: '⏳ Neachitat', bg: '#D97706' },
+                      { id: 'achitat', label: '✓ Achitat', bg: '#1D9E75' },
+                    ]
+                    return (
+                      <div style={{ borderTop: '1px solid #F0EAE0', paddingTop: '14px', marginTop: '14px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '8px' }}>
+                          AVANS 50%{sumaAvans > 0 ? ` · ${sumaAvans} LEI` : ''}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {opt.map(o => (
+                            <button key={o.id} onClick={() => saveAvans(o.id)}
+                              style={{ flex: 1, padding: '10px 6px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', fontFamily: 'Georgia, serif',
+                                background: stareAvans === o.id ? o.bg : '#F3EDE5',
+                                color: stareAvans === o.id ? 'white' : '#888' }}>
+                              {o.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.5 }}>
+                          {stareAvans === 'achitat'
+                            ? 'Avans primit: clienta nu mai primește SMS de avans.'
+                            : stareAvans === 'neachitat'
+                              ? 'Apare zilnic în alerta de pe Telegram până îl bifezi „Achitat”.'
+                              : 'Programarea nu cere avans.'}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* SMS Status */}
