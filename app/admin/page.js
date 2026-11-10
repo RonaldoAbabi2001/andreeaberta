@@ -6,6 +6,7 @@ import ServiciiTab from '../components/ServiciiTab'
 import MeniuSalonTab from '../components/MeniuSalonTab'
 import MaterialeUtilizate from '../components/MaterialeUtilizate'
 import ExtraServicii from '../components/ExtraServicii'
+import { textAvans } from '../lib/avansText'
 import { IcoCalendar, IcoClienti, IcoProduse, IcoMeniu, IcoAnalitica, IcoRapoarte, IcoImport, IcoServicii, IcoRepetitiv, IcoAzi, IcoInchide, IcoConcediu, IcoSetari, IcoSms, IcoLimita } from '../components/AdminIcons'
 
 const ZILE = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
@@ -899,19 +900,32 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                               <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
                                 Rest de plată la salon: <strong>{rest} lei</strong>{avansSumaInput === '' ? ` (gol = jumătate, ${sumaAvans} lei)` : ''}
                               </div>
-                              <button onClick={() => trimiteSmsAvans('confirmare')} disabled={avansSmsStare === 'se trimite'}
-                                style={{ width: '100%', marginTop: '10px', padding: '11px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#1D9E75', color: 'white' }}>
-                                ✅ Trimite SMS: confirmare avans {sumaAfis} lei
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                <button onClick={() => trimiteSmsAvans('confirmare')} disabled={avansSmsStare === 'se trimite'}
+                                  style={{ flex: 1, padding: '11px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#1D9E75', color: 'white' }}>
+                                  ✅ SMS confirmare {sumaAfis} lei
+                                </button>
+                                <a href={waLink(detailProg.telefon, waPrefix, textAvans('confirmare', detailProg, avansSumaInput))} target="_blank" rel="noreferrer"
+                                  onClick={() => { if (avansSumaInput !== salvata) saveAvans('achitat', avansSumaInput === '' ? null : Number(avansSumaInput)) }}
+                                  style={{ flex: 1, padding: '11px 8px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', background: '#25D366', color: 'white', textDecoration: 'none', textAlign: 'center' }}>
+                                  WhatsApp confirmare
+                                </a>
+                              </div>
                             </div>
                           )
                         })()}
 
                         {stareAvans === 'neachitat' && (
-                          <button onClick={() => trimiteSmsAvans('reminder')} disabled={avansSmsStare === 'se trimite'}
-                            style={{ width: '100%', marginTop: '12px', padding: '11px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#D97706', color: 'white' }}>
-                            🔔 Trimite SMS: reminder avans{sumaAvans > 0 ? ` ${sumaAvans} lei` : ''}
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                            <button onClick={() => trimiteSmsAvans('reminder')} disabled={avansSmsStare === 'se trimite'}
+                              style={{ flex: 1, padding: '11px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#D97706', color: 'white' }}>
+                              🔔 SMS reminder{sumaAvans > 0 ? ` ${sumaAvans} lei` : ''}
+                            </button>
+                            <a href={waLink(detailProg.telefon, waPrefix, textAvans('reminder', detailProg))} target="_blank" rel="noreferrer"
+                              style={{ flex: 1, padding: '11px 8px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', background: '#25D366', color: 'white', textDecoration: 'none', textAlign: 'center' }}>
+                              WhatsApp reminder
+                            </a>
+                          </div>
                         )}
 
                         {avansSmsStare && (
@@ -941,10 +955,16 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                         return (
                           <div key={sms.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 10px', background: '#FDFAF7', borderRadius: '10px' }}>
                             <span style={{ fontSize: '14px', lineHeight: '1.4' }}>{icon}</span>
-                            <div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1C1C1C' }}>{tipLabel}</div>
                               <div style={{ fontSize: '11px', color: statusColor, marginTop: '2px' }}>{statusText}</div>
                             </div>
+                            {/* Acelasi mesaj, trimis de mana pe WhatsApp: deschide chatul clientei cu textul scris */}
+                            <a href={waLink(sms.telefon || p.telefon, waPrefix, sms.mesaj)} target="_blank" rel="noreferrer"
+                              title="Trimite același mesaj pe WhatsApp"
+                              style={{ flexShrink: 0, background: '#25D366', color: 'white', borderRadius: '8px', padding: '6px 9px', fontSize: '11px', fontWeight: 'bold', textDecoration: 'none' }}>
+                              WhatsApp
+                            </a>
                           </div>
                         )
                       })}

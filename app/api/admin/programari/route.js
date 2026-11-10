@@ -5,6 +5,7 @@ import { neon } from '@neondatabase/serverless'
 
 import { checkAuth } from '../../../lib/adminAuth'
 import { enqueueReminders, resyncReminders, stergeRemindere, stergeSmsAvans } from '../../../lib/reminders'
+import { textAvans } from '../../../lib/avansText'
 
 async function getDb() {
   return neon(process.env.DATABASE_URL)
@@ -106,22 +107,8 @@ export async function PATCH(request) {
     const [p] = await sql`SELECT nume, telefon, data, ora, pret, avans_suma, status FROM programari WHERE id = ${body.id}`
     if (!p) return NextResponse.json({ error: 'Programarea nu există' }, { status: 404 })
     if (p.status === 'cancelled' || p.status === 'noshow') return NextResponse.json({ error: 'Programarea e anulată' }, { status: 409 })
-    const prenume = String(p.nume || '').trim().split(/\s+/)[0] || 'draga'
-    const pret = Number(p.pret) || 0
-    const ora = p.ora ? `, ora ${p.ora}` : ''
-    let mesaj, tip
-    if (body._avansSms === 'confirmare') {
-      const suma = p.avans_suma != null ? Number(p.avans_suma) : Math.ceil(pret / 2)
-      const rest = Math.max(0, pret - suma)
-      tip = 'avans_confirmare'
-      mesaj = `Buna ${prenume}! Am primit avansul de ${suma} lei. Programarea ta din ${p.data}${ora} este confirmata.` +
-        (rest > 0 ? ` Rest de plata la salon: ${rest} lei.` : '') + ' Te asteptam! EVOLIS'
-    } else {
-      const suma = Math.ceil(pret / 2)
-      tip = 'avans_reminder'
-      mesaj = `Buna ${prenume}! Iti reamintim ca programarea ta din ${p.data}${ora} devine ferma dupa achitarea avansului` +
-        (suma > 0 ? ` de ${suma} lei` : '') + ', numerar la salon sau cu cardul. Pentru detalii: 0793 234 142. Multumim! EVOLIS'
-    }
+    const tip = body._avansSms === 'confirmare' ? 'avans_confirmare' : 'avans_reminder'
+    const mesaj = textAvans(body._avansSms === 'confirmare' ? 'confirmare' : 'reminder', p)
     await sql`CREATE TABLE IF NOT EXISTS sms_queue (
       id BIGINT PRIMARY KEY, telefon TEXT NOT NULL, mesaj TEXT NOT NULL,
       tip TEXT DEFAULT 'confirmare', programare_id BIGINT,
