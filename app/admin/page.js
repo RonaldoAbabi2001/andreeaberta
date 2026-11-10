@@ -254,17 +254,51 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
 
   // Avans: 'fara' | 'neachitat' | 'achitat'. Achitat -> nu mai pleaca SMS de avans
   // si dispare din alerta zilnica de pe Telegram.
-  async function saveAvans(stare) {
+  async function saveAvans(stare, sumaNoua) {
     if (!detailProg) return
     const avans_necesar = stare !== 'fara'
     const avans_achitat = stare === 'achitat'
+    const extra = {}
+    if (sumaNoua !== undefined) extra.avans_suma = sumaNoua
     const prev = detailProg
-    setDetailProg(p => ({ ...p, avans_necesar, avans_achitat }))
-    const res = await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _avansOnly: true, avans_necesar, avans_achitat }) })
-    if (!res.ok) { setDetailProg(prev); alert('Nu s-a salvat avansul. Încearcă din nou.'); return }
+    setDetailProg(p => ({ ...p, avans_necesar, avans_achitat, ...extra }))
+    const res = await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _avansOnly: true, avans_necesar, avans_achitat, ...extra }) })
+    if (!res.ok) { setDetailProg(prev); alert('Nu s-a salvat avansul. Încearcă din nou.'); return false }
+    refreshSmsProg()
+    onSaved && onSaved()
+    return true
+  }
+
+  function refreshSmsProg() {
+    if (!detailProg) return
     fetch(`/api/sms-queue?programare_id=${detailProg.id}`, { headers: { 'x-admin-token': token } })
       .then(r => r.json()).then(d => Array.isArray(d) && setSmsProgramare(d)).catch(() => {})
-    onSaved && onSaved()
+  }
+
+  // Suma lasata efectiv de clienta (implicit jumatate din pret) + butoanele de SMS
+  const [avansSumaInput, setAvansSumaInput] = useState('')
+  const [avansSmsStare, setAvansSmsStare] = useState('')
+  useEffect(() => {
+    if (!detailProg) return
+    setAvansSumaInput(detailProg.avans_suma != null ? String(Number(detailProg.avans_suma)) : '')
+    setAvansSmsStare('')
+  }, [detailProg?.id])
+
+  async function trimiteSmsAvans(tip) {
+    if (!detailProg) return
+    if (tip === 'confirmare') {
+      // salvez intai suma scrisa, ca SMS-ul sa o foloseasca
+      const suma = avansSumaInput === '' ? null : Number(avansSumaInput)
+      if (suma !== (detailProg.avans_suma != null ? Number(detailProg.avans_suma) : null)) {
+        const ok = await saveAvans('achitat', suma)
+        if (!ok) return
+      }
+    }
+    setAvansSmsStare('se trimite')
+    const res = await fetch('/api/admin/programari', { method: 'PATCH', headers: authH, body: JSON.stringify({ id: detailProg.id, _avansSms: tip }) })
+    const d = await res.json().catch(() => ({}))
+    setAvansSmsStare(res.ok ? `În coadă: „${d.mesaj}”` : `Eroare: ${d.error || 'nu s-a trimis'}`)
+    refreshSmsProg()
   }
 
   async function savePlata(plata) {
@@ -838,11 +872,53 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                         </div>
                         <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.5 }}>
                           {stareAvans === 'achitat'
-                            ? 'Avans primit: clienta nu mai primește SMS de avans.'
+                            ? 'Avans primit: clienta nu mai primește SMS automat de avans.'
                             : stareAvans === 'neachitat'
                               ? 'Apare zilnic în alerta de pe Telegram până îl bifezi „Achitat”.'
                               : 'Programarea nu cere avans.'}
                         </div>
+
+                        {stareAvans === 'achitat' && (() => {
+                          const sumaAfis = avansSumaInput === '' ? sumaAvans : Number(avansSumaInput) || 0
+                          const rest = Math.max(0, (Number(detailProg.pret) || 0) - sumaAfis)
+                          const salvata = detailProg.avans_suma != null ? String(Number(detailProg.avans_suma)) : ''
+                          return (
+                            <div style={{ marginTop: '12px' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#AAA', letterSpacing: '1px', marginBottom: '6px' }}>CÂT A LĂSAT (lei)</div>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input type="number" min="0" inputMode="decimal" value={avansSumaInput} placeholder={String(sumaAvans)}
+                                  onChange={e => setAvansSumaInput(e.target.value)}
+                                  style={{ flex: 1, border: '1.5px solid #E8DDD0', borderRadius: '10px', padding: '9px 12px', fontSize: '15px', fontWeight: 'bold', outline: 'none', boxSizing: 'border-box', fontFamily: 'Georgia, serif', color: '#1D9E75', minWidth: 0 }} />
+                                <button disabled={avansSumaInput === salvata}
+                                  onClick={() => saveAvans('achitat', avansSumaInput === '' ? null : Number(avansSumaInput))}
+                                  style={{ padding: '10px 14px', borderRadius: '10px', border: 'none', cursor: avansSumaInput === salvata ? 'default' : 'pointer', fontSize: '13px', fontWeight: 'bold',
+                                    background: avansSumaInput === salvata ? '#F3EDE5' : '#1D9E75', color: avansSumaInput === salvata ? '#AAA' : 'white' }}>
+                                  {avansSumaInput === salvata ? 'Salvat' : 'Salvează'}
+                                </button>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+                                Rest de plată la salon: <strong>{rest} lei</strong>{avansSumaInput === '' ? ` (gol = jumătate, ${sumaAvans} lei)` : ''}
+                              </div>
+                              <button onClick={() => trimiteSmsAvans('confirmare')} disabled={avansSmsStare === 'se trimite'}
+                                style={{ width: '100%', marginTop: '10px', padding: '11px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#1D9E75', color: 'white' }}>
+                                ✅ Trimite SMS: confirmare avans {sumaAfis} lei
+                              </button>
+                            </div>
+                          )
+                        })()}
+
+                        {stareAvans === 'neachitat' && (
+                          <button onClick={() => trimiteSmsAvans('reminder')} disabled={avansSmsStare === 'se trimite'}
+                            style={{ width: '100%', marginTop: '12px', padding: '11px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: '#D97706', color: 'white' }}>
+                            🔔 Trimite SMS: reminder avans{sumaAvans > 0 ? ` ${sumaAvans} lei` : ''}
+                          </button>
+                        )}
+
+                        {avansSmsStare && (
+                          <div style={{ fontSize: '11px', color: avansSmsStare.startsWith('Eroare') ? '#B91C1C' : '#1D9E75', marginTop: '6px', lineHeight: 1.5 }}>
+                            {avansSmsStare === 'se trimite' ? 'Se pune în coadă...' : avansSmsStare}
+                          </div>
+                        )}
                       </div>
                     )
                   })()}
@@ -857,7 +933,7 @@ function ClientDrawer({ client, programari, token, onClose, onSaved, produseDB =
                         const trimisLa = sms.trimis_la ? new Date(sms.trimis_la) : null
                         const deTrimisLa = sms.de_trimis_la ? new Date(sms.de_trimis_la) : null
                         const formatData = d => d ? `${d.getDate()} ${['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : ''
-                        const tipLabel = { confirmare: 'Confirmare', avans: 'Cerere avans', modificare: 'Programare mutată', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
+                        const tipLabel = { confirmare: 'Confirmare', avans: 'Cerere avans', avans_reminder: 'Reminder avans', avans_confirmare: 'Confirmare avans', modificare: 'Programare mutată', reminder_24h: 'Reminder 24h', feedback: 'Feedback', recontact: 'Recontact' }[sms.tip] || sms.tip
                         let icon, statusText, statusColor
                         if (sms.trimis) { icon = '✅'; statusText = `trimis ${formatData(trimisLa)}`; statusColor = '#1D9E75' }
                         else if (sms.eroare) { icon = '❌'; statusText = `eroare: ${sms.eroare}`; statusColor = '#9B1B30' }

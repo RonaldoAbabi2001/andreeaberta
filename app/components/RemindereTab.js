@@ -18,7 +18,7 @@ const TIPURI = [
 const PLACEHOLDERS = ['{nume}', '{data}', '{ora}', '{serviciu}']
 
 const TIP_LABEL = {
-  confirmare: 'Confirmare', avans: 'Avans', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Recontact',
+  confirmare: 'Confirmare', avans: 'Avans', avans_reminder: 'Reminder avans', avans_confirmare: 'Avans primit', modificare: 'Mutată', reminder_24h: 'Reminder', feedback: 'Feedback', recontact: 'Recontact',
 }
 
 function formatData(iso) {

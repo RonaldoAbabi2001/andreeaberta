@@ -83,9 +83,10 @@ export async function PATCH(request) {
     await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`
     await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat BOOLEAN DEFAULT FALSE`
     await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_achitat_la TIMESTAMPTZ`
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_suma NUMERIC`
     const achitat = !!body.avans_achitat
     if (achitat) {
-      await sql`UPDATE programari SET avans_achitat = true, avans_achitat_la = NOW() WHERE id = ${body.id}`
+      await sql`UPDATE programari SET avans_achitat = true, avans_achitat_la = COALESCE(avans_achitat_la, NOW()) WHERE id = ${body.id}`
       await stergeSmsAvans(sql, body.id)
     } else {
       await sql`UPDATE programari SET avans_achitat = false, avans_achitat_la = NULL WHERE id = ${body.id}`
@@ -93,6 +94,45 @@ export async function PATCH(request) {
     if (body.avans_necesar !== undefined) {
       await sql`UPDATE programari SET avans_necesar = ${!!body.avans_necesar} WHERE id = ${body.id}`
     }
+    // Suma lasata efectiv (ex. 35 lei), nu neaparat jumatate din pret
+    if (body.avans_suma !== undefined) {
+      const suma = body.avans_suma === null || body.avans_suma === '' ? null : Math.max(0, Number(body.avans_suma) || 0)
+      await sql`UPDATE programari SET avans_suma = ${suma} WHERE id = ${body.id}`
+    }
+  } else if (body._avansSms) {
+    // Buton manual din fisa programarii: reminder de avans sau confirmarea avansului primit.
+    // Textul se face aici, din datele salvate, cu suma lasata efectiv de clienta.
+    await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_suma NUMERIC`
+    const [p] = await sql`SELECT nume, telefon, data, ora, pret, avans_suma, status FROM programari WHERE id = ${body.id}`
+    if (!p) return NextResponse.json({ error: 'Programarea nu există' }, { status: 404 })
+    if (p.status === 'cancelled' || p.status === 'noshow') return NextResponse.json({ error: 'Programarea e anulată' }, { status: 409 })
+    const prenume = String(p.nume || '').trim().split(/\s+/)[0] || 'draga'
+    const pret = Number(p.pret) || 0
+    const ora = p.ora ? `, ora ${p.ora}` : ''
+    let mesaj, tip
+    if (body._avansSms === 'confirmare') {
+      const suma = p.avans_suma != null ? Number(p.avans_suma) : Math.ceil(pret / 2)
+      const rest = Math.max(0, pret - suma)
+      tip = 'avans_confirmare'
+      mesaj = `Buna ${prenume}! Am primit avansul de ${suma} lei. Programarea ta din ${p.data}${ora} este confirmata.` +
+        (rest > 0 ? ` Rest de plata la salon: ${rest} lei.` : '') + ' Te asteptam! EVOLIS'
+    } else {
+      const suma = Math.ceil(pret / 2)
+      tip = 'avans_reminder'
+      mesaj = `Buna ${prenume}! Iti reamintim ca programarea ta din ${p.data}${ora} devine ferma dupa achitarea avansului` +
+        (suma > 0 ? ` de ${suma} lei` : '') + ', numerar la salon sau cu cardul. Pentru detalii: 0793 234 142. Multumim! EVOLIS'
+    }
+    await sql`CREATE TABLE IF NOT EXISTS sms_queue (
+      id BIGINT PRIMARY KEY, telefon TEXT NOT NULL, mesaj TEXT NOT NULL,
+      tip TEXT DEFAULT 'confirmare', programare_id BIGINT,
+      de_trimis_la TIMESTAMPTZ DEFAULT NOW(), trimis BOOLEAN DEFAULT FALSE,
+      trimis_la TIMESTAMPTZ, eroare TEXT, creat TIMESTAMPTZ DEFAULT NOW()
+    )`
+    await sql`
+      INSERT INTO sms_queue (id, telefon, mesaj, tip, programare_id, de_trimis_la)
+      VALUES (${Date.now()}, ${p.telefon}, ${mesaj}, ${tip}, ${body.id}, NOW())
+    `
+    return NextResponse.json({ success: true, mesaj })
   } else if (body._plataOnly) {
     await sql`UPDATE programari SET plata = ${body.plata} WHERE id = ${body.id}`
   } else if (body._oreOnly) {
