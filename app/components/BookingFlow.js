@@ -108,6 +108,44 @@ function PrefixSelect({ value, onChange }) {
   )
 }
 
+// 11.11.2026 (Ronaldo): in decembrie plata se poate face numerar la salon sau prin transfer bancar;
+// la transfer, motivul platii = numele serviciului ales
+const CONT_SALON = { beneficiar: 'ABROAN S.R.L.', iban: 'RO92BTRLRONCRT0CT9715901', banca: 'Banca Transilvania' }
+
+function TransferBancar({ serviciu, suma }) {
+  const [copiat, setCopiat] = useState('')
+  const copiaza = (cheie, text) => {
+    try { navigator.clipboard.writeText(text).then(() => { setCopiat(cheie); setTimeout(() => setCopiat(''), 1500) }) } catch {}
+  }
+  const rand = (eticheta, valoare, cheie) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', padding: '8px 0', borderTop: '1px solid #FDE68A' }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#B45309' }}>{eticheta}</div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#78350F', wordBreak: 'break-all' }}>{valoare}</div>
+      </div>
+      {cheie && (
+        <button type="button" onClick={() => copiaza(cheie, valoare)}
+          style={{ flexShrink: 0, fontSize: '12px', padding: '6px 10px', borderRadius: '8px', border: '1px solid #F59E0B', background: copiat === cheie ? '#F59E0B' : 'white', color: copiat === cheie ? 'white' : '#92400E', cursor: 'pointer' }}>
+          {copiat === cheie ? 'Copiat ✓' : 'Copiază'}
+        </button>
+      )}
+    </div>
+  )
+  return (
+    <div style={{ marginTop: '12px', background: 'white', border: '1px solid #FDE68A', borderRadius: '12px', padding: '12px 14px', textAlign: 'left' }}>
+      <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: 'bold', color: '#92400E' }}>🏦 Plata prin transfer bancar</p>
+      {rand('Beneficiar', CONT_SALON.beneficiar)}
+      {rand('IBAN', CONT_SALON.iban, 'iban')}
+      {rand('Banca', CONT_SALON.banca)}
+      {suma > 0 && rand('Suma (avans 50%)', `${suma} lei`)}
+      {rand('Motivul plății', serviciu || 'serviciul ales', 'motiv')}
+      <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#92400E', lineHeight: 1.5 }}>
+        La motivul plății scrieți numele serviciului ales, ca să găsim plata dumneavoastră.
+      </p>
+    </div>
+  )
+}
+
 function WaitlistBox({ data, serviciu, loggedInClient }) {
   const [nume, setNume] = useState(loggedInClient?.nume || '')
   const [tel, setTel] = useState(loggedInClient?.telefon || '')
@@ -411,7 +449,7 @@ export default function BookingFlow() {
           <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
             Am înregistrat cererea dumneavoastră.<br />
             <strong style={{ color: '#92400E' }}>Programarea va fi finalizată după achitarea avansului de 50%{sumaAvans > 0 ? ` (${sumaAvans} lei)` : ''}.</strong><br />
-            Avansul se poate achita numerar la salon sau cu cardul online.
+            Avansul se poate achita numerar la salon sau {esteDecembrie ? 'prin transfer bancar (datele mai jos)' : 'cu cardul online'}.
           </p>
         ) : (
           <p style={{ color: '#666', lineHeight: 1.8, fontSize: '16px' }}>
@@ -427,6 +465,13 @@ export default function BookingFlow() {
             <a href="tel:+40793234142" style={{ display: 'block', fontSize: '26px', fontWeight: 'bold', color: '#92400E', textDecoration: 'none', letterSpacing: '1px' }}>
               0793 234 142
             </a>
+            {esteDecembrie && <TransferBancar serviciu={serviciu?.name} suma={sumaAvans} />}
+          </div>
+        )}
+        {!cereAvans && esteDecembrie && (
+          <div style={{ maxWidth: '360px', margin: '24px auto 0' }}>
+            <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>Plata: numerar la salon sau prin transfer bancar.</p>
+            <TransferBancar serviciu={serviciu?.name} suma={sumaAvans} />
           </div>
         )}
         <div style={{ marginTop: '32px', background: style.nude, borderRadius: '16px', padding: '24px', maxWidth: '360px', margin: '32px auto 0' }}>
@@ -746,10 +791,12 @@ export default function BookingFlow() {
                   : esteClientaNoua
                     ? 'Pentru clientele noi, programarea se confirmă cu avans.'
                     : 'Pentru acest număr se percepe avans.'}
-                {' '}Avansul se poate achita <strong>numerar la salon</strong> sau <strong>cu cardul online</strong>.
+                {' '}Avansul se poate achita <strong>numerar la salon</strong> sau{' '}
+                {esteDecembrie ? <strong>prin transfer bancar</strong> : <strong>cu cardul online</strong>}.
                 Programarea devine fermă după achitarea avansului. Pentru detalii, sună-ne la{' '}
                 <a href="tel:+40793234142" style={{ color: '#92400E', fontWeight: 'bold' }}>0793 234 142</a>.
               </p>
+              {esteDecembrie && <TransferBancar serviciu={serviciu?.name} suma={sumaAvans} />}
               <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginTop: '12px', cursor: 'pointer', fontSize: '13px', color: '#78350F' }}>
                 <input type="checkbox" checked={avansAcceptat} onChange={e => setAvansAcceptat(e.target.checked)} style={{ marginTop: '2px', width: '18px', height: '18px' }} />
                 <span>Am înțeles că programarea se confirmă după achitarea avansului de 50%.</span>
