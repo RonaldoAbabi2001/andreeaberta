@@ -287,8 +287,13 @@ export default function BookingFlow() {
 
   const todayDate = new Date(); todayDate.setHours(0,0,0,0)
   const allDates = generateFutureDates(12)
-  const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + e.pret, 0) : 0
-  const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + e.durata, 0) : 0
+  // extras „per unghie” (Swarovski, design per unghie): clienta alege cate unghii, pretul se inmulteste (12.11)
+  const pretE = e => e.pret * (e.cant || 1)
+  const durataE = e => e.durata * (e.cant || 1)
+  const numeE = e => (e.cant > 1 ? `${e.name} × ${e.cant} unghii` : e.name)
+  const setCant = (name, cant) => setExtrasSelectate(extrasSelectate.map(e => (e.name === name ? { ...e, cant: Math.max(1, Math.min(10, cant)) } : e)))
+  const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + pretE(e), 0) : 0
+  const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + durataE(e), 0) : 0
   const durataEfectiva = Math.max(durataTotal, intervalMinim)
   const slots = (serviciu && orarZi && !orarZi.inchis && !orarZi.plin) ? generateSlots(durataEfectiva, orarZi) : []
 
@@ -415,7 +420,7 @@ export default function BookingFlow() {
           serviciu: serviciu.name,
           pret: pretTotal,
           durata: durataTotal,
-          extra_servicii: extrasSelectate.map(e => ({ nume: e.name, pret: e.pret, durata: e.durata })),
+          extra_servicii: extrasSelectate.map(e => ({ nume: numeE(e), pret: pretE(e), durata: durataE(e), cant: e.cant || 1 })),
           data: formatData(data),
           ora, plata,
           clientToken: clientToken || null,
@@ -557,9 +562,12 @@ export default function BookingFlow() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             {extrasDB.map(s => {
               const sel = extrasSelectate.some(e => e.name === s.name)
+              const perUnghie = /SWAROVSKI|PER UNGHIE/i.test(s.name)
+              const cant = extrasSelectate.find(e => e.name === s.name)?.cant || 1
+              const btn = { width: '30px', height: '30px', borderRadius: '50%', border: `1.5px solid ${style.ruby}`, background: 'white', color: style.ruby, fontSize: '17px', fontWeight: 'bold', cursor: 'pointer', lineHeight: 1, padding: 0 }
               return (
                 <div key={s.name}
-                  onClick={() => setExtrasSelectate(sel ? extrasSelectate.filter(e => e.name !== s.name) : [...extrasSelectate, s])}
+                  onClick={() => setExtrasSelectate(sel ? extrasSelectate.filter(e => e.name !== s.name) : [...extrasSelectate, perUnghie ? { ...s, cant: 1 } : s])}
                   style={{ background: sel ? '#FFF5F6' : style.white, borderRadius: '14px', padding: '14px 18px', cursor: 'pointer', border: `1.5px solid ${sel ? style.ruby : '#EEE'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s', boxShadow: sel ? '0 2px 12px rgba(155,27,48,0.12)' : '0 2px 8px rgba(0,0,0,0.04)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -568,10 +576,17 @@ export default function BookingFlow() {
                     </div>
                     <div>
                       <p style={{ fontSize: '14px', margin: 0, color: sel ? style.ruby : style.text }}>{s.name}</p>
-                      <p style={{ color: '#AAA', fontSize: '11px', margin: 0 }}>+{s.durata} min</p>
+                      <p style={{ color: '#AAA', fontSize: '11px', margin: 0 }}>{perUnghie ? `${s.pret} lei / unghie` : `+${s.durata} min`}</p>
+                      {perUnghie && sel && (
+                        <div onClick={ev => ev.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                          <button type="button" aria-label="O unghie mai puțin" style={btn} onClick={() => setCant(s.name, cant - 1)}>−</button>
+                          <span style={{ fontSize: '14px', fontWeight: 'bold', minWidth: '62px', textAlign: 'center' }}>{cant} {cant === 1 ? 'unghie' : 'unghii'}</span>
+                          <button type="button" aria-label="Încă o unghie" style={btn} onClick={() => setCant(s.name, cant + 1)}>+</button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <p style={{ color: style.ruby, fontWeight: 'bold', fontSize: '15px', margin: 0, marginLeft: '12px', whiteSpace: 'nowrap' }}>+{s.pret} lei</p>
+                  <p style={{ color: style.ruby, fontWeight: 'bold', fontSize: '15px', margin: 0, marginLeft: '12px', whiteSpace: 'nowrap' }}>+{perUnghie && sel ? s.pret * cant : s.pret} lei</p>
                 </div>
               )
             })}
@@ -580,7 +595,7 @@ export default function BookingFlow() {
           {extrasSelectate.length > 0 && (
             <div style={{ background: style.nude, borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', border: `1px solid ${style.gold}` }}>
               <p style={{ fontSize: '12px', color: '#888', margin: '0 0 4px' }}>Total suplimentar</p>
-              <p style={{ fontSize: '16px', fontWeight: 'bold', color: style.ruby, margin: 0 }}>+{extrasSelectate.reduce((s, e) => s + e.pret, 0)} lei · +{extrasSelectate.reduce((s, e) => s + e.durata, 0)} min</p>
+              <p style={{ fontSize: '16px', fontWeight: 'bold', color: style.ruby, margin: 0 }}>+{extrasSelectate.reduce((s, e) => s + pretE(e), 0)} lei · +{extrasSelectate.reduce((s, e) => s + durataE(e), 0)} min</p>
             </div>
           )}
 
@@ -701,7 +716,7 @@ export default function BookingFlow() {
             {[
               ['Specialist', 'Andreea Berta'],
               ['Serviciu', serviciu.name],
-              ...(extrasSelectate.length > 0 ? [['Extras', extrasSelectate.map(e => e.name).join(', ')]] : []),
+              ...(extrasSelectate.length > 0 ? [['Extras', extrasSelectate.map(numeE).join(', ')]] : []),
               ['Data', formatData(data)],
               ['Ora', ora],
               ['Durată', `${durataTotal} min`],
