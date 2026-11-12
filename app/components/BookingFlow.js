@@ -229,7 +229,7 @@ export default function BookingFlow() {
         const principale = Array.isArray(d) ? d : (d.servicii || [])
         const extrasDB   = Array.isArray(d) ? [] : (d.extras || [])
         setServicii(principale.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
-        setExtrasDB(extrasDB.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
+        setExtrasDB(extrasDB.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata), desc: s.descriere || '' })))
         if (d.interval_minim) setIntervalMinim(Number(d.interval_minim))
       })
       .catch(() => {})
@@ -577,6 +577,7 @@ export default function BookingFlow() {
                     <div>
                       <p style={{ fontSize: '14px', margin: 0, color: sel ? style.ruby : style.text }}>{s.name}</p>
                       <p style={{ color: '#AAA', fontSize: '11px', margin: 0 }}>{perUnghie ? `${s.pret} lei / unghie` : `+${s.durata} min`}</p>
+                      {s.desc && <p style={{ color: '#8A7A6A', fontSize: '12px', fontStyle: 'italic', lineHeight: 1.45, margin: '6px 0 0', maxWidth: '360px' }}>{s.desc}</p>}
                       {perUnghie && sel && (
                         <div onClick={ev => ev.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
                           <button type="button" aria-label="O unghie mai puțin" style={btn} onClick={() => setCant(s.name, cant - 1)}>−</button>
