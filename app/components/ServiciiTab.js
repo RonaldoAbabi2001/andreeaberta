@@ -100,21 +100,25 @@ function GaleriePanel({ serviciu, onClose }) {
   )
 }
 
-const EMPTY = { nume: '', pret: '', durata: 60, tip: 'principal' }
+const EMPTY = { nume: '', pret: '', pret_max: '', durata: 60, tip: 'principal' }
+// pret variabil: „100–200” (pret = minim, pret_max = maxim); fix = doar pret
+const afisPret = sv => (sv.pret_max != null && sv.pret_max !== '' && Number(sv.pret_max) > Number(sv.pret || 0) ? `${Number(sv.pret || 0)}–${Number(sv.pret_max)}` : `${Number(sv.pret || 0)}`)
 
 function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' }) {
   const isNew = !serviciu?.id
-  const [form, setForm] = useState(serviciu ? { nume: serviciu.nume, pret: serviciu.pret, durata: serviciu.durata, tip: serviciu.tip || 'principal' } : { ...EMPTY, tip: tipDefault })
+  const [form, setForm] = useState(serviciu ? { nume: serviciu.nume, pret: serviciu.pret, pret_max: serviciu.pret_max ?? '', durata: serviciu.durata, tip: serviciu.tip || 'principal' } : { ...EMPTY, tip: tipDefault })
+  const [variabil, setVariabil] = useState(serviciu?.pret_max != null && serviciu?.pret_max !== '')
   const [saving, setSaving] = useState(false)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   async function save() {
     if (!form.nume.trim()) return alert('Numele serviciului este obligatoriu.')
+    if (variabil && !(Number(form.pret_max) > Number(form.pret || 0))) return alert('La preț variabil, „până la” trebuie să fie mai mare decât „de la”.')
     setSaving(true)
     const res = await fetch('/api/admin/servicii', {
       method: isNew ? 'POST' : 'PATCH',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() },
-      body: JSON.stringify(isNew ? form : { ...form, id: serviciu.id }),
+      body: JSON.stringify({ ...form, pret_max: variabil ? form.pret_max : null, ...(isNew ? {} : { id: serviciu.id }) }),
     })
     const data = await res.json()
     setSaving(false)
@@ -141,11 +145,31 @@ function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' })
             <label style={lbl}>DENUMIRE SERVICIU *</label>
             <input value={form.nume} onChange={e => set('nume', e.target.value)} placeholder="ex: Construcție Gel/Polygel 1-2" style={{ ...inp, borderColor: form.nume ? '#E0D0C0' : s.ruby }} autoFocus />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={lbl}>PREȚ (RON)</label>
-              <input value={form.pret} onChange={e => set('pret', e.target.value)} placeholder="ex: 165" type="number" min="0" style={inp} />
+          <div>
+            <label style={lbl}>TIP PREȚ</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[{ v: false, l: 'Fix' }, { v: true, l: 'Variabil (de la – până la)' }].map(opt => (
+                <div key={String(opt.v)} onClick={() => setVariabil(opt.v)}
+                  style={{ flex: 1, padding: '9px', borderRadius: '10px', textAlign: 'center', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold',
+                    background: variabil === opt.v ? s.ruby : 'white', color: variabil === opt.v ? 'white' : '#888',
+                    border: `1.5px solid ${variabil === opt.v ? s.ruby : '#E0D0C0'}` }}>
+                  {opt.l}
+                </div>
+              ))}
             </div>
+            {variabil && <div style={{ fontSize: '11px', color: '#999', marginTop: '6px' }}>Clienta vede intervalul; prețul exact îl stabilești în privat, după mărime.</div>}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: variabil ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={lbl}>{variabil ? 'DE LA (RON)' : 'PREȚ (RON)'}</label>
+              <input value={form.pret} onChange={e => set('pret', e.target.value)} placeholder={variabil ? 'ex: 100' : 'ex: 165'} type="number" min="0" style={inp} />
+            </div>
+            {variabil && (
+              <div>
+                <label style={lbl}>PÂNĂ LA (RON)</label>
+                <input value={form.pret_max} onChange={e => set('pret_max', e.target.value)} placeholder="ex: 200" type="number" min="0" style={inp} />
+              </div>
+            )}
             <div>
               <label style={lbl}>DURATĂ (minute)</label>
               <input value={form.durata} onChange={e => set('durata', e.target.value)} placeholder="ex: 90" type="number" min="5" style={inp} />
@@ -172,7 +196,7 @@ function ServiciuModal({ serviciu, onClose, onSaved, tipDefault = 'principal' })
             <div style={{ background: s.nude, borderRadius: '10px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: s.text }}>{form.nume}</span>
               <div style={{ display: 'flex', gap: '10px', fontSize: '13px' }}>
-                {form.pret && <span style={{ color: s.ruby, fontWeight: 'bold' }}>{form.pret} RON</span>}
+                {form.pret && <span style={{ color: s.ruby, fontWeight: 'bold' }}>{afisPret({ pret: form.pret, pret_max: variabil ? form.pret_max : null })} RON</span>}
                 {form.durata && <span style={{ color: '#888' }}>{form.durata} min</span>}
               </div>
             </div>
@@ -265,7 +289,7 @@ export default function ServiciiTab() {
             <div className="sv-nume" style={{ padding: '14px 0', fontSize: '14px', color: s.text }}>{serv.nume}</div>
 
             <div className="sv-pret" style={{ padding: '14px 0', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '15px', fontWeight: 'bold', color: accentColor }}>{serv.pret}</span>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: accentColor }}>{afisPret(serv)}</span>
               <span style={{ fontSize: '12px', color: '#AAA', marginLeft: '4px' }}>RON</span>
             </div>
 

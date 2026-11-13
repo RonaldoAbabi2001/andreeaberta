@@ -199,7 +199,7 @@ export async function POST(request) {
       `💅 ${body.serviciu}\n` +
       `📅 ${body.data} · ${body.ora}\n` +
       `💳 Plată: ${body.plata === 'numerar' ? 'Numerar' : 'Transfer bancar'}\n` +
-      `💰 Total: ${body.pret} lei` +
+      `💰 Total: ${body.pret_max ? `${body.pret}–${body.pret_max} lei (preț variabil, stabilește-l în privat)` : `${body.pret} lei`}` +
       (cereAvans ? `\n⏳ <b>Avans 50% neachitat</b> (${Math.ceil((Number(body.pret) || 0) / 2)} lei). Bifează „Avans achitat” în admin când îl primești.` : '') +
       reducereLine
     )

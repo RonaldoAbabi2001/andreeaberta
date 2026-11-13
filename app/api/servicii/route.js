@@ -30,6 +30,7 @@ export async function GET() {
       )
     `
     await sql`ALTER TABLE servicii ADD COLUMN IF NOT EXISTS tip TEXT DEFAULT 'principal'`
+    await sql`ALTER TABLE servicii ADD COLUMN IF NOT EXISTS pret_max NUMERIC`
     const toate = await sql`SELECT * FROM servicii WHERE activ = true AND salon_id = 'evolis' ORDER BY ordine ASC, creat ASC`
     const servicii = toate.filter(s => !s.tip || s.tip === 'principal')
     const extras = toate.filter(s => s.tip === 'extra')

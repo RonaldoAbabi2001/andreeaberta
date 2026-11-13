@@ -228,7 +228,7 @@ export default function BookingFlow() {
       .then(d => {
         const principale = Array.isArray(d) ? d : (d.servicii || [])
         const extrasDB   = Array.isArray(d) ? [] : (d.extras || [])
-        setServicii(principale.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata) })))
+        setServicii(principale.map(s => ({ name: s.nume, pret: Number(s.pret), pretMax: s.pret_max != null && Number(s.pret_max) > Number(s.pret) ? Number(s.pret_max) : null, durata: Number(s.durata) })))
         setExtrasDB(extrasDB.map(s => ({ name: s.nume, pret: Number(s.pret), durata: Number(s.durata), desc: s.descriere || '' })))
         if (d.interval_minim) setIntervalMinim(Number(d.interval_minim))
       })
@@ -293,6 +293,9 @@ export default function BookingFlow() {
   const numeE = e => (e.cant > 1 ? `${e.name} × ${e.cant} unghii` : e.name)
   const setCant = (name, cant) => setExtrasSelectate(extrasSelectate.map(e => (e.name === name ? { ...e, cant: Math.max(1, Math.min(10, cant)) } : e)))
   const pretTotal = serviciu ? serviciu.pret + extrasSelectate.reduce((s, e) => s + pretE(e), 0) : 0
+  // pret variabil (13.11.2026): clienta vede intervalul; pretul exact il stabileste Andreea in privat
+  const pretTotalMax = serviciu?.pretMax ? pretTotal + (serviciu.pretMax - serviciu.pret) : null
+  const afisTotal = pretTotalMax ? `${pretTotal}–${pretTotalMax}` : `${pretTotal}`
   const durataTotal = serviciu ? serviciu.durata + extrasSelectate.reduce((s, e) => s + durataE(e), 0) : 0
   const durataEfectiva = Math.max(durataTotal, intervalMinim)
   const slots = (serviciu && orarZi && !orarZi.inchis && !orarZi.plin) ? generateSlots(durataEfectiva, orarZi) : []
@@ -419,6 +422,7 @@ export default function BookingFlow() {
           email: form.email,
           serviciu: serviciu.name,
           pret: pretTotal,
+          ...(pretTotalMax ? { pret_max: pretTotalMax, observatii: `Preț variabil: ${afisTotal} lei (se stabilește în privat, după mărime)` } : {}),
           durata: durataTotal,
           extra_servicii: extrasSelectate.map(e => ({ nume: numeE(e), pret: pretE(e), durata: durataE(e), cant: e.cant || 1 })),
           data: formatData(data),
@@ -538,7 +542,7 @@ export default function BookingFlow() {
                   <p style={{ fontSize: '15px', marginBottom: '4px' }}>{s.name}</p>
                   <p style={{ color: '#999', fontSize: '12px' }}>⏱ {s.durata} min</p>
                 </div>
-                <p style={{ color: style.ruby, fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', marginLeft: '16px' }}>{s.pret} lei</p>
+                <p style={{ color: style.ruby, fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', marginLeft: '16px' }}>{s.pretMax ? `${s.pret}–${s.pretMax}` : s.pret} lei</p>
               </div>
             ))}
           </div>
@@ -730,8 +734,13 @@ export default function BookingFlow() {
             ))}
             <div style={{ borderTop: `1px solid ${style.gold}`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 'bold' }}>Total</span>
-              <span style={{ fontWeight: 'bold', color: style.ruby, fontSize: '18px' }}>{pretTotal} lei</span>
+              <span style={{ fontWeight: 'bold', color: style.ruby, fontSize: '18px' }}>{afisTotal} lei</span>
             </div>
+            {pretTotalMax && (
+              <p style={{ fontSize: '12px', color: '#888', margin: '8px 0 0', lineHeight: 1.5 }}>
+                Prețul variază în funcție de mărime. Andreea îți spune prețul exact în privat, înainte de programare.
+              </p>
+            )}
           </div>
 
           {/* Metoda de plata */}

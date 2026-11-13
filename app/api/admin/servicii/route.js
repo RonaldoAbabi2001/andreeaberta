@@ -17,6 +17,8 @@ async function getDb() {
     )
   `
   await sql`ALTER TABLE servicii ADD COLUMN IF NOT EXISTS tip TEXT DEFAULT 'principal'`
+  // pret variabil (13.11.2026): pret = minim, pret_max = maxim; NULL = pret fix
+  await sql`ALTER TABLE servicii ADD COLUMN IF NOT EXISTS pret_max NUMERIC`
   const count = await sql`SELECT COUNT(*) FROM servicii WHERE salon_id = 'evolis'`
   if (parseInt(count[0].count) === 0) {
     const seed = [
@@ -51,13 +53,19 @@ export async function GET(request) {
   return NextResponse.json(rows)
 }
 
+// pret_max valid doar daca e mai mare decat pretul minim; altfel serviciul are pret fix
+function pretMax(body) {
+  const max = Number(body.pret_max)
+  return body.pret_max !== '' && body.pret_max != null && max > Number(body.pret || 0) ? max : null
+}
+
 export async function POST(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   const sql = await getDb()
   const id = Date.now()
   const maxOrdine = await sql`SELECT COALESCE(MAX(ordine), 0) as m FROM servicii WHERE salon_id = 'evolis'`
-  await sql`INSERT INTO servicii (id, nume, pret, durata, ordine, tip) VALUES (${id}, ${body.nume}, ${body.pret || 0}, ${body.durata || 60}, ${maxOrdine[0].m + 1}, ${body.tip || 'principal'})`
+  await sql`INSERT INTO servicii (id, nume, pret, pret_max, durata, ordine, tip) VALUES (${id}, ${body.nume}, ${body.pret || 0}, ${pretMax(body)}, ${body.durata || 60}, ${maxOrdine[0].m + 1}, ${body.tip || 'principal'})`
   return NextResponse.json({ success: true, id })
 }
 
@@ -72,7 +80,7 @@ export async function PATCH(request) {
     }
     return NextResponse.json({ success: true })
   }
-  await sql`UPDATE servicii SET nume = ${body.nume}, pret = ${body.pret || 0}, durata = ${body.durata || 60}, tip = ${body.tip || 'principal'} WHERE id = ${body.id}`
+  await sql`UPDATE servicii SET nume = ${body.nume}, pret = ${body.pret || 0}, pret_max = ${pretMax(body)}, durata = ${body.durata || 60}, tip = ${body.tip || 'principal'} WHERE id = ${body.id}`
   return NextResponse.json({ success: true })
 }
 
