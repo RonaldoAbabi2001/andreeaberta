@@ -130,6 +130,11 @@ export async function POST(request) {
     const cl = await sql`SELECT avans_obligatoriu FROM clienti WHERE telefon = ${body.telefon} LIMIT 1`
     const esteDecembrie = / Decembrie /.test(` ${body.data || ''} `)
     const cereAvans = !!cl[0]?.avans_obligatoriu || cl.length === 0 || esteDecembrie
+    // Dovada acceptarii conditiilor (avans, anulare 48h, intarziere 10 min), cu data si ora
+    if (body.conditiiAvansAcceptate) {
+      const acum = new Date().toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' })
+      body.observatii = [body.observatii, `Condiții avans acceptate pe site: ${acum}`].filter(Boolean).join(' | ')
+    }
 
     await sql`
       INSERT INTO programari (id, nume, telefon, serviciu, pret, durata, data, ora, plata, observatii, status, extra_servicii, avans_necesar)

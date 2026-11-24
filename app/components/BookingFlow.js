@@ -64,6 +64,17 @@ const lockedStyle = {
 
 const STORAGE_KEY = 'booking_flow_state'
 
+// Conditiile afisate la programarile cu avans (clienta le bifeaza inainte de confirmare)
+const CONDITII_AVANS = [
+  'Programarea devine fermă după achitarea avansului de 50%. Avansul se scade din prețul final.',
+  'Anulare sau reprogramare cu cel puțin 48 de ore înainte: avansul se returnează integral sau se mută pe noua programare.',
+  'Anulare cu mai puțin de 48 de ore înainte sau neprezentare: avansul nu se mai returnează.',
+  'Întârziere de peste 10 minute: programarea se anulează automat, iar avansul se reține.',
+  'Reprogramarea gratuită se poate face o singură dată, tot cu minimum 48 de ore înainte.',
+  'Dacă ai gel sau semipermanent făcut în alt salon, spune-ne la programare: îndepărtarea poate cere timp în plus.',
+  'Anulările și reprogramările se fac telefonic sau pe WhatsApp, la 0793 234 142.',
+]
+
 const PREFIXE = [
   ['🇷🇴','+40','România'],['🇮🇹','+39','Italia'],['🇪🇸','+34','Spania'],
   ['🇩🇪','+49','Germania'],['🇬🇧','+44','Marea Britanie'],['🇫🇷','+33','Franța'],
@@ -429,6 +440,7 @@ export default function BookingFlow() {
           ora, plata,
           clientToken: clientToken || null,
           telefonOriginal: loggedInClient?.telefon || null,
+          conditiiAvansAcceptate: avansNecesar && avansAcceptat,
         })
       })
       if (res.ok) {
@@ -822,9 +834,15 @@ export default function BookingFlow() {
                 <a href="tel:+40793234142" style={{ color: '#92400E', fontWeight: 'bold' }}>0793 234 142</a>.
               </p>
               {esteDecembrie && <TransferBancar serviciu={serviciu?.name} suma={sumaAvans} />}
+              <div style={{ marginTop: '12px', background: '#FFFFFF', border: '1px solid #FCD34D', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: 'bold', color: '#78350F' }}>Condițiile programării cu avans</p>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12.5px', color: '#78350F', lineHeight: 1.6 }}>
+                  {CONDITII_AVANS.map((c, i) => <li key={i}>{c}</li>)}
+                </ul>
+              </div>
               <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginTop: '12px', cursor: 'pointer', fontSize: '13px', color: '#78350F' }}>
                 <input type="checkbox" checked={avansAcceptat} onChange={e => setAvansAcceptat(e.target.checked)} style={{ marginTop: '2px', width: '18px', height: '18px' }} />
-                <span>Am înțeles că programarea se confirmă după achitarea avansului de 50%.</span>
+                <span>Am citit și accept condițiile programării cu avans.</span>
               </label>
             </div>
           )}
