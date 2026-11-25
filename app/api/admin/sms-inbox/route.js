@@ -17,7 +17,7 @@ export async function GET(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const { searchParams } = new URL(request.url)
   const telefon = normTel(searchParams.get('telefon'))
   const esuate = searchParams.get('esuate')
@@ -93,7 +93,7 @@ export async function POST(request) {
   if (!telefon || !mesaj)
     return NextResponse.json({ error: 'Date incomplete' }, { status: 400 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const ts = new Date(creat || Date.now()).getTime()
   const id = `${telefon}_${ts}`
 
@@ -134,7 +134,7 @@ export async function PATCH(request) {
   const { sms_queue_id, status, eroare } = await request.json()
   if (!sms_queue_id) return NextResponse.json({ error: 'sms_queue_id lipsa' }, { status: 400 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`
     UPDATE sms_inbox
     SET status = ${status || 'esuat'}, eroare = ${eroare || null}

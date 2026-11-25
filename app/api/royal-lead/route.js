@@ -50,7 +50,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Consimțământul e necesar.' }, { status: 400, headers })
     }
 
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await sql`CREATE TABLE IF NOT EXISTS royalnails_leads (
       id text PRIMARY KEY,
       email text,

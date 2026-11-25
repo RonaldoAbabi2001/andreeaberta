@@ -32,7 +32,7 @@ function autorizat(request) {
 
 export async function GET(request) {
   if (!autorizat(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const fortat = new URL(request.url).searchParams.get('force') === '1' && checkAuth(request)
 
   await sql`ALTER TABLE programari ADD COLUMN IF NOT EXISTS avans_necesar BOOLEAN DEFAULT FALSE`

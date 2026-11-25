@@ -20,7 +20,7 @@ export async function GET(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const [programari, clienti, materiale] = await Promise.all([
     sql`SELECT * FROM programari`,
     sql`SELECT * FROM clienti`,

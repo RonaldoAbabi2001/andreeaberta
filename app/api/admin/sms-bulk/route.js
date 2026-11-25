@@ -6,7 +6,7 @@ export async function GET(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const campanii = await sql`
     SELECT
       c.id, c.mesaj, c.creat, c.total,
@@ -30,7 +30,7 @@ export async function POST(request) {
   if (!mesaj?.trim())
     return NextResponse.json({ error: 'Mesaj gol' }, { status: 400 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
 
   const recent = await sql`
     SELECT id FROM sms_bulk_campaigns

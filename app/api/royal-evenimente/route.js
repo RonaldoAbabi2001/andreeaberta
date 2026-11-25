@@ -35,7 +35,7 @@ export async function POST(req) {
     const b = JSON.parse(raw || '{}')
     if (!EVENIMENTE.has(b.e)) return new NextResponse(null, { status: 400, headers })
 
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await sql`CREATE TABLE IF NOT EXISTS royalnails_evenimente (
       id bigserial PRIMARY KEY,
       creat timestamptz DEFAULT now(),

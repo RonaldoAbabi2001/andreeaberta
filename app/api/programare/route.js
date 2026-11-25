@@ -6,7 +6,7 @@ const BOT_TOKEN = '8465613425:AAEawrbtzjSTyIpmtAtgYQEeOBCjc2T3iAE'
 const CHAT_ID = '645634084'
 
 async function getDb() {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`
     CREATE TABLE IF NOT EXISTS programari (
       id BIGINT PRIMARY KEY,

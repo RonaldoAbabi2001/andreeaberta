@@ -33,7 +33,7 @@ async function initTables(sql) {
 
 // GET — listă SMS din coadă + setările de reminder. ?status=pending|trimis|eroare
 export async function GET(request) {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTables(sql)
   if (!(await checkAuth(request, sql)))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -78,7 +78,7 @@ export async function GET(request) {
 
 // POST — salvează setările de reminder (cheia 'reminder_settings' în salon_settings)
 export async function POST(request) {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTables(sql)
   if (!(await checkAuth(request, sql)))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -108,7 +108,7 @@ export async function POST(request) {
 
 // PATCH — retrimite un SMS eșuat (îl repune în coadă pentru worker-ul de pe Beelink)
 export async function PATCH(request) {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTables(sql)
   if (!(await checkAuth(request, sql)))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

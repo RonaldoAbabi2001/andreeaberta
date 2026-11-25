@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await sql`
       CREATE TABLE IF NOT EXISTS servicii (
         id BIGINT PRIMARY KEY,

@@ -7,7 +7,7 @@ import { checkAuth } from '../../lib/adminAuth'
 const INTERVAL_ZILE = 14
 
 async function getDb() {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`
     CREATE TABLE IF NOT EXISTS roata_norocului (
       id BIGINT PRIMARY KEY,

@@ -40,7 +40,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Scrie ce model cauți.' }, { status: 400, headers })
     }
 
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await sql`CREATE TABLE IF NOT EXISTS royalnails_dorinte (
       id text PRIMARY KEY,
       dorinta text NOT NULL,

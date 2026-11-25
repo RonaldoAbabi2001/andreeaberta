@@ -5,7 +5,7 @@ export async function POST(request) {
   const { telefon, parola } = await request.json()
   if (!telefon) return NextResponse.json({ error: 'Numărul de telefon este obligatoriu.' }, { status: 400 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const telNorm = telefon.trim().replace(/\s+/g, '').replace(/^\+40/, '0')
   const rows = await sql`SELECT * FROM clienti WHERE REPLACE(REPLACE(telefon, ' ', ''), '+40', '0') = ${telNorm}`
 
@@ -35,7 +35,7 @@ export async function PATCH(request) {
   if (!token || !parola_noua) return NextResponse.json({ error: 'Date incomplete.' }, { status: 400 })
 
   const id = token.replace('client_', '')
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`UPDATE clienti SET parola = ${parola_noua} WHERE id = ${id}`
   return NextResponse.json({ success: true })
 }

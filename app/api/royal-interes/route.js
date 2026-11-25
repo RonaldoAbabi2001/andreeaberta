@@ -38,7 +38,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Lipsește produsul.' }, { status: 400, headers })
     }
 
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await sql`CREATE TABLE IF NOT EXISTS royalnails_interes (
       id text PRIMARY KEY,
       handle text,

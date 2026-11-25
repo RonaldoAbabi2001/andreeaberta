@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless'
 import { checkAuth } from '../../../lib/adminAuth'
 
 async function getDb() {
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`
     CREATE TABLE IF NOT EXISTS programare_materiale (
       id BIGINT PRIMARY KEY,

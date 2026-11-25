@@ -6,7 +6,7 @@ async function checkAuth(req) {
   if (!token) return false
   if (checkSessionAuth(req)) return true
   try {
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     const rows = await sql`SELECT valoare FROM salon_settings WHERE cheie = 'admin_password' LIMIT 1`
     if (rows.length > 0 && rows[0].valoare === token) return true
   } catch {}
@@ -26,7 +26,7 @@ async function initTable(sql) {
 export async function GET(req) {
   if (!(await checkAuth(req))) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTable(sql)
 
   const rows = await sql`SELECT cheie, valoare FROM salon_settings`
@@ -39,7 +39,7 @@ export async function GET(req) {
 export async function POST(req) {
   if (!(await checkAuth(req))) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTable(sql)
 
   const body = await req.json()

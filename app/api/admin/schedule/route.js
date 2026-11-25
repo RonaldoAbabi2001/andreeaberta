@@ -60,7 +60,7 @@ function defaultSchedule() {
 export async function GET(req) {
   if (!auth(req)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
 
   try {
     await initTables(sql)
@@ -139,7 +139,7 @@ export async function GET(req) {
 export async function POST(req) {
   if (!auth(req)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTables(sql)
 
   try {
@@ -196,7 +196,7 @@ export async function POST(req) {
 export async function DELETE(req) {
   if (!auth(req)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
 
   try {
     const body = await req.json()

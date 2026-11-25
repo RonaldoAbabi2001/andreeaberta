@@ -36,7 +36,7 @@ export async function GET(req) {
   const zi = (jsDay + 6) % 7
 
   try {
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
 
     // Get first active worker
     let worker

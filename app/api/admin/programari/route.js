@@ -8,7 +8,7 @@ import { enqueueReminders, resyncReminders, stergeRemindere, stergeSmsAvans } fr
 import { textAvans } from '../../../lib/avansText'
 
 async function getDb() {
-  return neon(process.env.DATABASE_URL)
+  return neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
 }
 
 export async function GET(request) {

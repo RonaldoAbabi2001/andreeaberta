@@ -37,7 +37,7 @@ export async function GET(request) {
   const clientId = getClientId(request)
   if (!clientId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const clients = await sql`SELECT * FROM clienti WHERE id = ${clientId}`
   if (clients.length === 0) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,7 +53,7 @@ export async function PATCH(request) {
   const clientId = getClientId(request)
   if (!clientId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   const clients = await sql`SELECT * FROM clienti WHERE id = ${clientId}`
   if (clients.length === 0) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

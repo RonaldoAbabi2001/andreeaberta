@@ -25,7 +25,7 @@ async function initTable(sql) {
 export async function GET(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTable(sql)
   const { searchParams } = new URL(request.url)
   const programare_id = searchParams.get('programare_id')
@@ -85,7 +85,7 @@ export async function POST(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTable(sql)
   const id = Date.now()
   await sql`
@@ -102,7 +102,7 @@ export async function PATCH(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   if (body.eroare) {
     await sql`UPDATE sms_queue SET eroare = ${body.eroare} WHERE id = ${body.id}`
   } else {

@@ -51,7 +51,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Nume și telefon valid (07...) sunt necesare.' }, { status: 400 })
     }
 
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await ensureTable(sql)
     await sql`INSERT INTO lista_asteptare (id, nume, telefon, data_dorita, serviciu, mesaj)
       VALUES (${crypto.randomUUID()}, ${nume}, ${telefon}, ${data_dorita || null}, ${serviciu || null}, ${mesaj || null})`
@@ -75,7 +75,7 @@ export async function POST(request) {
 // GET — listare cereri pentru admin
 export async function GET(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await ensureTable(sql)
   const rows = await sql`SELECT * FROM lista_asteptare ORDER BY creat DESC LIMIT 100`
   return NextResponse.json(rows)
@@ -86,7 +86,7 @@ export async function PATCH(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id, status } = await request.json()
   if (!id) return NextResponse.json({ error: 'id lipsă' }, { status: 400 })
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`UPDATE lista_asteptare SET status = ${status || 'nou'} WHERE id = ${id}`
   return NextResponse.json({ ok: true })
 }

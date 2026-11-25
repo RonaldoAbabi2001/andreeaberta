@@ -35,7 +35,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: true })
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     await initTables(sql)
 
     if (body.eveniment) {
@@ -62,7 +62,7 @@ export async function GET(request) {
   if (!checkAuth(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await initTables(sql)
 
   const [azi, saptamana, luna, totalRows, paginaTop, zilnice, evenimenteTop, funnel] = await Promise.all([

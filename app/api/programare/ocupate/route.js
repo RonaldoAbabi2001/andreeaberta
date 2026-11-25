@@ -9,7 +9,7 @@ export async function GET(request) {
   if (!data) return NextResponse.json([])
 
   try {
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
     const rows = await sql`
       SELECT ora, durata, ora_sfarsit FROM programari
       WHERE data = ${data}

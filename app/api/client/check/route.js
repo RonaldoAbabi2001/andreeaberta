@@ -6,7 +6,7 @@ export async function GET(request) {
   const telefon = searchParams.get('telefon')
   if (!telefon) return NextResponse.json({ exists: false })
 
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { cache: 'no-store' } })
   await sql`ALTER TABLE clienti ADD COLUMN IF NOT EXISTS avans_obligatoriu BOOLEAN DEFAULT FALSE`
   const rows = await sql`SELECT id, nume, avans_obligatoriu FROM clienti WHERE telefon = ${telefon.trim()}`
   return NextResponse.json({
